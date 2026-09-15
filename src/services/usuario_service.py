@@ -1,3 +1,5 @@
+import os
+
 from src.entities.usuario import Usuario
 from src.entities.enums.papel_usuario import PapelUsuario
 
@@ -9,13 +11,21 @@ class UsuarioService:
     def pode_gerenciar(self, usuario_logado: Usuario, usuario_alvo: Usuario):
         if usuario_logado.papel == PapelUsuario.ADMINISTRADOR:
             return True
+
         if usuario_logado.papel == PapelUsuario.GERENTE:
             return usuario_alvo.papel == PapelUsuario.FUNCIONARIO
         return False
 
     def cadastrar_usuario(self, usuario_logado, nome, senha, papel: PapelUsuario = PapelUsuario.FUNCIONARIO):
+        if not nome.strip():
+            raise ValueError ("O nome nao pode estar vazio.")
+
+        if not senha:
+            raise ValueError ("A senha nao pode estar vazio")
+
         if usuario_logado.papel == PapelUsuario.GERENTE and papel != PapelUsuario.FUNCIONARIO:
             raise PermissionError("Gerentes só podem cadastrar funcionários.")
+
         if usuario_logado.papel not in (PapelUsuario.ADMINISTRADOR, PapelUsuario.GERENTE):
             raise PermissionError("Você não tem permissão para cadastrar usuários.")
         
@@ -30,11 +40,11 @@ class UsuarioService:
     def promover_a_gerente(self, usuario_logado, id_usuario):
         if usuario_logado.papel != PapelUsuario.ADMINISTRADOR:
             raise PermissionError("Apenas administradores podem promover funcionários a gerentes.")
-        
+
         usuario = self.usuario_repository.buscar_por_id(id_usuario)
         if not usuario:
             raise ValueError(f"Usuário com id {id_usuario} não encontrado.")
-        
+
         if usuario.papel != PapelUsuario.FUNCIONARIO:
             raise ValueError("Apenas funcionários podem ser promovidos a gerentes.")
         
@@ -45,7 +55,7 @@ class UsuarioService:
         usuario_alvo = self.usuario_repository.buscar_por_id(id_usuario_alvo)
         if not usuario_alvo:
             raise ValueError(f"Usuário com id {id_usuario_alvo} não encontrado.")
-        
+
         if not self.pode_gerenciar(usuario_logado, usuario_alvo):
             raise PermissionError("Você não tem permissão para resetar a senha deste usuário.")
         
@@ -57,9 +67,26 @@ class UsuarioService:
         usuario_alvo = self.usuario_repository.buscar_por_id(id_usuario_alvo)
         if not usuario_alvo:
             raise ValueError(f"Usuário com id {id_usuario_alvo} não encontrado.")
-        
+
         if not self.pode_gerenciar(usuario_logado, usuario_alvo):
             raise PermissionError("Você não tem permissão para desativar este usuário.")
-        
+
         usuario_alvo.ativo = False
         return self.usuario_repository.atualizar(usuario_alvo)   
+
+    def obter_papeis_cadastro(self, usuario_logado):
+        if usuario_logado.papel == PapelUsuario.ADMINISTRADOR:
+            return[PapelUsuario.FUNCIONARIO, PapelUsuario.GERENTE]
+        if usuario_logado.papel == PapelUsuario.GERENTE:
+            return[PapelUsuario.FUNCIONARIO]
+        return []
+
+    def criar_admin_padrao(self):
+        if self.usuario_repository.existe_usuario():
+            return None
+            
+        senha_do_ambiente = os.getenv("SENHA_PADRAO_FABRICA", "admin123")
+        senha_hash = self.autenticacao_service.gerar_senha_hash(senha_do_ambiente)
+        admin_padrao = Usuario(nome="admin", senha_hash=senha_hash, papel=PapelUsuario.ADMINISTRADOR)
+        return self.usuario_repository.criar(admin_padrao)
+    

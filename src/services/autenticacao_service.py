@@ -5,9 +5,13 @@ class AutenticacaoService:
         self.usuario_repository = usuario_repository
 
     def autenticar(self, id_usuario, senha):
+        if id_usuario <=0:
+            raise ValueError("ID de usuario invalido.")
+
         usuario = self.usuario_repository.buscar_por_id(id_usuario)
         if not usuario or not self.verificar_senha(senha, usuario.senha_hash):
             raise ValueError("ID ou Senha Invalidos.")
+
         if not usuario.ativo:
             raise ValueError("Usuário inativo.")
 
@@ -29,6 +33,7 @@ class AutenticacaoService:
         usuario = self.usuario_repository.buscar_por_id(id_usuario)
         if not usuario:
             raise ValueError("Usuário não encontrado.")
+
         if not self.verificar_senha(senha_atual, usuario.senha_hash):
             raise ValueError("Senha atual incorreta.")
 

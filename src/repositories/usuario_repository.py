@@ -83,3 +83,14 @@ class UsuarioRepository:
         except Exception:
             conn.rollback()
             raise
+
+    def existe_usuario(self):
+        conn = self.conexao.get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT EXISTS (SELECT 1 FROM usuarios)")
+                (existe,) = cursor.fetchone()
+            return existe
+        except Exception:
+            conn.rollback()
+            raise
