@@ -154,69 +154,158 @@ def test_cadastrar_cliente_com_telefone_invalido(service, repository):
     repository.criar.assert_not_called()
 
 
-def test_atualizar_cliente_com_dados_validos(service, repository):
+def test_atualizar_telefone_com_dados_validos(service, repository):
     cliente = Cliente(
         id_cliente=1,
-        nome=" João da Silva ",
-        cpf="529.982.247-25",
-        telefone="(67) 99999-8888",
+        nome="João da Silva",
+        cpf="52998224725",
+        telefone="67999998888",
+        endereco="Rua A"
+    )
+
+    repository.buscar_por_cpf.return_value = cliente
+    repository.atualizar.return_value = cliente
+
+    resultado = service.atualizar_telefone(
+        cpf_cliente="52998224725",
+        telefone="(67) 98888-7777"
+    )
+
+    assert resultado == cliente
+    assert cliente.telefone == "67988887777"
+
+    repository.buscar_por_cpf.assert_called_once_with("52998224725")
+    repository.atualizar.assert_called_once_with(cliente)
+
+
+def test_atualizar_telefone_com_cliente_inexistente(service, repository):
+    repository.buscar_por_cpf.return_value = None
+
+    with pytest.raises(ValueError, match="Cliente"):
+        service.atualizar_telefone(
+            cpf_cliente="99999999999",
+            telefone="67999998888"
+        )
+
+    repository.atualizar.assert_not_called()
+
+
+def test_atualizar_telefone_vazio(service, repository):
+    cliente = Cliente(
+        id_cliente=1,
+        nome="João da Silva",
+        cpf="52998224725",
+        telefone="67999998888",
+        endereco="Rua A"
+    )
+
+    repository.buscar_por_cpf.return_value = cliente
+
+    with pytest.raises(ValueError, match="telefone"):
+        service.atualizar_telefone(
+            cpf_cliente="52998224725",
+            telefone=""
+        )
+
+    repository.atualizar.assert_not_called()
+
+
+def test_atualizar_telefone_invalido(service, repository):
+    cliente = Cliente(
+        id_cliente=1,
+        nome="João da Silva",
+        cpf="52998224725",
+        telefone="67999998888",
+        endereco="Rua A"
+    )
+
+    repository.buscar_por_cpf.return_value = cliente
+
+    with pytest.raises(ValueError, match="telefone"):
+        service.atualizar_telefone(
+            cpf_cliente="52998224725",
+            telefone="6733338888"
+        )
+
+    repository.atualizar.assert_not_called()
+
+
+def test_atualizar_endereco_com_dados_validos(service, repository):
+    cliente = Cliente(
+        id_cliente=1,
+        nome="João da Silva",
+        cpf="52998224725",
+        telefone="67999998888",
+        endereco=None
+    )
+
+    repository.buscar_por_cpf.return_value = cliente
+    repository.atualizar.return_value = cliente
+
+    resultado = service.atualizar_endereco(
+        cpf_cliente="52998224725",
         endereco=" Rua A "
     )
 
+    assert resultado == cliente
+    assert cliente.endereco == "Rua A"
+
+    repository.buscar_por_cpf.assert_called_once_with("52998224725")
+    repository.atualizar.assert_called_once_with(cliente)
+
+
+def test_atualizar_endereco_vazio(service, repository):
+    cliente = Cliente(
+        id_cliente=1,
+        nome="João da Silva",
+        cpf="52998224725",
+        telefone="67999998888",
+        endereco="Rua A"
+    )
+
+    repository.buscar_por_cpf.return_value = cliente
     repository.atualizar.return_value = cliente
 
-    resultado = service.atualizar_cliente(cliente)
+    resultado = service.atualizar_endereco(
+        cpf_cliente="52998224725",
+        endereco=""
+    )
 
     assert resultado == cliente
-
-    assert cliente.nome == "João da Silva"
-    assert cliente.cpf == "52998224725"
-    assert cliente.telefone == "67999998888"
-    assert cliente.endereco == "Rua A"
+    assert cliente.endereco == ""
 
     repository.atualizar.assert_called_once_with(cliente)
 
 
-def test_atualizar_cliente_com_nome_vazio(service, repository):
+def test_atualizar_endereco_none(service, repository):
     cliente = Cliente(
         id_cliente=1,
-        nome="   ",
+        nome="João da Silva",
         cpf="52998224725",
         telefone="67999998888",
         endereco="Rua A"
     )
 
-    with pytest.raises(ValueError, match="Nome"):
-        service.atualizar_cliente(cliente)
+    repository.buscar_por_cpf.return_value = cliente
+
+    resultado = service.atualizar_endereco(
+        cpf_cliente="52998224725",
+        endereco=None
+    )
+
+    assert resultado == cliente
+    assert cliente.endereco == "Rua A"
 
     repository.atualizar.assert_not_called()
 
 
-def test_atualizar_cliente_com_cpf_invalido(service, repository):
-    cliente = Cliente(
-        id_cliente=1,
-        nome="João",
-        cpf="52998224724",
-        telefone="67999998888",
-        endereco="Rua A"
-    )
+def test_atualizar_endereco_com_cliente_inexistente(service, repository):
+    repository.buscar_por_cpf.return_value = None
 
-    with pytest.raises(ValueError, match="CPF"):
-        service.atualizar_cliente(cliente)
-
-    repository.atualizar.assert_not_called()
-
-
-def test_atualizar_cliente_com_telefone_invalido(service, repository):
-    cliente = Cliente(
-        id_cliente=1,
-        nome="João",
-        cpf="52998224725",
-        telefone="6733338888",
-        endereco="Rua A"
-    )
-
-    with pytest.raises(ValueError, match="telefone"):
-        service.atualizar_cliente(cliente)
+    with pytest.raises(ValueError, match="Cliente"):
+        service.atualizar_endereco(
+            cpf_cliente="99999999999",
+            endereco="Rua A"
+        )
 
     repository.atualizar.assert_not_called()

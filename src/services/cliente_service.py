@@ -35,7 +35,7 @@ class ClienteService:
             return True
         return False
 
-    def cadastrar_cliente(self, nome,cpf,telefone,endereco):
+    def cadastrar_cliente(self, nome,cpf,telefone,endereco=None):
         cpf = re.sub(r'\D', '', cpf)
         telefone = re.sub(r'\D', '', telefone)
 
@@ -58,29 +58,40 @@ class ClienteService:
         if not self.validar_telefone(telefone):
             raise ValueError ("O telefone e invalido!")
 
+        if endereco is not None:
+            endereco = endereco.strip()
+
         novo_cliente = Cliente(
-            nome=nome,
+            nome=nome.strip(),
             cpf=cpf,
             telefone=telefone,
             endereco=endereco
         )
         return self.cliente_repository.criar(novo_cliente)
 
-    def atualizar_cliente(self,cliente):
-        if not cliente.nome.strip():
-            raise ValueError ("Nome nao pode estar vazio.")
+    def atualizar_telefone(self,cpf_cliente, telefone):
+        cliente= self.cliente_repository.buscar_por_cpf(cpf_cliente)
+        if cliente is None:
+            raise ValueError("Cliente nao encontrado.")
 
-        cpf = re.sub(r'\D', '', cliente.cpf)
-        if not self.validar_cpf(cpf):
-            raise ValueError ("O CPF e invalido!")
+        telefone = re.sub(r'\D', '', telefone)
+        if not telefone:
+            raise ValueError("O telefone nao pode estar vazio.")
 
-        telefone = re.sub(r'\D', '', cliente.telefone)
         if not self.validar_telefone(telefone):
-            raise ValueError ("O telefone e invalido!")
+            raise ValueError("O telefone e invalido!")
 
-        cliente.nome = cliente.nome.strip()
-        cliente.cpf = cpf 
         cliente.telefone = telefone
-        cliente.endereco = cliente.endereco.strip()
+        return self.cliente_repository.atualizar(cliente)
 
+    def atualizar_endereco(self, cpf_cliente, endereco):
+        cliente = self.cliente_repository.buscar_por_cpf(cpf_cliente)
+        if cliente is None:
+            raise ValueError("Cliente nao encontrado.")
+
+        if endereco is None:
+            return cliente
+
+        cliente.endereco = endereco.strip()
+        
         return self.cliente_repository.atualizar(cliente)
