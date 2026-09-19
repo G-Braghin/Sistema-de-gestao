@@ -1,7 +1,15 @@
 from src.entities.enums.papel_usuario import PapelUsuario
 
+
 class Usuario:
-    def __init__(self, nome, senha_hash, papel:PapelUsuario ,id_usuario=None, ativo=True):
+    def __init__(
+        self,
+        nome: str,
+        senha_hash: str,
+        papel: PapelUsuario,
+        id_usuario: int | None = None,
+        ativo=True,
+    ):
         self.id_usuario = id_usuario
         self.nome = nome
         self.senha_hash = senha_hash

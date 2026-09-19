@@ -1,13 +1,15 @@
-from src.entities.usuario import Usuario
+from src.database.conexao import Conexao
 from src.entities.enums.papel_usuario import PapelUsuario
+from src.entities.usuario import Usuario
+
 
 class UsuarioRepository:
-    def __init__(self, conexao):
+    def __init__(self, conexao: Conexao):
         self.conexao = conexao
 
-    def buscar_por_id(self, id_usuario):
+    def buscar_por_id(self, id_usuario: int) -> Usuario:
         conn = self.conexao.get_connection()
-        try: 
+        try:
             with conn.cursor() as cursor:
                 cursor.execute(
                     """
@@ -15,24 +17,24 @@ class UsuarioRepository:
                     nome, senha_hash, papel, ativo 
                     FROM usuarios 
                     WHERE id_usuario = %s
-                    """, 
-                    (id_usuario,)
+                    """,
+                    (id_usuario,),
                 )
                 row = cursor.fetchone()
             if row:
                 return Usuario(
-                    id_usuario=row[0], 
-                    nome=row[1], 
-                    senha_hash=row[2], 
-                    papel=PapelUsuario(row[3]), 
-                    ativo=row[4]
-                )         
+                    id_usuario=row[0],
+                    nome=row[1],
+                    senha_hash=row[2],
+                    papel=PapelUsuario(row[3]),
+                    ativo=row[4],
+                )
             return None
         except Exception:
             conn.rollback()
             raise
 
-    def criar(self, usuario: Usuario):
+    def criar(self, usuario: Usuario) -> Usuario:
         conn = self.conexao.get_connection()
         try:
             with conn.cursor() as cursor:
@@ -47,8 +49,8 @@ class UsuarioRepository:
                         usuario.nome,
                         usuario.senha_hash,
                         usuario.papel.value,
-                        usuario.ativo
-                    )
+                        usuario.ativo,
+                    ),
                 )
                 usuario.id_usuario = cursor.fetchone()[0]
             conn.commit()
@@ -57,7 +59,7 @@ class UsuarioRepository:
             conn.rollback()
             raise
 
-    def atualizar(self, usuario: Usuario):
+    def atualizar(self, usuario: Usuario) -> Usuario:
         conn = self.conexao.get_connection()
         try:
             with conn.cursor() as cursor:
@@ -72,8 +74,8 @@ class UsuarioRepository:
                         usuario.senha_hash,
                         usuario.papel.value,
                         usuario.ativo,
-                        usuario.id_usuario
-                    )
+                        usuario.id_usuario,
+                    ),
                 )
                 linhas_afetadas = cursor.rowcount
             conn.commit()

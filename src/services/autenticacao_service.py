@@ -1,11 +1,13 @@
 import bcrypt
+from src.repositories.usuario_repository import UsuarioRepository
+
 
 class AutenticacaoService:
-    def __init__(self, usuario_repository):
+    def __init__(self, usuario_repository: UsuarioRepository):
         self.usuario_repository = usuario_repository
 
-    def autenticar(self, id_usuario, senha):
-        if id_usuario <=0:
+    def autenticar(self, id_usuario: int, senha: str):
+        if id_usuario <= 0:
             raise ValueError("ID de usuario invalido.")
 
         usuario = self.usuario_repository.buscar_por_id(id_usuario)
@@ -17,19 +19,15 @@ class AutenticacaoService:
 
         return usuario
 
-    def gerar_senha_hash(self, senha):
-        return bcrypt.hashpw(
-            senha.encode('utf-8'),
-            bcrypt.gensalt()
-        ).decode('utf-8')
+    def gerar_senha_hash(self, senha: str):
+        return bcrypt.hashpw(senha.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
-    def verificar_senha(self, senha, senha_hash):
-        return bcrypt.checkpw(
-            senha.encode('utf-8'),
-            senha_hash.encode('utf-8')
-        )
+    def verificar_senha(self, senha: str, senha_hash: str):
+        return bcrypt.checkpw(senha.encode("utf-8"), senha_hash.encode("utf-8"))
 
-    def atualizar_senha_usuario(self, id_usuario, senha_atual, nova_senha):
+    def atualizar_senha_usuario(
+        self, id_usuario: str, senha_atual: str, nova_senha: str
+    ):
         usuario = self.usuario_repository.buscar_por_id(id_usuario)
         if not usuario:
             raise ValueError("Usuário não encontrado.")

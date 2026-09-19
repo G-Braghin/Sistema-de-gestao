@@ -1,14 +1,21 @@
 import os
 
-from src.entities.usuario import Usuario
 from src.entities.enums.papel_usuario import PapelUsuario
+from src.entities.usuario import Usuario
+from src.repositories.usuario_repository import UsuarioRepository
+from src.services.autenticacao_service import AutenticacaoService
+
 
 class UsuarioService:
-    def __init__(self, usuario_repository, autenticacao_service):
+    def __init__(
+        self,
+        usuario_repository: UsuarioRepository,
+        autenticacao_service: AutenticacaoService,
+    ):
         self.usuario_repository = usuario_repository
         self.autenticacao_service = autenticacao_service
 
-    def pode_gerenciar(self, usuario_logado: Usuario, usuario_alvo: Usuario):
+    def pode_gerenciar(self, usuario_logado: Usuario, usuario_alvo: Usuario) -> bool:
         if usuario_logado.papel == PapelUsuario.ADMINISTRADOR:
             return True
 
@@ -16,30 +23,40 @@ class UsuarioService:
             return usuario_alvo.papel == PapelUsuario.FUNCIONARIO
         return False
 
-    def cadastrar_usuario(self, usuario_logado, nome, senha, papel: PapelUsuario = PapelUsuario.FUNCIONARIO):
+    def cadastrar_usuario(
+        self,
+        usuario_logado: Usuario,
+        nome: str,
+        senha: str,
+        papel: PapelUsuario = PapelUsuario.FUNCIONARIO,
+    ) -> Usuario:
         if not nome.strip():
-            raise ValueError ("O nome nao pode estar vazio.")
+            raise ValueError("O nome nao pode estar vazio.")
 
         if not senha:
-            raise ValueError ("A senha nao pode estar vazio")
+            raise ValueError("A senha nao pode estar vazio")
 
-        if usuario_logado.papel == PapelUsuario.GERENTE and papel != PapelUsuario.FUNCIONARIO:
+        if (
+            usuario_logado.papel == PapelUsuario.GERENTE
+            and papel != PapelUsuario.FUNCIONARIO
+        ):
             raise PermissionError("Gerentes só podem cadastrar funcionários.")
 
-        if usuario_logado.papel not in (PapelUsuario.ADMINISTRADOR, PapelUsuario.GERENTE):
+        if usuario_logado.papel not in (
+            PapelUsuario.ADMINISTRADOR,
+            PapelUsuario.GERENTE,
+        ):
             raise PermissionError("Você não tem permissão para cadastrar usuários.")
-        
+
         senha_hash = self.autenticacao_service.gerar_senha_hash(senha)
-        novo_usuario = Usuario(
-            nome=nome, 
-            senha_hash=senha_hash, 
-            papel=papel
-        )
+        novo_usuario = Usuario(nome=nome, senha_hash=senha_hash, papel=papel)
         return self.usuario_repository.criar(novo_usuario)
 
-    def promover_a_gerente(self, usuario_logado, id_usuario):
+    def promover_a_gerente(self, usuario_logado: Usuario, id_usuario: int) -> Usuario:
         if usuario_logado.papel != PapelUsuario.ADMINISTRADOR:
-            raise PermissionError("Apenas administradores podem promover funcionários a gerentes.")
+            raise PermissionError(
+                "Apenas administradores podem promover funcionários a gerentes."
+            )
 
         usuario = self.usuario_repository.buscar_por_id(id_usuario)
         if not usuario:
@@ -47,23 +64,29 @@ class UsuarioService:
 
         if usuario.papel != PapelUsuario.FUNCIONARIO:
             raise ValueError("Apenas funcionários podem ser promovidos a gerentes.")
-        
+
         usuario.papel = PapelUsuario.GERENTE
         return self.usuario_repository.atualizar(usuario)
 
-    def resetar_senha(self, usuario_logado, id_usuario_alvo, nova_senha):
+    def resetar_senha(
+        self, usuario_logado: Usuario, id_usuario_alvo: int, nova_senha: str
+    ) -> Usuario:
         usuario_alvo = self.usuario_repository.buscar_por_id(id_usuario_alvo)
         if not usuario_alvo:
             raise ValueError(f"Usuário com id {id_usuario_alvo} não encontrado.")
 
         if not self.pode_gerenciar(usuario_logado, usuario_alvo):
-            raise PermissionError("Você não tem permissão para resetar a senha deste usuário.")
-        
+            raise PermissionError(
+                "Você não tem permissão para resetar a senha deste usuário."
+            )
+
         nova_senha_hash = self.autenticacao_service.gerar_senha_hash(nova_senha)
         usuario_alvo.senha_hash = nova_senha_hash
         return self.usuario_repository.atualizar(usuario_alvo)
-     
-    def desativar_usuario(self, usuario_logado, id_usuario_alvo):
+
+    def desativar_usuario(
+        self, usuario_logado: Usuario, id_usuario_alvo: int
+    ) -> Usuario:
         usuario_alvo = self.usuario_repository.buscar_por_id(id_usuario_alvo)
         if not usuario_alvo:
             raise ValueError(f"Usuário com id {id_usuario_alvo} não encontrado.")
@@ -72,21 +95,22 @@ class UsuarioService:
             raise PermissionError("Você não tem permissão para desativar este usuário.")
 
         usuario_alvo.ativo = False
-        return self.usuario_repository.atualizar(usuario_alvo)   
+        return self.usuario_repository.atualizar(usuario_alvo)
 
-    def obter_papeis_cadastro(self, usuario_logado):
+    def obter_papeis_cadastro(self, usuario_logado: Usuario) -> list[PapelUsuario]:
         if usuario_logado.papel == PapelUsuario.ADMINISTRADOR:
-            return[PapelUsuario.FUNCIONARIO, PapelUsuario.GERENTE]
+            return [PapelUsuario.FUNCIONARIO, PapelUsuario.GERENTE]
         if usuario_logado.papel == PapelUsuario.GERENTE:
-            return[PapelUsuario.FUNCIONARIO]
+            return [PapelUsuario.FUNCIONARIO]
         return []
 
-    def criar_admin_padrao(self):
+    def criar_admin_padrao(self) -> Usuario | None:
         if self.usuario_repository.existe_usuario():
             return None
-            
+
         senha_do_ambiente = os.getenv("SENHA_PADRAO_FABRICA", "admin123")
         senha_hash = self.autenticacao_service.gerar_senha_hash(senha_do_ambiente)
-        admin_padrao = Usuario(nome="admin", senha_hash=senha_hash, papel=PapelUsuario.ADMINISTRADOR)
+        admin_padrao = Usuario(
+            nome="admin", senha_hash=senha_hash, papel=PapelUsuario.ADMINISTRADOR
+        )
         return self.usuario_repository.criar(admin_padrao)
-    
