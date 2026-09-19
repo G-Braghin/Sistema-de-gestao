@@ -1,10 +1,12 @@
+from src.database.conexao import Conexao
 from src.entities.cliente import Cliente
 
+
 class ClienteRepository:
-    def __init__(self, conexao):
+    def __init__(self, conexao: Conexao):
         self.conexao = conexao
 
-    def buscar_por_id(self, id_cliente):
+    def buscar_por_id(self, id_cliente: int) -> Cliente:
         conn = self.conexao.get_connection()
         try:
             with conn.cursor() as cursor:
@@ -14,8 +16,8 @@ class ClienteRepository:
                     nome, cpf, telefone, endereco 
                     FROM clientes 
                     WHERE id_cliente = %s
-                    """, 
-                    (id_cliente,)
+                    """,
+                    (id_cliente,),
                 )
                 row = cursor.fetchone()
             if row:
@@ -24,14 +26,14 @@ class ClienteRepository:
                     nome=row[1],
                     cpf=row[2],
                     telefone=row[3],
-                    endereco=row[4]
+                    endereco=row[4],
                 )
             return None
         except Exception:
             conn.rollback()
             raise
 
-    def buscar_por_cpf(self,cpf):
+    def buscar_por_cpf(self, cpf: str) -> Cliente:
         conn = self.conexao.get_connection()
         try:
             with conn.cursor() as cursor:
@@ -42,7 +44,7 @@ class ClienteRepository:
                     FROM clientes
                     WHERE cpf = %s
                     """,
-                    (cpf,)
+                    (cpf,),
                 )
                 row = cursor.fetchone()
             if row:
@@ -51,14 +53,14 @@ class ClienteRepository:
                     nome=row[1],
                     cpf=row[2],
                     telefone=row[3],
-                    endereco=row[4]
+                    endereco=row[4],
                 )
             return None
         except Exception:
             conn.rollback()
             raise
 
-    def criar(self,cliente: Cliente):
+    def criar(self, cliente: Cliente) -> Cliente:
         conn = self.conexao.get_connection()
         try:
             with conn.cursor() as cursor:
@@ -69,12 +71,7 @@ class ClienteRepository:
                     VALUES (%s, %s, %s, %s)
                     RETURNING id_cliente
                     """,
-                    (
-                        cliente.nome,
-                        cliente.cpf,
-                        cliente.telefone,
-                        cliente.endereco
-                    )
+                    (cliente.nome, cliente.cpf, cliente.telefone, cliente.endereco),
                 )
                 cliente.id_cliente = cursor.fetchone()[0]
             conn.commit()
@@ -83,7 +80,7 @@ class ClienteRepository:
             conn.rollback()
             raise
 
-    def atualizar(self, cliente: Cliente):
+    def atualizar(self, cliente: Cliente) -> Cliente:
         conn = self.conexao.get_connection()
         try:
             with conn.cursor() as cursor:
@@ -98,8 +95,8 @@ class ClienteRepository:
                         cliente.cpf,
                         cliente.telefone,
                         cliente.endereco,
-                        cliente.id_cliente
-                    )
+                        cliente.id_cliente,
+                    ),
                 )
                 linhas_afetadas = cursor.rowcount
             conn.commit()
