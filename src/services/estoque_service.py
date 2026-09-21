@@ -1,3 +1,4 @@
+from src.entities.enums.papel_usuario import PapelUsuario
 from src.entities.enums.tipo_movimentacao import TipoMovimentacao
 from src.entities.movimentacao_estoque import MovimentacaoEstoque
 from src.entities.produto import Produto
@@ -68,7 +69,16 @@ class EstoqueService:
 
         return produto
 
-    def listar_movimentacoes(self) -> list[MovimentacaoEstoque]:
+    def listar_movimentacoes(
+        self, usuario_logado: Usuario
+    ) -> list[MovimentacaoEstoque]:
+        if usuario_logado.papel not in (
+            PapelUsuario.ADMINISTRADOR,
+            PapelUsuario.GERENTE,
+        ):
+            raise PermissionError(
+                "Você não tem permissão para ver o histórico de movimentações."
+            )
         return self.movimentacao_repository.listar()
 
     def validar_disponibilidade(

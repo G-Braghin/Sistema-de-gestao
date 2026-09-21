@@ -271,10 +271,18 @@ def test_dar_saida_com_estoque_insuficiente(
     movimentacao_repository.criar.assert_not_called()
 
 
-def test_listar_movimentacoes(
+def test_listar_movimentacoes_com_administrador(
     service,
     movimentacao_repository
 ):
+    usuario = Usuario(
+        id_usuario=1,
+        nome="TESTE_ADMIN",
+        senha_hash="teste_hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        ativo=True
+    )
+
     movimentacoes = [
         MovimentacaoEstoque(
             id_produto=1,
@@ -292,10 +300,53 @@ def test_listar_movimentacoes(
 
     movimentacao_repository.listar.return_value = movimentacoes
 
-    resultado = service.listar_movimentacoes()
+    resultado = service.listar_movimentacoes(usuario)
 
     assert resultado == movimentacoes
     movimentacao_repository.listar.assert_called_once()
+
+
+def test_listar_movimentacoes_com_gerente(
+    service,
+    movimentacao_repository
+):
+    usuario = Usuario(
+        id_usuario=2,
+        nome="TESTE_GERENTE",
+        senha_hash="teste_hash",
+        papel=PapelUsuario.GERENTE,
+        ativo=True
+    )
+
+    movimentacoes = [
+        MovimentacaoEstoque(
+            id_produto=1,
+            id_usuario=2,
+            tipo=TipoMovimentacao.ENTRADA,
+            quantidade=5
+        )
+    ]
+
+    movimentacao_repository.listar.return_value = movimentacoes
+
+    resultado = service.listar_movimentacoes(usuario)
+
+    assert resultado == movimentacoes
+    movimentacao_repository.listar.assert_called_once()
+
+
+def test_listar_movimentacoes_sem_permissao(
+    service,
+    movimentacao_repository,
+    usuario
+):
+    with pytest.raises(
+        PermissionError,
+        match="Você não tem permissão"
+    ):
+        service.listar_movimentacoes(usuario)
+
+    movimentacao_repository.listar.assert_not_called()
 
 
 def test_validar_disponibilidade_com_estoque_suficiente(
