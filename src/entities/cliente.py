@@ -5,6 +5,7 @@ class Cliente:
         cpf: str,
         telefone: str,
         endereco: str,
+        ativo : bool = True,
         id_cliente: int | None = None,
     ):
         self.id_cliente = id_cliente
@@ -12,6 +13,7 @@ class Cliente:
         self.cpf = cpf
         self.telefone = telefone
         self.endereco = endereco
-
+        self.ativo = ativo
+    
     def __str__(self):
-        return f"Cliente(id_cliente={self.id_cliente}, nome={self.nome}, cpf={self.cpf}, telefone={self.telefone}, endereco={self.endereco})"
+        return f"Cliente(id_cliente={self.id_cliente}, nome={self.nome}, cpf={self.cpf}, telefone={self.telefone}, endereco={self.endereco}, ativo={self.ativo})"

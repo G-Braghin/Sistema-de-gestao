@@ -106,3 +106,41 @@ def test_atualizar_cliente_inexistente(repository):
 
     with pytest.raises(ValueError):
         repository.atualizar(cliente)
+
+
+def test_listar_clientes_ativos(repository):
+    cliente = Cliente(
+        nome="TESTE_ATIVO",
+        cpf="11111111111",
+        telefone="(11) 1234-5678",
+        endereco="teste",
+        ativo=True,
+    )
+
+    repository.criar(cliente)
+
+    clientes = repository.listar()
+
+    assert any(
+        c.id_cliente == cliente.id_cliente
+        for c in clientes
+    )
+
+
+def test_listar_clientes_inativos(repository):
+    cliente = Cliente(
+        nome="TESTE_INATIVO",
+        cpf="22222222222",
+        telefone="(11) 1234-5678",
+        endereco="teste",
+        ativo=False,
+    )
+
+    repository.criar(cliente)
+
+    clientes = repository.listar(False)
+
+    assert any(
+        c.id_cliente == cliente.id_cliente
+        for c in clientes
+    )

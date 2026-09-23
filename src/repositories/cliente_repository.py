@@ -13,7 +13,7 @@ class ClienteRepository:
                 cursor.execute(
                     """
                     SELECT id_cliente, 
-                    nome, cpf, telefone, endereco 
+                    nome, cpf, telefone, endereco, ativo
                     FROM clientes 
                     WHERE id_cliente = %s
                     """,
@@ -27,6 +27,7 @@ class ClienteRepository:
                     cpf=row[2],
                     telefone=row[3],
                     endereco=row[4],
+                    ativo=row[5],
                 )
             return None
         except Exception:
@@ -40,7 +41,7 @@ class ClienteRepository:
                 cursor.execute(
                     """
                     SELECT id_cliente,
-                    nome,cpf,telefone,endereco
+                    nome, cpf, telefone, endereco, ativo
                     FROM clientes
                     WHERE cpf = %s
                     """,
@@ -54,6 +55,7 @@ class ClienteRepository:
                     cpf=row[2],
                     telefone=row[3],
                     endereco=row[4],
+                    ativo=row[5],
                 )
             return None
         except Exception:
@@ -67,11 +69,17 @@ class ClienteRepository:
                 cursor.execute(
                     """
                     INSERT INTO clientes
-                    (nome,cpf,telefone,endereco)
-                    VALUES (%s, %s, %s, %s)
+                    (nome,cpf,telefone,endereco,ativo)
+                    VALUES (%s, %s, %s, %s, %s)
                     RETURNING id_cliente
                     """,
-                    (cliente.nome, cliente.cpf, cliente.telefone, cliente.endereco),
+                    (
+                        cliente.nome,
+                        cliente.cpf,
+                        cliente.telefone,
+                        cliente.endereco,
+                        cliente.ativo,
+                    ),
                 )
                 cliente.id_cliente = cursor.fetchone()[0]
             conn.commit()
@@ -87,7 +95,7 @@ class ClienteRepository:
                 cursor.execute(
                     """
                     UPDATE clientes 
-                    SET nome = %s, cpf = %s, telefone = %s, endereco = %s 
+                    SET nome = %s, cpf = %s, telefone = %s, endereco = %s, ativo = %s 
                     WHERE id_cliente = %s
                     """,
                     (
@@ -95,6 +103,7 @@ class ClienteRepository:
                         cliente.cpf,
                         cliente.telefone,
                         cliente.endereco,
+                        cliente.ativo,
                         cliente.id_cliente,
                     ),
                 )
@@ -103,6 +112,36 @@ class ClienteRepository:
             if linhas_afetadas == 0:
                 raise ValueError(f"Cliente com id {cliente.id_cliente} não encontrado.")
             return cliente
+        except Exception:
+            conn.rollback()
+            raise
+
+    def listar(self, status_ativo: bool = True) -> list[Cliente]:
+        conn = self.conexao.get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT id_cliente, nome, cpf, telefone, endereco, ativo
+                    FROM clientes
+                    WHERE ativo = %s
+                    ORDER BY nome
+                    """,
+                    (status_ativo,),
+                )
+                rows = cursor.fetchall()
+
+            return [
+                Cliente(
+                    id_cliente=row[0],
+                    nome=row[1],
+                    cpf=row[2],
+                    telefone=row[3],
+                    endereco=row[4],
+                    ativo=row[5],
+                )
+                for row in rows
+            ]
         except Exception:
             conn.rollback()
             raise
