@@ -229,6 +229,23 @@ def test_atualizar_telefone_invalido(service, repository):
 
     repository.atualizar.assert_not_called()
 
+def test_atualizar_telefone_cliente_desativado(service, repository):
+    cliente = Cliente(
+        id_cliente=1,
+        nome="João da Silva",
+        cpf="52998224725",
+        telefone="67999998888",
+        endereco="Rua A",
+        ativo = False
+    )
+    repository.buscar_por_cpf.return_value = cliente
+
+    with pytest.raises(ValueError, match="Cliente esta desativado."):
+            service.atualizar_telefone(
+                cpf_cliente="52998224725",
+                telefone="6733338888"
+            )
+    repository.atualizar.assert_not_called()
 
 def test_atualizar_endereco_com_dados_validos(service, repository):
     cliente = Cliente(
@@ -308,4 +325,233 @@ def test_atualizar_endereco_com_cliente_inexistente(service, repository):
             endereco="Rua A"
         )
 
+    repository.atualizar.assert_not_called()
+
+def test_atualizar_endereco_cliente_desativado(service, repository):
+    cliente = Cliente(
+        id_cliente=1,
+        nome="João da Silva",
+        cpf="52998224725",
+        telefone="67999998888",
+        endereco=None,
+        ativo = False
+    )
+
+    repository.buscar_por_cpf.return_value = cliente
+
+    with pytest.raises(ValueError, match="Cliente esta desativado."):
+        service.atualizar_endereco(
+        cpf_cliente="52998224725",
+        endereco="Rua A"
+                )
+    repository.atualizar.assert_not_called()
+
+def test_atualizar_nome_com_dados_validos(service, repository):
+    cliente = Cliente(
+        id_cliente=1,
+        nome="João da Sil",
+        cpf="52998224725",
+        telefone="67999998888",
+        endereco=None
+    )
+    
+    repository.buscar_por_cpf.return_value = cliente
+    repository.atualizar.return_value = cliente
+    
+    resultado = service.atualizar_nome(
+                cpf_cliente="52998224725",
+                nome="João da Silva"
+                )
+    
+    assert resultado == cliente
+    assert cliente.nome == "João da Silva"
+    
+    repository.buscar_por_cpf.assert_called_once_with("52998224725")
+    repository.atualizar.assert_called_once_with(cliente)
+
+def test_atualizar_nome_vazio(service, repository):
+    cliente = Cliente(
+        id_cliente=1,
+        nome="João da Silva",
+        cpf="52998224725",
+        telefone="67999998888",
+        endereco="Rua A"
+    )
+
+    repository.buscar_por_cpf.return_value = cliente
+
+    with pytest.raises(ValueError, match="O nome nao pode estar vazio."):
+        service.atualizar_nome(
+        cpf_cliente="52998224725",
+        nome=""
+        )
+    assert cliente.nome == "João da Silva"
+
+    repository.atualizar.assert_not_called()
+
+def test_atualizar_nome_none(service, repository):
+    cliente = Cliente(
+            id_cliente=1,
+            nome="João da Silva",
+            cpf="52998224725",
+            telefone="67999998888",
+            endereco="Rua A"
+        )
+
+    repository.buscar_por_cpf.return_value = cliente
+
+    with pytest.raises(ValueError, match="O nome nao pode estar vazio."):
+            service.atualizar_nome(
+            cpf_cliente="52998224725",
+            nome=None
+            )
+
+    assert cliente.nome == "João da Silva"
+
+
+    repository.atualizar.assert_not_called()    
+
+def test_atualizar_com_nome_com_cliente_inexistente(service, repository):
+    repository.buscar_por_cpf.return_value = None
+
+    with pytest.raises(ValueError, match="Cliente"):
+        service.atualizar_nome(
+            cpf_cliente="99999999999",
+            nome="João da Silva"
+        )
+
+    repository.atualizar.assert_not_called()
+
+def test_atualizar_nome_com_cliente_desativado(service, repository):
+    cliente = Cliente(
+            id_cliente=1,
+            nome="João da Silva",
+            cpf="52998224725",
+            telefone="67999998888",
+            endereco=None,
+            ativo = False
+        )
+    
+    repository.buscar_por_cpf.return_value = cliente
+    
+    with pytest.raises(ValueError, match="Cliente esta desativado."):
+        service.atualizar_nome(
+        cpf_cliente="52998224725",
+        nome="João da Silva"
+        )
+
+    repository.atualizar.assert_not_called()    
+
+def test_listar_clientes_ativos(service, repository):
+    clientes = [
+        Cliente(
+            id_cliente=1,
+            nome="João",
+            cpf="52998224725",
+            telefone="67999998888",
+            endereco="Rua A",
+            ativo=True,
+        )
+    ]
+
+    repository.listar.return_value = clientes
+
+    resultado = service.listar(True)
+
+    assert resultado == clientes
+    repository.listar.assert_called_once_with(True)
+
+
+def test_listar_clientes_inativos(service, repository):
+    repository.listar.return_value = []
+
+    resultado = service.listar(False)
+
+    assert resultado == []
+    repository.listar.assert_called_once_with(False)
+
+
+def test_desativar_cliente(service, repository):
+    cliente = Cliente(
+        id_cliente=1,
+        nome="João",
+        cpf="52998224725",
+        telefone="67999998888",
+        endereco="Rua A",
+        ativo=True,
+    )
+
+    repository.buscar_por_id.return_value = cliente
+    repository.atualizar.return_value = cliente
+
+    resultado = service.atualizar_status(1, False)
+
+    assert resultado.id_cliente ==  1
+    assert resultado.ativo == False
+
+    repository.atualizar.assert_called_once_with(cliente)
+    repository.buscar_por_id.assert_called_once_with(1)
+
+
+def test_ativar_cliente(service, repository):
+    cliente = Cliente(
+            id_cliente=1,
+            nome="João",
+            cpf="52998224725",
+            telefone="67999998888",
+            endereco="Rua A",
+            ativo=False,
+        )
+    repository.buscar_por_id.return_value = cliente
+    repository.atualizar.return_value = cliente
+
+    resultado = service.atualizar_status(1, True)
+
+    assert resultado.id_cliente ==  1
+    assert resultado.ativo == True
+
+    repository.atualizar.assert_called_once_with(cliente)
+    repository.buscar_por_id.assert_called_once_with(1)
+
+def test_ativar_cliente_ativado(service, repository):
+    cliente = Cliente(
+            id_cliente=1,
+            nome="João",
+            cpf="52998224725",
+            telefone="67999998888",
+            endereco="Rua A",
+            ativo=True,
+            )
+    repository.buscar_por_id.return_value = cliente
+    repository.atualizar.return_value = cliente
+
+    with pytest.raises(ValueError, match="Cliente ja esta ativo"):
+        service.atualizar_status(1,True)
+
+    repository.atualizar.assert_not_called()
+
+def test_desativar_cliente_desativado(service, repository):
+    cliente = Cliente(
+            id_cliente=1,
+            nome="João",
+            cpf="52998224725",
+            telefone="67999998888",
+            endereco="Rua A",
+            ativo=False,
+            )
+    repository.buscar_por_id.return_value = cliente
+    repository.atualizar.return_value = cliente
+
+    with pytest.raises(ValueError, match="Cliente ja esta desativado."):
+        service.atualizar_status(1,False)
+
+    repository.atualizar.assert_not_called()
+
+def test_atualizar_status_cliente_inexistente(service, repository):
+    repository.buscar_por_id.return_value = None
+    
+    with pytest.raises(ValueError, match="Cliente nao encontrado"):
+        service.atualizar_status(999999,True)
+
+    repository.buscar_por_id.assert_called_once_with(999999)
     repository.atualizar.assert_not_called()

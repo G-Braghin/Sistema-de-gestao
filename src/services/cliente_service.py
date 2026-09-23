@@ -3,6 +3,7 @@ import re
 from src.entities.cliente import Cliente
 from src.repositories.cliente_repository import ClienteRepository
 
+CLIENTE_NAO_ATIVO = "Cliente esta desativado."
 
 class ClienteService:
     def __init__(self, cliente_repository: ClienteRepository):
@@ -74,6 +75,9 @@ class ClienteService:
         if not telefone:
             raise ValueError("O telefone nao pode estar vazio.")
 
+        if cliente.ativo == False:
+            raise ValueError(CLIENTE_NAO_ATIVO)
+        
         if not self.validar_telefone(telefone):
             raise ValueError("O telefone e invalido!")
 
@@ -85,9 +89,43 @@ class ClienteService:
         if cliente is None:
             raise ValueError("Cliente nao encontrado.")
 
+        if cliente.ativo == False:
+            raise ValueError(CLIENTE_NAO_ATIVO)
+        
         if endereco is None:
             return cliente
 
         cliente.endereco = endereco.strip()
 
         return self.cliente_repository.atualizar(cliente)
+
+    def atualizar_nome(self, cpf_cliente: str, nome: str) -> Cliente:
+        cliente = self.cliente_repository.buscar_por_cpf(cpf_cliente)
+        if cliente is None:
+            raise ValueError("Cliente nao encontrado.")
+
+        if cliente.ativo == False:
+            raise ValueError(CLIENTE_NAO_ATIVO)
+
+        if not nome or not nome.strip():
+            raise ValueError("O nome nao pode estar vazio.")
+
+        cliente.nome = nome.strip()
+        return self.cliente_repository.atualizar(cliente)
+
+    def listar(self, status_ativo: bool = True) -> list[Cliente]:
+        return self.cliente_repository.listar(status_ativo)
+
+    def atualizar_status(self, id_cliente: int, ativo: bool) -> Cliente:
+        cliente = self.cliente_repository.buscar_por_id(id_cliente)
+        if cliente is None:
+            raise ValueError("Cliente nao encontrado.")
+
+        if cliente.ativo == ativo:
+            raise ValueError(
+                "Cliente ja esta ativo." if ativo else "Cliente ja esta desativado."
+            )
+        cliente.ativo = ativo
+        return self.cliente_repository.atualizar(cliente)
+
+    
