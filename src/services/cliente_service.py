@@ -4,12 +4,13 @@ from src.entities.cliente import Cliente
 from src.repositories.cliente_repository import ClienteRepository
 
 CLIENTE_NAO_ATIVO = "Cliente esta desativado."
+CLIENTE_NAO_ENCONTRADO = "Cliente nao encontrado."
 
 class ClienteService:
     def __init__(self, cliente_repository: ClienteRepository):
         self.cliente_repository = cliente_repository
 
-    def validar_cpf(self, cpf: str) -> bool:
+    def _validar_cpf(self, cpf: str) -> bool:
         if len(cpf) != 11:
             return False
 
@@ -29,7 +30,7 @@ class ClienteService:
 
         return digito2 == int(cpf[10])
 
-    def validar_telefone(self, telefone: str) -> bool:
+    def _validar_telefone(self, telefone: str) -> bool:
         padrao = r"^[1-9]{2}9[\d]{8}$"
         return bool(re.match(padrao, telefone))
 
@@ -45,7 +46,7 @@ class ClienteService:
         if not cpf:
             raise ValueError("O CPF nao pode estar vazio.")
 
-        if not self.validar_cpf(cpf):
+        if not self._validar_cpf(cpf):
             raise ValueError("O CPF e invalido!")
 
         cliente_existente = self.cliente_repository.buscar_por_cpf(cpf)
@@ -55,7 +56,7 @@ class ClienteService:
         if not telefone:
             raise ValueError("O telefone nao pode estar vazio.")
 
-        if not self.validar_telefone(telefone):
+        if not self._validar_telefone(telefone):
             raise ValueError("O telefone e invalido!")
 
         if endereco is not None:
@@ -69,7 +70,7 @@ class ClienteService:
     def atualizar_telefone(self, cpf_cliente: str, telefone: str) -> Cliente:
         cliente = self.cliente_repository.buscar_por_cpf(cpf_cliente)
         if cliente is None:
-            raise ValueError("Cliente nao encontrado.")
+            raise ValueError(CLIENTE_NAO_ENCONTRADO)
 
         telefone = re.sub(r"\D", "", telefone)
         if not telefone:
@@ -78,7 +79,7 @@ class ClienteService:
         if cliente.ativo == False:
             raise ValueError(CLIENTE_NAO_ATIVO)
         
-        if not self.validar_telefone(telefone):
+        if not self._validar_telefone(telefone):
             raise ValueError("O telefone e invalido!")
 
         cliente.telefone = telefone
@@ -87,7 +88,7 @@ class ClienteService:
     def atualizar_endereco(self, cpf_cliente: str, endereco: str) -> Cliente:
         cliente = self.cliente_repository.buscar_por_cpf(cpf_cliente)
         if cliente is None:
-            raise ValueError("Cliente nao encontrado.")
+            raise ValueError(CLIENTE_NAO_ENCONTRADO)
 
         if cliente.ativo == False:
             raise ValueError(CLIENTE_NAO_ATIVO)
@@ -102,7 +103,7 @@ class ClienteService:
     def atualizar_nome(self, cpf_cliente: str, nome: str) -> Cliente:
         cliente = self.cliente_repository.buscar_por_cpf(cpf_cliente)
         if cliente is None:
-            raise ValueError("Cliente nao encontrado.")
+            raise ValueError(CLIENTE_NAO_ENCONTRADO)
 
         if cliente.ativo == False:
             raise ValueError(CLIENTE_NAO_ATIVO)
@@ -119,7 +120,7 @@ class ClienteService:
     def atualizar_status(self, id_cliente: int, ativo: bool) -> Cliente:
         cliente = self.cliente_repository.buscar_por_id(id_cliente)
         if cliente is None:
-            raise ValueError("Cliente nao encontrado.")
+            raise ValueError(CLIENTE_NAO_ENCONTRADO)
 
         if cliente.ativo == ativo:
             raise ValueError(
