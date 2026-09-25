@@ -19,8 +19,8 @@ class ClienteController:
     def atualizar_nome(self, cpf_cliente: str, novo_nome: str) -> Cliente:
         return self.cliente_service.atualizar_nome(cpf_cliente, novo_nome)
 
-    def atualizar_status(self, id_cliente, ativo: bool) -> Cliente:
-        return self.cliente_service.atualizar_status(id_cliente,ativo)
+    def atualizar_status(self,usuario_logado, id_cliente, ativo: bool) -> Cliente:
+        return self.cliente_service.atualizar_status(usuario_logado, id_cliente, ativo)
     
-    def listar_clientes(self, status_ativo: bool = True) -> list[Cliente]:
-        return self.cliente_service.listar(status_ativo)
+    def listar_clientes(self,usuario_logado, status_ativo: bool = True) -> list[Cliente]:
+        return self.cliente_service.listar(usuario_logado, status_ativo)

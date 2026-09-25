@@ -1,7 +1,9 @@
-import pytest
 from unittest.mock import Mock
 
+import pytest
 from src.entities.cliente import Cliente
+from src.entities.enums.papel_usuario import PapelUsuario
+from src.entities.usuario import Usuario
 from src.services.cliente_service import ClienteService
 
 
@@ -9,33 +11,30 @@ from src.services.cliente_service import ClienteService
 def repository():
     return Mock()
 
+
 @pytest.fixture
 def service(repository):
     return ClienteService(repository)
 
 
-def test_validar_cpf_valido(service):
-    assert service.validar_cpf("52998224725") is True
+@pytest.fixture
+def usuario_logado():
+    return Usuario(
+        id_usuario=1,
+        nome="Gerente teste",
+        senha_hash="hash_teste",
+        papel=PapelUsuario.GERENTE,
+    )
 
 
-def test_validar_cpf_com_quantidade_invalida_de_digitos(service):
-    assert service.validar_cpf("123456789") is False
-
-
-def test_validar_cpf_com_digitos_repetidos(service):
-    assert service.validar_cpf("11111111111") is False
-
-
-def test_validar_cpf_invalido(service):
-    assert service.validar_cpf("52998224724") is False
-
-
-def test_validar_telefone_valido(service):
-    assert service.validar_telefone("67999998888") is True
-
-
-def test_validar_telefone_invalido(service):
-    assert service.validar_telefone("6733338888") is False
+@pytest.fixture
+def funcionario():
+    return Usuario(
+        id_usuario=2,
+        nome="Funcionario teste",
+        senha_hash="hash_teste",
+        papel=PapelUsuario.FUNCIONARIO,
+    )
 
 
 def test_cadastrar_cliente_com_dados_validos(service, repository):
@@ -46,7 +45,7 @@ def test_cadastrar_cliente_com_dados_validos(service, repository):
         nome="João da Silva",
         cpf="52998224725",
         telefone="67999998888",
-        endereco="Rua A"
+        endereco="Rua A",
     )
 
     repository.criar.return_value = cliente_criado
@@ -55,7 +54,7 @@ def test_cadastrar_cliente_com_dados_validos(service, repository):
         nome="João da Silva",
         cpf="529.982.247-25",
         telefone="(67) 99999-8888",
-        endereco="Rua A"
+        endereco="Rua A",
     )
 
     assert resultado == cliente_criado
@@ -73,10 +72,7 @@ def test_cadastrar_cliente_com_dados_validos(service, repository):
 def test_cadastrar_cliente_com_nome_vazio(service, repository):
     with pytest.raises(ValueError, match="nome"):
         service.cadastrar_cliente(
-            nome="   ",
-            cpf="52998224725",
-            telefone="67999998888",
-            endereco="Rua A"
+            nome="   ", cpf="52998224725", telefone="67999998888", endereco="Rua A"
         )
 
     repository.criar.assert_not_called()
@@ -85,10 +81,7 @@ def test_cadastrar_cliente_com_nome_vazio(service, repository):
 def test_cadastrar_cliente_com_cpf_vazio(service, repository):
     with pytest.raises(ValueError, match="CPF"):
         service.cadastrar_cliente(
-            nome="João",
-            cpf="",
-            telefone="67999998888",
-            endereco="Rua A"
+            nome="João", cpf="", telefone="67999998888", endereco="Rua A"
         )
 
     repository.criar.assert_not_called()
@@ -97,10 +90,7 @@ def test_cadastrar_cliente_com_cpf_vazio(service, repository):
 def test_cadastrar_cliente_com_cpf_invalido(service, repository):
     with pytest.raises(ValueError, match="CPF"):
         service.cadastrar_cliente(
-            nome="João",
-            cpf="52998224724",
-            telefone="67999998888",
-            endereco="Rua A"
+            nome="João", cpf="52998224724", telefone="67999998888", endereco="Rua A"
         )
 
     repository.criar.assert_not_called()
@@ -112,15 +102,12 @@ def test_cadastrar_cliente_com_cpf_ja_cadastrado(service, repository):
         nome="Cliente Existente",
         cpf="52998224725",
         telefone="67999998888",
-        endereco="Rua A"
+        endereco="Rua A",
     )
 
     with pytest.raises(ValueError, match="CPF já está cadastrado"):
         service.cadastrar_cliente(
-            nome="João",
-            cpf="52998224725",
-            telefone="67999998888",
-            endereco="Rua B"
+            nome="João", cpf="52998224725", telefone="67999998888", endereco="Rua B"
         )
 
     repository.criar.assert_not_called()
@@ -131,10 +118,7 @@ def test_cadastrar_cliente_com_telefone_vazio(service, repository):
 
     with pytest.raises(ValueError, match="telefone"):
         service.cadastrar_cliente(
-            nome="João",
-            cpf="52998224725",
-            telefone="",
-            endereco="Rua A"
+            nome="João", cpf="52998224725", telefone="", endereco="Rua A"
         )
 
     repository.criar.assert_not_called()
@@ -145,10 +129,7 @@ def test_cadastrar_cliente_com_telefone_invalido(service, repository):
 
     with pytest.raises(ValueError, match="telefone"):
         service.cadastrar_cliente(
-            nome="João",
-            cpf="52998224725",
-            telefone="6733338888",
-            endereco="Rua A"
+            nome="João", cpf="52998224725", telefone="6733338888", endereco="Rua A"
         )
 
     repository.criar.assert_not_called()
@@ -160,15 +141,14 @@ def test_atualizar_telefone_com_dados_validos(service, repository):
         nome="João da Silva",
         cpf="52998224725",
         telefone="67999998888",
-        endereco="Rua A"
+        endereco="Rua A",
     )
 
     repository.buscar_por_cpf.return_value = cliente
     repository.atualizar.return_value = cliente
 
     resultado = service.atualizar_telefone(
-        cpf_cliente="52998224725",
-        telefone="(67) 98888-7777"
+        cpf_cliente="52998224725", telefone="(67) 98888-7777"
     )
 
     assert resultado == cliente
@@ -181,11 +161,8 @@ def test_atualizar_telefone_com_dados_validos(service, repository):
 def test_atualizar_telefone_com_cliente_inexistente(service, repository):
     repository.buscar_por_cpf.return_value = None
 
-    with pytest.raises(ValueError, match="Cliente"):
-        service.atualizar_telefone(
-            cpf_cliente="99999999999",
-            telefone="67999998888"
-        )
+    with pytest.raises(ValueError, match="Cliente nao encontrado."):
+        service.atualizar_telefone(cpf_cliente="276.767.800-39", telefone="67999998888")
 
     repository.atualizar.assert_not_called()
 
@@ -196,16 +173,13 @@ def test_atualizar_telefone_vazio(service, repository):
         nome="João da Silva",
         cpf="52998224725",
         telefone="67999998888",
-        endereco="Rua A"
+        endereco="Rua A",
     )
 
     repository.buscar_por_cpf.return_value = cliente
 
     with pytest.raises(ValueError, match="telefone"):
-        service.atualizar_telefone(
-            cpf_cliente="52998224725",
-            telefone=""
-        )
+        service.atualizar_telefone(cpf_cliente="52998224725", telefone="")
 
     repository.atualizar.assert_not_called()
 
@@ -216,18 +190,16 @@ def test_atualizar_telefone_invalido(service, repository):
         nome="João da Silva",
         cpf="52998224725",
         telefone="67999998888",
-        endereco="Rua A"
+        endereco="Rua A",
     )
 
     repository.buscar_por_cpf.return_value = cliente
 
     with pytest.raises(ValueError, match="telefone"):
-        service.atualizar_telefone(
-            cpf_cliente="52998224725",
-            telefone="6733338888"
-        )
+        service.atualizar_telefone(cpf_cliente="52998224725", telefone="6733338888")
 
     repository.atualizar.assert_not_called()
+
 
 def test_atualizar_telefone_cliente_desativado(service, repository):
     cliente = Cliente(
@@ -236,16 +208,14 @@ def test_atualizar_telefone_cliente_desativado(service, repository):
         cpf="52998224725",
         telefone="67999998888",
         endereco="Rua A",
-        ativo = False
+        ativo=False,
     )
     repository.buscar_por_cpf.return_value = cliente
 
     with pytest.raises(ValueError, match="Cliente esta desativado."):
-            service.atualizar_telefone(
-                cpf_cliente="52998224725",
-                telefone="6733338888"
-            )
+        service.atualizar_telefone(cpf_cliente="52998224725", telefone="6733338888")
     repository.atualizar.assert_not_called()
+
 
 def test_atualizar_endereco_com_dados_validos(service, repository):
     cliente = Cliente(
@@ -253,15 +223,14 @@ def test_atualizar_endereco_com_dados_validos(service, repository):
         nome="João da Silva",
         cpf="52998224725",
         telefone="67999998888",
-        endereco=None
+        endereco=None,
     )
 
     repository.buscar_por_cpf.return_value = cliente
     repository.atualizar.return_value = cliente
 
     resultado = service.atualizar_endereco(
-        cpf_cliente="52998224725",
-        endereco=" Rua A "
+        cpf_cliente="52998224725", endereco=" Rua A "
     )
 
     assert resultado == cliente
@@ -277,16 +246,13 @@ def test_atualizar_endereco_vazio(service, repository):
         nome="João da Silva",
         cpf="52998224725",
         telefone="67999998888",
-        endereco="Rua A"
+        endereco="Rua A",
     )
 
     repository.buscar_por_cpf.return_value = cliente
     repository.atualizar.return_value = cliente
 
-    resultado = service.atualizar_endereco(
-        cpf_cliente="52998224725",
-        endereco=""
-    )
+    resultado = service.atualizar_endereco(cpf_cliente="52998224725", endereco="")
 
     assert resultado == cliente
     assert cliente.endereco == ""
@@ -300,15 +266,12 @@ def test_atualizar_endereco_none(service, repository):
         nome="João da Silva",
         cpf="52998224725",
         telefone="67999998888",
-        endereco="Rua A"
+        endereco="Rua A",
     )
 
     repository.buscar_por_cpf.return_value = cliente
 
-    resultado = service.atualizar_endereco(
-        cpf_cliente="52998224725",
-        endereco=None
-    )
+    resultado = service.atualizar_endereco(cpf_cliente="52998224725", endereco=None)
 
     assert resultado == cliente
     assert cliente.endereco == "Rua A"
@@ -319,13 +282,11 @@ def test_atualizar_endereco_none(service, repository):
 def test_atualizar_endereco_com_cliente_inexistente(service, repository):
     repository.buscar_por_cpf.return_value = None
 
-    with pytest.raises(ValueError, match="Cliente"):
-        service.atualizar_endereco(
-            cpf_cliente="99999999999",
-            endereco="Rua A"
-        )
+    with pytest.raises(ValueError, match="Cliente nao encontrado."):
+        service.atualizar_endereco(cpf_cliente="276.767.800-39", endereco="Rua A")
 
     repository.atualizar.assert_not_called()
+
 
 def test_atualizar_endereco_cliente_desativado(service, repository):
     cliente = Cliente(
@@ -334,17 +295,15 @@ def test_atualizar_endereco_cliente_desativado(service, repository):
         cpf="52998224725",
         telefone="67999998888",
         endereco=None,
-        ativo = False
+        ativo=False,
     )
 
     repository.buscar_por_cpf.return_value = cliente
 
     with pytest.raises(ValueError, match="Cliente esta desativado."):
-        service.atualizar_endereco(
-        cpf_cliente="52998224725",
-        endereco="Rua A"
-                )
+        service.atualizar_endereco(cpf_cliente="52998224725", endereco="Rua A")
     repository.atualizar.assert_not_called()
+
 
 def test_atualizar_nome_com_dados_validos(service, repository):
     cliente = Cliente(
@@ -352,22 +311,20 @@ def test_atualizar_nome_com_dados_validos(service, repository):
         nome="João da Sil",
         cpf="52998224725",
         telefone="67999998888",
-        endereco=None
+        endereco=None,
     )
-    
+
     repository.buscar_por_cpf.return_value = cliente
     repository.atualizar.return_value = cliente
-    
-    resultado = service.atualizar_nome(
-                cpf_cliente="52998224725",
-                nome="João da Silva"
-                )
-    
+
+    resultado = service.atualizar_nome(cpf_cliente="52998224725", nome="João da Silva")
+
     assert resultado == cliente
     assert cliente.nome == "João da Silva"
-    
+
     repository.buscar_por_cpf.assert_called_once_with("52998224725")
     repository.atualizar.assert_called_once_with(cliente)
+
 
 def test_atualizar_nome_vazio(service, repository):
     cliente = Cliente(
@@ -375,74 +332,65 @@ def test_atualizar_nome_vazio(service, repository):
         nome="João da Silva",
         cpf="52998224725",
         telefone="67999998888",
-        endereco="Rua A"
+        endereco="Rua A",
     )
 
     repository.buscar_por_cpf.return_value = cliente
 
     with pytest.raises(ValueError, match="O nome nao pode estar vazio."):
-        service.atualizar_nome(
-        cpf_cliente="52998224725",
-        nome=""
-        )
+        service.atualizar_nome(cpf_cliente="52998224725", nome="")
     assert cliente.nome == "João da Silva"
 
     repository.atualizar.assert_not_called()
 
+
 def test_atualizar_nome_none(service, repository):
     cliente = Cliente(
-            id_cliente=1,
-            nome="João da Silva",
-            cpf="52998224725",
-            telefone="67999998888",
-            endereco="Rua A"
-        )
+        id_cliente=1,
+        nome="João da Silva",
+        cpf="52998224725",
+        telefone="67999998888",
+        endereco="Rua A",
+    )
 
     repository.buscar_por_cpf.return_value = cliente
 
     with pytest.raises(ValueError, match="O nome nao pode estar vazio."):
-            service.atualizar_nome(
-            cpf_cliente="52998224725",
-            nome=None
-            )
+        service.atualizar_nome(cpf_cliente="52998224725", nome=None)
 
     assert cliente.nome == "João da Silva"
 
+    repository.atualizar.assert_not_called()
 
-    repository.atualizar.assert_not_called()    
 
 def test_atualizar_com_nome_com_cliente_inexistente(service, repository):
     repository.buscar_por_cpf.return_value = None
 
-    with pytest.raises(ValueError, match="Cliente"):
-        service.atualizar_nome(
-            cpf_cliente="99999999999",
-            nome="João da Silva"
-        )
+    with pytest.raises(ValueError, match="Cliente nao encontrado."):
+        service.atualizar_nome(cpf_cliente="276.767.800-39", nome="João da Silva")
 
     repository.atualizar.assert_not_called()
 
+
 def test_atualizar_nome_com_cliente_desativado(service, repository):
     cliente = Cliente(
-            id_cliente=1,
-            nome="João da Silva",
-            cpf="52998224725",
-            telefone="67999998888",
-            endereco=None,
-            ativo = False
-        )
-    
+        id_cliente=1,
+        nome="João da Silva",
+        cpf="52998224725",
+        telefone="67999998888",
+        endereco=None,
+        ativo=False,
+    )
+
     repository.buscar_por_cpf.return_value = cliente
-    
+
     with pytest.raises(ValueError, match="Cliente esta desativado."):
-        service.atualizar_nome(
-        cpf_cliente="52998224725",
-        nome="João da Silva"
-        )
+        service.atualizar_nome(cpf_cliente="52998224725", nome="João da Silva")
 
-    repository.atualizar.assert_not_called()    
+    repository.atualizar.assert_not_called()
 
-def test_listar_clientes_ativos(service, repository):
+
+def test_listar_clientes_ativos(service, repository, funcionario):
     clientes = [
         Cliente(
             id_cliente=1,
@@ -456,22 +404,34 @@ def test_listar_clientes_ativos(service, repository):
 
     repository.listar.return_value = clientes
 
-    resultado = service.listar(True)
+    resultado = service.listar(funcionario, True)
 
     assert resultado == clientes
     repository.listar.assert_called_once_with(True)
 
 
-def test_listar_clientes_inativos(service, repository):
+def test_listar_clientes_inativos(service, repository, usuario_logado):
     repository.listar.return_value = []
 
-    resultado = service.listar(False)
+    resultado = service.listar(usuario_logado, False)
 
     assert resultado == []
     repository.listar.assert_called_once_with(False)
 
 
-def test_desativar_cliente(service, repository):
+def test_listar_cliente_desativados_funcionario(service, repository, funcionario):
+    repository.listar.return_value = []
+
+    with pytest.raises(
+        PermissionError,
+        match="Funcionarios nao tem permissao para ver cliente desativados.",
+    ):
+        service.listar(funcionario, False)
+
+    repository.listar.assert_not_called()
+
+
+def test_desativar_cliente(service, repository, usuario_logado):
     cliente = Cliente(
         id_cliente=1,
         nome="João",
@@ -484,74 +444,123 @@ def test_desativar_cliente(service, repository):
     repository.buscar_por_id.return_value = cliente
     repository.atualizar.return_value = cliente
 
-    resultado = service.atualizar_status(1, False)
+    resultado = service.atualizar_status(usuario_logado, 1, False)
 
-    assert resultado.id_cliente ==  1
+    assert resultado.id_cliente == 1
     assert resultado.ativo == False
 
     repository.atualizar.assert_called_once_with(cliente)
     repository.buscar_por_id.assert_called_once_with(1)
 
 
-def test_ativar_cliente(service, repository):
+def test_ativar_cliente(service, repository, usuario_logado):
     cliente = Cliente(
-            id_cliente=1,
-            nome="João",
-            cpf="52998224725",
-            telefone="67999998888",
-            endereco="Rua A",
-            ativo=False,
-        )
+        id_cliente=1,
+        nome="João",
+        cpf="52998224725",
+        telefone="67999998888",
+        endereco="Rua A",
+        ativo=False,
+    )
     repository.buscar_por_id.return_value = cliente
     repository.atualizar.return_value = cliente
 
-    resultado = service.atualizar_status(1, True)
+    resultado = service.atualizar_status(usuario_logado, 1, True)
 
-    assert resultado.id_cliente ==  1
+    assert resultado.id_cliente == 1
     assert resultado.ativo == True
 
     repository.atualizar.assert_called_once_with(cliente)
     repository.buscar_por_id.assert_called_once_with(1)
 
-def test_ativar_cliente_ativado(service, repository):
+
+def test_ativar_cliente_ativado(service, repository, usuario_logado):
     cliente = Cliente(
-            id_cliente=1,
-            nome="João",
-            cpf="52998224725",
-            telefone="67999998888",
-            endereco="Rua A",
-            ativo=True,
-            )
+        id_cliente=1,
+        nome="João",
+        cpf="52998224725",
+        telefone="67999998888",
+        endereco="Rua A",
+        ativo=True,
+    )
     repository.buscar_por_id.return_value = cliente
     repository.atualizar.return_value = cliente
 
     with pytest.raises(ValueError, match="Cliente ja esta ativo"):
-        service.atualizar_status(1,True)
+        service.atualizar_status(usuario_logado, 1, True)
 
     repository.atualizar.assert_not_called()
 
-def test_desativar_cliente_desativado(service, repository):
+
+def test_desativar_cliente_desativado(service, repository, usuario_logado):
     cliente = Cliente(
-            id_cliente=1,
-            nome="João",
-            cpf="52998224725",
-            telefone="67999998888",
-            endereco="Rua A",
-            ativo=False,
-            )
+        id_cliente=1,
+        nome="João",
+        cpf="52998224725",
+        telefone="67999998888",
+        endereco="Rua A",
+        ativo=False,
+    )
     repository.buscar_por_id.return_value = cliente
     repository.atualizar.return_value = cliente
 
     with pytest.raises(ValueError, match="Cliente ja esta desativado."):
-        service.atualizar_status(1,False)
+        service.atualizar_status(usuario_logado, 1, False)
 
     repository.atualizar.assert_not_called()
 
-def test_atualizar_status_cliente_inexistente(service, repository):
+
+def test_atualizar_status_cliente_inexistente(service, repository, usuario_logado):
     repository.buscar_por_id.return_value = None
-    
+
     with pytest.raises(ValueError, match="Cliente nao encontrado"):
-        service.atualizar_status(999999,True)
+        service.atualizar_status(usuario_logado, 999999, True)
 
     repository.buscar_por_id.assert_called_once_with(999999)
+    repository.atualizar.assert_not_called()
+
+
+def test_atualizar_status_cliente_id_letras(service, repository, usuario_logado):
+    repository.buscar_por_id.return_value = None
+
+    with pytest.raises(TypeError, match="ID tem que ser um numero."):
+        service.atualizar_status(usuario_logado, "abc", True)
+
+    repository.buscar_por_id.assert_not_called()
+    repository.atualizar.assert_not_called()
+
+
+def test_atualizar_status_cliente_id_bool(service, repository, usuario_logado):
+    repository.buscar_por_id.return_value = None
+
+    with pytest.raises(TypeError, match="ID tem que ser um numero."):
+        service.atualizar_status(usuario_logado, True, True)
+
+    repository.buscar_por_id.assert_not_called()
+    repository.atualizar.assert_not_called()
+
+
+def test_atualizar_status_cliente_funcionario(service, repository, funcionario):
+    repository.buscar_por_id.return_value = None
+
+    with pytest.raises(
+        PermissionError,
+        match="Funcionarios nao tem permissao para atualizar status de clientes.",
+    ):
+        service.atualizar_status(funcionario, 1, True)
+
+    repository.buscar_por_id.assert_not_called()
+    repository.atualizar.assert_not_called()
+
+
+def test_atualizar_status_cliente_nao_inserido(service, repository, usuario_logado):
+    repository.buscar_por_id.return_value = None
+
+    with pytest.raises(
+        ValueError,
+        match="ID nao inserido.",
+    ):
+        service.atualizar_status(usuario_logado, "", True)
+
+    repository.buscar_por_id.assert_not_called()
     repository.atualizar.assert_not_called()

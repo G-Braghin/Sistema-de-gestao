@@ -1,10 +1,15 @@
 import re
 
 from src.entities.cliente import Cliente
+from src.entities.enums.papel_usuario import PapelUsuario
+from src.entities.usuario import Usuario
 from src.repositories.cliente_repository import ClienteRepository
 
 CLIENTE_NAO_ATIVO = "Cliente esta desativado."
 CLIENTE_NAO_ENCONTRADO = "Cliente nao encontrado."
+CPF_INVALIDO = "CPF e invalido."
+CPF_NAO_INSERIDO = "CPF nao pode estar vazio."
+
 
 class ClienteService:
     def __init__(self, cliente_repository: ClienteRepository):
@@ -34,20 +39,38 @@ class ClienteService:
         padrao = r"^[1-9]{2}9[\d]{8}$"
         return bool(re.match(padrao, telefone))
 
+    def _buscar_cliente_ativo(self, cpf_cliente: str) -> Cliente:
+        if cpf_cliente is None:
+            raise ValueError(CPF_NAO_INSERIDO)
+
+        cpf_cliente = re.sub(r"\D", "", cpf_cliente)
+        if not self._validar_cpf(cpf_cliente):
+            raise ValueError(CPF_INVALIDO)
+
+        cliente = self.cliente_repository.buscar_por_cpf(cpf_cliente)
+
+        if cliente is None:
+            raise ValueError(CLIENTE_NAO_ENCONTRADO)
+
+        if not cliente.ativo:
+            raise ValueError(CLIENTE_NAO_ATIVO)
+
+        return cliente
+
     def cadastrar_cliente(
         self, nome: str, cpf: str, telefone: str, endereco: str | None = None
     ) -> Cliente:
-        cpf = re.sub(r"\D", "", cpf)
-        telefone = re.sub(r"\D", "", telefone)
 
-        if not nome.strip():
+        if not nome or not nome.strip():
             raise ValueError("O nome nao pode estar vazio.")
 
         if not cpf:
-            raise ValueError("O CPF nao pode estar vazio.")
+            raise ValueError(CPF_NAO_INSERIDO)
+
+        cpf = re.sub(r"\D", "", cpf)
 
         if not self._validar_cpf(cpf):
-            raise ValueError("O CPF e invalido!")
+            raise ValueError(CPF_INVALIDO)
 
         cliente_existente = self.cliente_repository.buscar_por_cpf(cpf)
         if cliente_existente:
@@ -56,6 +79,7 @@ class ClienteService:
         if not telefone:
             raise ValueError("O telefone nao pode estar vazio.")
 
+        telefone = re.sub(r"\D", "", telefone)
         if not self._validar_telefone(telefone):
             raise ValueError("O telefone e invalido!")
 
@@ -68,17 +92,14 @@ class ClienteService:
         return self.cliente_repository.criar(novo_cliente)
 
     def atualizar_telefone(self, cpf_cliente: str, telefone: str) -> Cliente:
-        cliente = self.cliente_repository.buscar_por_cpf(cpf_cliente)
-        if cliente is None:
-            raise ValueError(CLIENTE_NAO_ENCONTRADO)
 
-        telefone = re.sub(r"\D", "", telefone)
+        cliente = self._buscar_cliente_ativo(cpf_cliente)
+
         if not telefone:
             raise ValueError("O telefone nao pode estar vazio.")
 
-        if cliente.ativo == False:
-            raise ValueError(CLIENTE_NAO_ATIVO)
-        
+        telefone = re.sub(r"\D", "", telefone)
+
         if not self._validar_telefone(telefone):
             raise ValueError("O telefone e invalido!")
 
@@ -86,13 +107,8 @@ class ClienteService:
         return self.cliente_repository.atualizar(cliente)
 
     def atualizar_endereco(self, cpf_cliente: str, endereco: str) -> Cliente:
-        cliente = self.cliente_repository.buscar_por_cpf(cpf_cliente)
-        if cliente is None:
-            raise ValueError(CLIENTE_NAO_ENCONTRADO)
+        cliente = self._buscar_cliente_ativo(cpf_cliente)
 
-        if cliente.ativo == False:
-            raise ValueError(CLIENTE_NAO_ATIVO)
-        
         if endereco is None:
             return cliente
 
@@ -101,12 +117,7 @@ class ClienteService:
         return self.cliente_repository.atualizar(cliente)
 
     def atualizar_nome(self, cpf_cliente: str, nome: str) -> Cliente:
-        cliente = self.cliente_repository.buscar_por_cpf(cpf_cliente)
-        if cliente is None:
-            raise ValueError(CLIENTE_NAO_ENCONTRADO)
-
-        if cliente.ativo == False:
-            raise ValueError(CLIENTE_NAO_ATIVO)
+        cliente = self._buscar_cliente_ativo(cpf_cliente)
 
         if not nome or not nome.strip():
             raise ValueError("O nome nao pode estar vazio.")
@@ -114,19 +125,39 @@ class ClienteService:
         cliente.nome = nome.strip()
         return self.cliente_repository.atualizar(cliente)
 
-    def listar(self, status_ativo: bool = True) -> list[Cliente]:
+    def listar(
+        self, usuario_logado: Usuario, status_ativo: bool = True
+    ) -> list[Cliente]:
+        if not status_ativo and usuario_logado.papel == PapelUsuario.FUNCIONARIO:
+            raise PermissionError(
+                "Funcionarios nao tem permissao para ver cliente desativados."
+            )
         return self.cliente_repository.listar(status_ativo)
 
-    def atualizar_status(self, id_cliente: int, ativo: bool) -> Cliente:
+    def atualizar_status(
+        self, usuario_logado: Usuario, id_cliente: int, status_ativo: bool
+    ) -> Cliente:
+        if usuario_logado.papel == PapelUsuario.FUNCIONARIO:
+            raise PermissionError(
+                "Funcionarios nao tem permissao para atualizar status de clientes."
+            )
+
+        if not id_cliente:
+            raise ValueError("ID nao inserido.")
+
+        if not isinstance(id_cliente, int) or isinstance(id_cliente, bool):
+            raise TypeError("ID tem que ser um numero.")
+
         cliente = self.cliente_repository.buscar_por_id(id_cliente)
+
         if cliente is None:
             raise ValueError(CLIENTE_NAO_ENCONTRADO)
 
-        if cliente.ativo == ativo:
+        if cliente.ativo == status_ativo:
             raise ValueError(
-                "Cliente ja esta ativo." if ativo else "Cliente ja esta desativado."
+                "Cliente ja esta ativo."
+                if status_ativo
+                else "Cliente ja esta desativado."
             )
-        cliente.ativo = ativo
+        cliente.ativo = status_ativo
         return self.cliente_repository.atualizar(cliente)
-
-    
