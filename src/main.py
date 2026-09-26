@@ -1,5 +1,6 @@
 from src.cli.cliente_cli import processar_menu_cliente
 from src.cli.usuario_cli import (
+    garantir_admin_padrao,
     processar_menu_gerenciamento,
     processar_menu_perfil,
     realizar_login,
@@ -34,7 +35,7 @@ def processar_menu_principal(usuario_controller, usuario_logado, cliente_control
     if opcao == "1":
         processar_menu_perfil(usuario_controller, usuario_logado)
     elif opcao == "2":
-        processar_menu_cliente(usuario_logado, cliente_controller) 
+        processar_menu_cliente(usuario_logado, cliente_controller)
     elif opcao == "3":
         if usuario_logado.papel in (PapelUsuario.ADMINISTRADOR, PapelUsuario.GERENTE):
             processar_menu_gerenciamento(usuario_controller, usuario_logado)
@@ -48,7 +49,7 @@ def processar_menu_principal(usuario_controller, usuario_logado, cliente_control
     return True
 
 
-def main():
+def main():    
     # Montagem das dependências
     conexao_db = Conexao()
     usuario_repo = UsuarioRepository(conexao_db)
@@ -56,10 +57,10 @@ def main():
     usuario_serv = UsuarioService(usuario_repo, autenticacao_serv)
     usuario_controller = UsuarioController(usuario_serv, autenticacao_serv)
 
-    usuario_controller.garantir_admin_padrao()
+    garantir_admin_padrao(usuario_controller)
 
-    cliente_repo= ClienteRepository(conexao_db)
-    cliente_serv= ClienteService(cliente_repo)
+    cliente_repo = ClienteRepository(conexao_db)
+    cliente_serv = ClienteService(cliente_repo)
     cliente_controller = ClienteController(cliente_serv)
 
     usuario_logado = realizar_login(usuario_controller)
