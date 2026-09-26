@@ -94,13 +94,13 @@ class UsuarioService:
 
         if usuario_logado.id_usuario == usuario_alvo.id_usuario:
             raise ValueError("Voce nao pode desativar a propria conta.")
-        
+
         if not self.pode_gerenciar(usuario_logado, usuario_alvo):
             raise PermissionError("Você não tem permissão para desativar este usuário.")
-        
+
         if not usuario_alvo.ativo:
             raise ValueError("Usuario ja esta desativado.")
-        
+
         usuario_alvo.ativo = False
         return self.usuario_repository.atualizar(usuario_alvo)
 
@@ -124,10 +124,29 @@ class UsuarioService:
             nome="admin", senha_hash=senha_hash, papel=PapelUsuario.ADMINISTRADOR
         )
         return self.usuario_repository.criar(admin_padrao)
-  
+
     def _checar_id(self, id_usuario: int):
         if not isinstance(id_usuario, int) or isinstance(id_usuario, bool):
             raise TypeError("ID tem que ser um numero inteiro.")
 
         if id_usuario <= 0:
             raise ValueError("ID de usuario invalido.")
+
+    def listar_usuarios(
+        self, usuario_logado: Usuario, status_ativo: bool = True
+    ) -> list:
+        if usuario_logado.papel == PapelUsuario.FUNCIONARIO:
+            raise PermissionError(
+                "Funcionarios nao tem permissao para listar funcionarios"
+            )
+
+        usuarios = self.usuario_repository.listar(status_ativo)
+
+        if usuario_logado.papel == PapelUsuario.GERENTE:
+            return [
+                usuario
+                for usuario in usuarios
+                if usuario.papel == PapelUsuario.FUNCIONARIO
+            ]
+
+        return usuarios

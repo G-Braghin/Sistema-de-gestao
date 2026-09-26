@@ -70,8 +70,9 @@ def menu_gerenciamento(usuario_logado):
     print("1 - Criar usuario")
     print("2 - Resetar Senha de usuario")
     print("3 - Desativar usuario")
+    print("4 - Listar usuarios")
     if usuario_logado.papel == PapelUsuario.ADMINISTRADOR:
-        print("4 - Promover a gerente")
+        print("5 - Promover a gerente")
 
     print(VOLTAR)
     return input("> ")
@@ -87,6 +88,8 @@ def processar_menu_gerenciamento(usuario_controller, usuario_logado):
         elif opcao == "3":
             desligar_usuario(usuario_controller, usuario_logado)
         elif opcao == "4":
+            listar_menu(usuario_controller, usuario_logado)
+        elif opcao == "5":
             if usuario_logado.papel == PapelUsuario.ADMINISTRADOR:
                 promover(usuario_controller, usuario_logado)
             else:
@@ -177,3 +180,50 @@ def promover(usuario_controller, usuario_logado):
         input(PRESSIONE_ENTER)
 
 
+def listar_menu(usuario_controller, usuario_logado):
+    while True:
+        print("\n=== Listar Usuarios ===")
+        print("1 - Usuarios ativos")
+        print("2 - Usuarios desativados")
+        print(VOLTAR)
+        opcao = input("> ")
+        if opcao == "1":
+            listar(usuario_controller, usuario_logado, True)
+        elif opcao == "2":
+            listar(usuario_controller, usuario_logado, False)
+        elif opcao == "0":
+            return
+        else:
+            print(INVALIDO)
+
+
+def listar(usuario_controller, usuario_logado, status_ativo):
+    try:
+        usuarios = usuario_controller.listar_usuarios(usuario_logado, status_ativo)
+    except PermissionError as e:
+        print(f"\n{e}")
+        input(PRESSIONE_ENTER)
+        return
+
+    if not usuarios:
+        print("Nenhum usuarios encontrado.")
+        input(PRESSIONE_ENTER)
+        return
+
+    exibir_tabela(usuarios)
+
+
+def exibir_tabela(usuarios):
+    print(f"\n{'ID':<5}{'Nome':<25}{'Cargo':<18}{'Status':<10}")
+    print("-" * 58)
+
+    for usuario in usuarios:
+        status = "Ativo" if usuario.ativo else "Inativo"
+        print(
+            f"{usuario.id_usuario:<5}"
+            f"{usuario.nome:<25}"
+            f"{usuario.papel.value:<18}"
+            f"{status:<10}"
+        )
+
+    input(PRESSIONE_ENTER)

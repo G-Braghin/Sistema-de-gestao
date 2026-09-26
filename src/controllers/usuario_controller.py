@@ -17,7 +17,9 @@ class UsuarioController:
     def fazer_login(self, id_usuario: int, senha: str) -> Usuario:
         return self.autenticacao_service.autenticar(id_usuario, senha)
 
-    def cadastrar_usuario(self, usuario_logado, nome: str, senha: str, papel) -> Usuario:
+    def cadastrar_usuario(
+        self, usuario_logado, nome: str, senha: str, papel
+    ) -> Usuario:
         return self.usuario_service.cadastrar_usuario(
             usuario_logado, nome, senha, papel
         )
@@ -25,7 +27,9 @@ class UsuarioController:
     def promover_gerente(self, usuario_logado, id_usuario_alvo: int) -> Usuario:
         return self.usuario_service.promover_a_gerente(usuario_logado, id_usuario_alvo)
 
-    def resetar_senha(self, usuario_logado, id_usuario_alvo: int, nova_senha: str) -> Usuario:
+    def resetar_senha(
+        self, usuario_logado, id_usuario_alvo: int, nova_senha: str
+    ) -> Usuario:
         return self.usuario_service.resetar_senha(
             usuario_logado, id_usuario_alvo, nova_senha
         )
@@ -46,3 +50,7 @@ class UsuarioController:
     def garantir_admin_padrao(self) -> Usuario | None:
         return self.usuario_service.criar_admin_padrao()
 
+    def listar_usuarios(
+        self, usuario_logado: Usuario, status_ativo: bool = True
+    ) -> list:
+        return self.usuario_service.listar_usuarios(usuario_logado, status_ativo)

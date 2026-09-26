@@ -1,6 +1,7 @@
 import pytest
 
 from src.entities.usuario import Usuario
+from src.entities.dtos.usuario_resumo import UsuarioResumo
 from src.entities.enums.papel_usuario import PapelUsuario
 from src.services.usuario_service import UsuarioService
 
@@ -9,6 +10,7 @@ class FakeUsuarioRepository:
     def __init__(self):
         self.usuarios = {}
         self.proximo_id = 1
+        self.consultas_listagem = []
 
     def criar(self, usuario):
         usuario.id_usuario = self.proximo_id
@@ -22,6 +24,19 @@ class FakeUsuarioRepository:
     def atualizar(self, usuario):
         self.usuarios[usuario.id_usuario] = usuario
         return usuario
+
+    def listar(self, status_ativo=True):
+        self.consultas_listagem.append(status_ativo)
+        return [
+            UsuarioResumo(
+                id_usuario=usuario.id_usuario,
+                nome=usuario.nome,
+                papel=usuario.papel,
+                ativo=usuario.ativo
+            )
+            for usuario in self.usuarios.values()
+            if usuario.ativo == status_ativo
+        ]
 
 class FakeAutenticacaoService:
 
@@ -826,3 +841,297 @@ def test_desativar_usuario_ja_desativado(service):
         service.desativar_usuario(admin, 2)
 
     assert funcionario.ativo is False
+
+
+#testar listar_usuarios
+
+def test_administrador_listar_usuarios_ativos(service):
+    usuario_logado = Usuario(
+        id_usuario=10,
+        nome="Responsavel",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR
+    )
+
+    service.usuario_repository.usuarios[1] = Usuario(
+        id_usuario=1,
+        nome="Usuario 1",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        ativo=True
+    )
+    service.usuario_repository.usuarios[4] = Usuario(
+        id_usuario=4,
+        nome="Usuario 4",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        ativo=False
+    )
+    service.usuario_repository.usuarios[2] = Usuario(
+        id_usuario=2,
+        nome="Usuario 2",
+        senha_hash="hash",
+        papel=PapelUsuario.GERENTE,
+        ativo=True
+    )
+    service.usuario_repository.usuarios[5] = Usuario(
+        id_usuario=5,
+        nome="Usuario 5",
+        senha_hash="hash",
+        papel=PapelUsuario.GERENTE,
+        ativo=False
+    )
+    service.usuario_repository.usuarios[3] = Usuario(
+        id_usuario=3,
+        nome="Usuario 3",
+        senha_hash="hash",
+        papel=PapelUsuario.FUNCIONARIO,
+        ativo=True
+    )
+    service.usuario_repository.usuarios[6] = Usuario(
+        id_usuario=6,
+        nome="Usuario 6",
+        senha_hash="hash",
+        papel=PapelUsuario.FUNCIONARIO,
+        ativo=False
+    )
+
+    resultado = service.listar_usuarios(usuario_logado)
+
+    assert [usuario.id_usuario for usuario in resultado] == [1, 2, 3]
+    assert all(usuario.ativo is True for usuario in resultado)
+    assert all(isinstance(usuario, UsuarioResumo) for usuario in resultado)
+    assert service.usuario_repository.consultas_listagem == [True]
+
+
+def test_administrador_listar_usuarios_desativados(service):
+    usuario_logado = Usuario(
+        id_usuario=10,
+        nome="Responsavel",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR
+    )
+
+    service.usuario_repository.usuarios[1] = Usuario(
+        id_usuario=1,
+        nome="Usuario 1",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        ativo=False
+    )
+    service.usuario_repository.usuarios[4] = Usuario(
+        id_usuario=4,
+        nome="Usuario 4",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        ativo=True
+    )
+    service.usuario_repository.usuarios[2] = Usuario(
+        id_usuario=2,
+        nome="Usuario 2",
+        senha_hash="hash",
+        papel=PapelUsuario.GERENTE,
+        ativo=False
+    )
+    service.usuario_repository.usuarios[5] = Usuario(
+        id_usuario=5,
+        nome="Usuario 5",
+        senha_hash="hash",
+        papel=PapelUsuario.GERENTE,
+        ativo=True
+    )
+    service.usuario_repository.usuarios[3] = Usuario(
+        id_usuario=3,
+        nome="Usuario 3",
+        senha_hash="hash",
+        papel=PapelUsuario.FUNCIONARIO,
+        ativo=False
+    )
+    service.usuario_repository.usuarios[6] = Usuario(
+        id_usuario=6,
+        nome="Usuario 6",
+        senha_hash="hash",
+        papel=PapelUsuario.FUNCIONARIO,
+        ativo=True
+    )
+
+    resultado = service.listar_usuarios(usuario_logado, False)
+
+    assert [usuario.id_usuario for usuario in resultado] == [1, 2, 3]
+    assert all(usuario.ativo is False for usuario in resultado)
+    assert all(isinstance(usuario, UsuarioResumo) for usuario in resultado)
+    assert service.usuario_repository.consultas_listagem == [False]
+
+
+def test_gerente_listar_usuarios_ativos(service):
+    usuario_logado = Usuario(
+        id_usuario=10,
+        nome="Responsavel",
+        senha_hash="hash",
+        papel=PapelUsuario.GERENTE
+    )
+
+    service.usuario_repository.usuarios[1] = Usuario(
+        id_usuario=1,
+        nome="Usuario 1",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        ativo=True
+    )
+    service.usuario_repository.usuarios[4] = Usuario(
+        id_usuario=4,
+        nome="Usuario 4",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        ativo=False
+    )
+    service.usuario_repository.usuarios[2] = Usuario(
+        id_usuario=2,
+        nome="Usuario 2",
+        senha_hash="hash",
+        papel=PapelUsuario.GERENTE,
+        ativo=True
+    )
+    service.usuario_repository.usuarios[5] = Usuario(
+        id_usuario=5,
+        nome="Usuario 5",
+        senha_hash="hash",
+        papel=PapelUsuario.GERENTE,
+        ativo=False
+    )
+    service.usuario_repository.usuarios[3] = Usuario(
+        id_usuario=3,
+        nome="Usuario 3",
+        senha_hash="hash",
+        papel=PapelUsuario.FUNCIONARIO,
+        ativo=True
+    )
+    service.usuario_repository.usuarios[6] = Usuario(
+        id_usuario=6,
+        nome="Usuario 6",
+        senha_hash="hash",
+        papel=PapelUsuario.FUNCIONARIO,
+        ativo=False
+    )
+
+    resultado = service.listar_usuarios(usuario_logado)
+
+    assert [usuario.id_usuario for usuario in resultado] == [3]
+    assert all(usuario.ativo is True for usuario in resultado)
+    assert all(isinstance(usuario, UsuarioResumo) for usuario in resultado)
+    assert service.usuario_repository.consultas_listagem == [True]
+
+
+def test_gerente_listar_usuarios_desativados(service):
+    usuario_logado = Usuario(
+        id_usuario=10,
+        nome="Responsavel",
+        senha_hash="hash",
+        papel=PapelUsuario.GERENTE
+    )
+
+    service.usuario_repository.usuarios[1] = Usuario(
+        id_usuario=1,
+        nome="Usuario 1",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        ativo=False
+    )
+    service.usuario_repository.usuarios[4] = Usuario(
+        id_usuario=4,
+        nome="Usuario 4",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        ativo=True
+    )
+    service.usuario_repository.usuarios[2] = Usuario(
+        id_usuario=2,
+        nome="Usuario 2",
+        senha_hash="hash",
+        papel=PapelUsuario.GERENTE,
+        ativo=False
+    )
+    service.usuario_repository.usuarios[5] = Usuario(
+        id_usuario=5,
+        nome="Usuario 5",
+        senha_hash="hash",
+        papel=PapelUsuario.GERENTE,
+        ativo=True
+    )
+    service.usuario_repository.usuarios[3] = Usuario(
+        id_usuario=3,
+        nome="Usuario 3",
+        senha_hash="hash",
+        papel=PapelUsuario.FUNCIONARIO,
+        ativo=False
+    )
+    service.usuario_repository.usuarios[6] = Usuario(
+        id_usuario=6,
+        nome="Usuario 6",
+        senha_hash="hash",
+        papel=PapelUsuario.FUNCIONARIO,
+        ativo=True
+    )
+
+    resultado = service.listar_usuarios(usuario_logado, False)
+
+    assert [usuario.id_usuario for usuario in resultado] == [3]
+    assert all(usuario.ativo is False for usuario in resultado)
+    assert all(isinstance(usuario, UsuarioResumo) for usuario in resultado)
+    assert service.usuario_repository.consultas_listagem == [False]
+
+
+def test_funcionario_nao_pode_listar_usuarios_ativos(service):
+    funcionario = Usuario(
+        id_usuario=1,
+        nome="Funcionario",
+        senha_hash="hash",
+        papel=PapelUsuario.FUNCIONARIO
+    )
+
+    with pytest.raises(PermissionError, match="Funcionarios nao tem permissao"):
+        service.listar_usuarios(funcionario, True)
+
+    assert service.usuario_repository.consultas_listagem == []
+
+
+def test_funcionario_nao_pode_listar_usuarios_desativados(service):
+    funcionario = Usuario(
+        id_usuario=1,
+        nome="Funcionario",
+        senha_hash="hash",
+        papel=PapelUsuario.FUNCIONARIO
+    )
+
+    with pytest.raises(PermissionError, match="Funcionarios nao tem permissao"):
+        service.listar_usuarios(funcionario, False)
+
+    assert service.usuario_repository.consultas_listagem == []
+
+
+def test_administrador_listar_sem_usuarios(service):
+    usuario_logado = Usuario(
+        id_usuario=1,
+        nome="Responsavel",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR
+    )
+
+    resultado = service.listar_usuarios(usuario_logado)
+
+    assert resultado == []
+    assert service.usuario_repository.consultas_listagem == [True]
+
+
+def test_gerente_listar_sem_usuarios(service):
+    usuario_logado = Usuario(
+        id_usuario=1,
+        nome="Responsavel",
+        senha_hash="hash",
+        papel=PapelUsuario.GERENTE
+    )
+
+    resultado = service.listar_usuarios(usuario_logado)
+
+    assert resultado == []
+    assert service.usuario_repository.consultas_listagem == [True]
