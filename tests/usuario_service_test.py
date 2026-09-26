@@ -304,3 +304,525 @@ def test_gerente_nao_pode_desativar_gerente(service):
             gerente1,
             2
         )
+
+
+def test_cadastrar_usuario_com_nome_vazio(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    with pytest.raises(ValueError, match='O nome nao pode estar vazio.'):
+        service.cadastrar_usuario(admin, "", "123456")
+
+    assert service.usuario_repository.usuarios == {}
+
+
+def test_cadastrar_usuario_com_nome_com_espacos(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    with pytest.raises(ValueError, match='O nome nao pode estar vazio.'):
+        service.cadastrar_usuario(admin, "   ", "123456")
+
+    assert service.usuario_repository.usuarios == {}
+
+
+def test_cadastrar_usuario_com_nome_none(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    with pytest.raises(ValueError, match='O nome nao pode estar vazio.'):
+        service.cadastrar_usuario(admin, None, "123456")
+
+    assert service.usuario_repository.usuarios == {}
+
+
+def test_cadastrar_usuario_com_senha_vazio(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    with pytest.raises(ValueError, match='Senha nao pode estar vazio.'):
+        service.cadastrar_usuario(admin, "Joao", "")
+
+    assert service.usuario_repository.usuarios == {}
+
+
+def test_cadastrar_usuario_com_senha_com_espacos(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    with pytest.raises(ValueError, match='Senha nao pode estar vazio.'):
+        service.cadastrar_usuario(admin, "Joao", "   ")
+
+    assert service.usuario_repository.usuarios == {}
+
+
+def test_cadastrar_usuario_com_senha_none(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    with pytest.raises(ValueError, match='Senha nao pode estar vazio.'):
+        service.cadastrar_usuario(admin, "Joao", None)
+
+    assert service.usuario_repository.usuarios == {}
+
+
+def test_admin_nao_pode_cadastrar_administrador(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    with pytest.raises(PermissionError, match="Você não pode cadastrar esse cargo"):
+        service.cadastrar_usuario(
+            admin, "Outro Admin", "123456", PapelUsuario.ADMINISTRADOR
+        )
+
+    assert service.usuario_repository.usuarios == {}
+
+
+def test_promover_a_gerente_com_id_zero(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    alvo = Usuario(
+        nome="Alvo",
+        senha_hash="hash_antigo",
+        papel=PapelUsuario.FUNCIONARIO,
+        id_usuario=1,
+        ativo=True
+    )
+    admin.id_usuario = 10
+    service.usuario_repository.usuarios[1] = alvo
+
+    with pytest.raises(ValueError, match='ID de usuario invalido.'):
+        service.promover_a_gerente(admin, 0)
+
+    assert alvo.papel == PapelUsuario.FUNCIONARIO
+    assert alvo.senha_hash == "hash_antigo"
+    assert alvo.ativo is True
+
+
+def test_promover_a_gerente_com_id_negativo(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    alvo = Usuario(
+        nome="Alvo",
+        senha_hash="hash_antigo",
+        papel=PapelUsuario.FUNCIONARIO,
+        id_usuario=1,
+        ativo=True
+    )
+    admin.id_usuario = 10
+    service.usuario_repository.usuarios[1] = alvo
+
+    with pytest.raises(ValueError, match='ID de usuario invalido.'):
+        service.promover_a_gerente(admin, -1)
+
+    assert alvo.papel == PapelUsuario.FUNCIONARIO
+    assert alvo.senha_hash == "hash_antigo"
+    assert alvo.ativo is True
+
+
+def test_promover_a_gerente_com_id_texto(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    alvo = Usuario(
+        nome="Alvo",
+        senha_hash="hash_antigo",
+        papel=PapelUsuario.FUNCIONARIO,
+        id_usuario=1,
+        ativo=True
+    )
+    admin.id_usuario = 10
+    service.usuario_repository.usuarios[1] = alvo
+
+    with pytest.raises(TypeError, match='ID tem que ser um numero inteiro.'):
+        service.promover_a_gerente(admin, "abc")
+
+    assert alvo.papel == PapelUsuario.FUNCIONARIO
+    assert alvo.senha_hash == "hash_antigo"
+    assert alvo.ativo is True
+
+
+def test_promover_a_gerente_com_id_bool(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    alvo = Usuario(
+        nome="Alvo",
+        senha_hash="hash_antigo",
+        papel=PapelUsuario.FUNCIONARIO,
+        id_usuario=1,
+        ativo=True
+    )
+    admin.id_usuario = 10
+    service.usuario_repository.usuarios[1] = alvo
+
+    with pytest.raises(TypeError, match='ID tem que ser um numero inteiro.'):
+        service.promover_a_gerente(admin, True)
+
+    assert alvo.papel == PapelUsuario.FUNCIONARIO
+    assert alvo.senha_hash == "hash_antigo"
+    assert alvo.ativo is True
+
+
+def test_resetar_senha_com_id_zero(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    alvo = Usuario(
+        nome="Alvo",
+        senha_hash="hash_antigo",
+        papel=PapelUsuario.FUNCIONARIO,
+        id_usuario=1,
+        ativo=True
+    )
+    admin.id_usuario = 10
+    service.usuario_repository.usuarios[1] = alvo
+
+    with pytest.raises(ValueError, match='ID de usuario invalido.'):
+        service.resetar_senha(admin, 0, "nova_senha")
+
+    assert alvo.papel == PapelUsuario.FUNCIONARIO
+    assert alvo.senha_hash == "hash_antigo"
+    assert alvo.ativo is True
+
+
+def test_resetar_senha_com_id_negativo(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    alvo = Usuario(
+        nome="Alvo",
+        senha_hash="hash_antigo",
+        papel=PapelUsuario.FUNCIONARIO,
+        id_usuario=1,
+        ativo=True
+    )
+    admin.id_usuario = 10
+    service.usuario_repository.usuarios[1] = alvo
+
+    with pytest.raises(ValueError, match='ID de usuario invalido.'):
+        service.resetar_senha(admin, -1, "nova_senha")
+
+    assert alvo.papel == PapelUsuario.FUNCIONARIO
+    assert alvo.senha_hash == "hash_antigo"
+    assert alvo.ativo is True
+
+
+def test_resetar_senha_com_id_texto(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    alvo = Usuario(
+        nome="Alvo",
+        senha_hash="hash_antigo",
+        papel=PapelUsuario.FUNCIONARIO,
+        id_usuario=1,
+        ativo=True
+    )
+    admin.id_usuario = 10
+    service.usuario_repository.usuarios[1] = alvo
+
+    with pytest.raises(TypeError, match='ID tem que ser um numero inteiro.'):
+        service.resetar_senha(admin, "abc", "nova_senha")
+
+    assert alvo.papel == PapelUsuario.FUNCIONARIO
+    assert alvo.senha_hash == "hash_antigo"
+    assert alvo.ativo is True
+
+
+def test_resetar_senha_com_id_bool(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    alvo = Usuario(
+        nome="Alvo",
+        senha_hash="hash_antigo",
+        papel=PapelUsuario.FUNCIONARIO,
+        id_usuario=1,
+        ativo=True
+    )
+    admin.id_usuario = 10
+    service.usuario_repository.usuarios[1] = alvo
+
+    with pytest.raises(TypeError, match='ID tem que ser um numero inteiro.'):
+        service.resetar_senha(admin, True, "nova_senha")
+
+    assert alvo.papel == PapelUsuario.FUNCIONARIO
+    assert alvo.senha_hash == "hash_antigo"
+    assert alvo.ativo is True
+
+
+def test_desativar_usuario_com_id_zero(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    alvo = Usuario(
+        nome="Alvo",
+        senha_hash="hash_antigo",
+        papel=PapelUsuario.FUNCIONARIO,
+        id_usuario=1,
+        ativo=True
+    )
+    admin.id_usuario = 10
+    service.usuario_repository.usuarios[1] = alvo
+
+    with pytest.raises(ValueError, match='ID de usuario invalido.'):
+        service.desativar_usuario(admin, 0)
+
+    assert alvo.papel == PapelUsuario.FUNCIONARIO
+    assert alvo.senha_hash == "hash_antigo"
+    assert alvo.ativo is True
+
+
+def test_desativar_usuario_com_id_negativo(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    alvo = Usuario(
+        nome="Alvo",
+        senha_hash="hash_antigo",
+        papel=PapelUsuario.FUNCIONARIO,
+        id_usuario=1,
+        ativo=True
+    )
+    admin.id_usuario = 10
+    service.usuario_repository.usuarios[1] = alvo
+
+    with pytest.raises(ValueError, match='ID de usuario invalido.'):
+        service.desativar_usuario(admin, -1)
+
+    assert alvo.papel == PapelUsuario.FUNCIONARIO
+    assert alvo.senha_hash == "hash_antigo"
+    assert alvo.ativo is True
+
+
+def test_desativar_usuario_com_id_texto(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    alvo = Usuario(
+        nome="Alvo",
+        senha_hash="hash_antigo",
+        papel=PapelUsuario.FUNCIONARIO,
+        id_usuario=1,
+        ativo=True
+    )
+    admin.id_usuario = 10
+    service.usuario_repository.usuarios[1] = alvo
+
+    with pytest.raises(TypeError, match='ID tem que ser um numero inteiro.'):
+        service.desativar_usuario(admin, "abc")
+
+    assert alvo.papel == PapelUsuario.FUNCIONARIO
+    assert alvo.senha_hash == "hash_antigo"
+    assert alvo.ativo is True
+
+
+def test_desativar_usuario_com_id_bool(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    alvo = Usuario(
+        nome="Alvo",
+        senha_hash="hash_antigo",
+        papel=PapelUsuario.FUNCIONARIO,
+        id_usuario=1,
+        ativo=True
+    )
+    admin.id_usuario = 10
+    service.usuario_repository.usuarios[1] = alvo
+
+    with pytest.raises(TypeError, match='ID tem que ser um numero inteiro.'):
+        service.desativar_usuario(admin, True)
+
+    assert alvo.papel == PapelUsuario.FUNCIONARIO
+    assert alvo.senha_hash == "hash_antigo"
+    assert alvo.ativo is True
+
+
+def test_resetar_senha_com_nova_senha_vazia(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    funcionario = Usuario(
+        nome="Funcionario",
+        senha_hash="hash_antigo",
+        papel=PapelUsuario.FUNCIONARIO,
+        id_usuario=2,
+        ativo=True
+    )
+    service.usuario_repository.usuarios[2] = funcionario
+
+    with pytest.raises(ValueError, match="Senha nao pode estar vazio"):
+        service.resetar_senha(admin, 2, "")
+
+    assert funcionario.senha_hash == "hash_antigo"
+
+
+def test_resetar_senha_com_nova_senha_com_espacos(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    funcionario = Usuario(
+        nome="Funcionario",
+        senha_hash="hash_antigo",
+        papel=PapelUsuario.FUNCIONARIO,
+        id_usuario=2,
+        ativo=True
+    )
+    service.usuario_repository.usuarios[2] = funcionario
+
+    with pytest.raises(ValueError, match="Senha nao pode estar vazio"):
+        service.resetar_senha(admin, 2, "   ")
+
+    assert funcionario.senha_hash == "hash_antigo"
+
+
+def test_resetar_senha_com_nova_senha_none(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    funcionario = Usuario(
+        nome="Funcionario",
+        senha_hash="hash_antigo",
+        papel=PapelUsuario.FUNCIONARIO,
+        id_usuario=2,
+        ativo=True
+    )
+    service.usuario_repository.usuarios[2] = funcionario
+
+    with pytest.raises(ValueError, match="Senha nao pode estar vazio"):
+        service.resetar_senha(admin, 2, None)
+
+    assert funcionario.senha_hash == "hash_antigo"
+
+
+def test_admin_nao_pode_desativar_propria_conta(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    service.usuario_repository.usuarios[1] = admin
+
+    with pytest.raises(ValueError, match="Voce nao pode desativar a propria conta"):
+        service.desativar_usuario(admin, 1)
+
+    assert admin.ativo is True
+
+
+def test_desativar_usuario_ja_desativado(service):
+    admin = Usuario(
+        nome="Admin",
+        senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR,
+        id_usuario=1
+    )
+
+    funcionario = Usuario(
+        nome="Funcionario",
+        senha_hash="hash_antigo",
+        papel=PapelUsuario.FUNCIONARIO,
+        id_usuario=2,
+        ativo=True
+    )
+    service.usuario_repository.usuarios[2] = funcionario
+
+    funcionario.ativo = False
+
+    with pytest.raises(ValueError, match="Usuario ja esta desativado"):
+        service.desativar_usuario(admin, 2)
+
+    assert funcionario.ativo is False

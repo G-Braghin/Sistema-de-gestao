@@ -30,23 +30,16 @@ class UsuarioService:
         senha: str,
         papel: PapelUsuario = PapelUsuario.FUNCIONARIO,
     ) -> Usuario:
-        if not nome.strip():
+        if not nome or not nome.strip():
             raise ValueError("O nome nao pode estar vazio.")
 
-        if not senha:
-            raise ValueError("A senha nao pode estar vazio")
+        if not senha or not senha.strip():
+            raise ValueError("Senha nao pode estar vazio.")
 
-        if (
-            usuario_logado.papel == PapelUsuario.GERENTE
-            and papel != PapelUsuario.FUNCIONARIO
-        ):
-            raise PermissionError("Gerentes só podem cadastrar funcionários.")
+        papeis_permitidos = self.obter_papeis_cadastro(usuario_logado)
 
-        if usuario_logado.papel not in (
-            PapelUsuario.ADMINISTRADOR,
-            PapelUsuario.GERENTE,
-        ):
-            raise PermissionError("Você não tem permissão para cadastrar usuários.")
+        if papel not in papeis_permitidos:
+            raise PermissionError("Você não pode cadastrar esse cargo.")
 
         senha_hash = self.autenticacao_service.gerar_senha_hash(senha)
         novo_usuario = Usuario(nome=nome, senha_hash=senha_hash, papel=papel)
@@ -57,6 +50,7 @@ class UsuarioService:
             raise PermissionError(
                 "Apenas administradores podem promover funcionários a gerentes."
             )
+        self._checar_id(id_usuario)
 
         usuario = self.usuario_repository.buscar_por_id(id_usuario)
         if not usuario:
@@ -71,6 +65,11 @@ class UsuarioService:
     def resetar_senha(
         self, usuario_logado: Usuario, id_usuario_alvo: int, nova_senha: str
     ) -> Usuario:
+        self._checar_id(id_usuario_alvo)
+
+        if not nova_senha or not nova_senha.strip():
+            raise ValueError("Senha nao pode estar vazio.")
+
         usuario_alvo = self.usuario_repository.buscar_por_id(id_usuario_alvo)
         if not usuario_alvo:
             raise ValueError(f"Usuário com id {id_usuario_alvo} não encontrado.")
@@ -87,22 +86,33 @@ class UsuarioService:
     def desativar_usuario(
         self, usuario_logado: Usuario, id_usuario_alvo: int
     ) -> Usuario:
+        self._checar_id(id_usuario_alvo)
+
         usuario_alvo = self.usuario_repository.buscar_por_id(id_usuario_alvo)
         if not usuario_alvo:
             raise ValueError(f"Usuário com id {id_usuario_alvo} não encontrado.")
 
+        if usuario_logado.id_usuario == usuario_alvo.id_usuario:
+            raise ValueError("Voce nao pode desativar a propria conta.")
+        
         if not self.pode_gerenciar(usuario_logado, usuario_alvo):
             raise PermissionError("Você não tem permissão para desativar este usuário.")
-
+        
+        if not usuario_alvo.ativo:
+            raise ValueError("Usuario ja esta desativado.")
+        
         usuario_alvo.ativo = False
         return self.usuario_repository.atualizar(usuario_alvo)
 
     def obter_papeis_cadastro(self, usuario_logado: Usuario) -> list[PapelUsuario]:
         if usuario_logado.papel == PapelUsuario.ADMINISTRADOR:
             return [PapelUsuario.FUNCIONARIO, PapelUsuario.GERENTE]
-        if usuario_logado.papel == PapelUsuario.GERENTE:
+        elif usuario_logado.papel == PapelUsuario.GERENTE:
             return [PapelUsuario.FUNCIONARIO]
-        return []
+        else:
+            raise PermissionError(
+                "Funcionarios nao tem permissao para casdastrar usuarios"
+            )
 
     def criar_admin_padrao(self) -> Usuario | None:
         if self.usuario_repository.existe_usuario():
@@ -114,3 +124,10 @@ class UsuarioService:
             nome="admin", senha_hash=senha_hash, papel=PapelUsuario.ADMINISTRADOR
         )
         return self.usuario_repository.criar(admin_padrao)
+  
+    def _checar_id(self, id_usuario: int):
+        if not isinstance(id_usuario, int) or isinstance(id_usuario, bool):
+            raise TypeError("ID tem que ser um numero inteiro.")
+
+        if id_usuario <= 0:
+            raise ValueError("ID de usuario invalido.")
