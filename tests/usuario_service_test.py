@@ -1,9 +1,9 @@
 import pytest
-
-from src.entities.usuario import Usuario
 from src.entities.dtos.usuario_resumo import UsuarioResumo
 from src.entities.enums.papel_usuario import PapelUsuario
+from src.entities.usuario import Usuario
 from src.services.usuario_service import UsuarioService
+
 
 class FakeUsuarioRepository:
 
@@ -291,10 +291,7 @@ def test_gerente_pode_desativar_funcionario(service):
 
     service.usuario_repository.usuarios[2] = funcionario
 
-    resultado = service.desativar_usuario(
-        gerente,
-        2
-    )
+    resultado = service.atualizar_status(gerente, 2, False)
 
     assert resultado.ativo is False
 
@@ -315,10 +312,7 @@ def test_gerente_nao_pode_desativar_gerente(service):
     service.usuario_repository.usuarios[2] = gerente2
 
     with pytest.raises(PermissionError):
-        service.desativar_usuario(
-            gerente1,
-            2
-        )
+        service.atualizar_status(gerente1, 2, False)
 
 
 def test_cadastrar_usuario_com_nome_vazio(service):
@@ -648,7 +642,7 @@ def test_desativar_usuario_com_id_zero(service):
     service.usuario_repository.usuarios[1] = alvo
 
     with pytest.raises(ValueError, match='ID de usuario invalido.'):
-        service.desativar_usuario(admin, 0)
+        service.atualizar_status(admin, 0, False)
 
     assert alvo.papel == PapelUsuario.FUNCIONARIO
     assert alvo.senha_hash == "hash_antigo"
@@ -674,7 +668,7 @@ def test_desativar_usuario_com_id_negativo(service):
     service.usuario_repository.usuarios[1] = alvo
 
     with pytest.raises(ValueError, match='ID de usuario invalido.'):
-        service.desativar_usuario(admin, -1)
+        service.atualizar_status(admin, -1, False)
 
     assert alvo.papel == PapelUsuario.FUNCIONARIO
     assert alvo.senha_hash == "hash_antigo"
@@ -700,7 +694,7 @@ def test_desativar_usuario_com_id_texto(service):
     service.usuario_repository.usuarios[1] = alvo
 
     with pytest.raises(TypeError, match='ID tem que ser um numero inteiro.'):
-        service.desativar_usuario(admin, "abc")
+        service.atualizar_status(admin, "abc", False)
 
     assert alvo.papel == PapelUsuario.FUNCIONARIO
     assert alvo.senha_hash == "hash_antigo"
@@ -726,7 +720,7 @@ def test_desativar_usuario_com_id_bool(service):
     service.usuario_repository.usuarios[1] = alvo
 
     with pytest.raises(TypeError, match='ID tem que ser um numero inteiro.'):
-        service.desativar_usuario(admin, True)
+        service.atualizar_status(admin, True, False)
 
     assert alvo.papel == PapelUsuario.FUNCIONARIO
     assert alvo.senha_hash == "hash_antigo"
@@ -812,8 +806,8 @@ def test_admin_nao_pode_desativar_propria_conta(service):
 
     service.usuario_repository.usuarios[1] = admin
 
-    with pytest.raises(ValueError, match="Voce nao pode desativar a propria conta"):
-        service.desativar_usuario(admin, 1)
+    with pytest.raises(PermissionError, match="Contas de administradores"):
+        service.atualizar_status(admin, 1, False)
 
     assert admin.ativo is True
 
@@ -838,7 +832,7 @@ def test_desativar_usuario_ja_desativado(service):
     funcionario.ativo = False
 
     with pytest.raises(ValueError, match="Usuario ja esta desativado"):
-        service.desativar_usuario(admin, 2)
+        service.atualizar_status(admin, 2, False)
 
     assert funcionario.ativo is False
 
@@ -1135,3 +1129,333 @@ def test_gerente_listar_sem_usuarios(service):
 
     assert resultado == []
     assert service.usuario_repository.consultas_listagem == [True]
+
+
+#testar ativacao e regras de atualizar_status
+
+def test_gerente_pode_ativar_funcionario(service):
+    usuario_logado = Usuario(
+        nome="Responsavel", senha_hash="hash",
+        papel=PapelUsuario.GERENTE, id_usuario=1
+    )
+    usuario_alvo = Usuario(
+        nome="Alvo", senha_hash="hash_alvo",
+        papel=PapelUsuario.FUNCIONARIO, id_usuario=2, ativo=False
+    )
+    service.usuario_repository.usuarios[usuario_alvo.id_usuario] = usuario_alvo
+
+    resultado = service.atualizar_status(usuario_logado, 2, True)
+
+    assert resultado == usuario_alvo
+    assert resultado.ativo is True
+    assert service.usuario_repository.buscar_por_id(2).ativo is True
+    assert resultado.senha_hash == "hash_alvo"
+    assert resultado.papel == PapelUsuario.FUNCIONARIO
+
+
+def test_administrador_pode_ativar_funcionario(service):
+    usuario_logado = Usuario(
+        nome="Responsavel", senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR, id_usuario=1
+    )
+    usuario_alvo = Usuario(
+        nome="Alvo", senha_hash="hash_alvo",
+        papel=PapelUsuario.FUNCIONARIO, id_usuario=2, ativo=False
+    )
+    service.usuario_repository.usuarios[usuario_alvo.id_usuario] = usuario_alvo
+
+    resultado = service.atualizar_status(usuario_logado, 2, True)
+
+    assert resultado == usuario_alvo
+    assert resultado.ativo is True
+    assert service.usuario_repository.buscar_por_id(2).ativo is True
+    assert resultado.senha_hash == "hash_alvo"
+    assert resultado.papel == PapelUsuario.FUNCIONARIO
+
+
+def test_administrador_pode_ativar_gerente(service):
+    usuario_logado = Usuario(
+        nome="Responsavel", senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR, id_usuario=1
+    )
+    usuario_alvo = Usuario(
+        nome="Alvo", senha_hash="hash_alvo",
+        papel=PapelUsuario.GERENTE, id_usuario=2, ativo=False
+    )
+    service.usuario_repository.usuarios[usuario_alvo.id_usuario] = usuario_alvo
+
+    resultado = service.atualizar_status(usuario_logado, 2, True)
+
+    assert resultado == usuario_alvo
+    assert resultado.ativo is True
+    assert service.usuario_repository.buscar_por_id(2).ativo is True
+    assert resultado.senha_hash == "hash_alvo"
+    assert resultado.papel == PapelUsuario.GERENTE
+
+
+def test_administrador_pode_desativar_gerente(service):
+    usuario_logado = Usuario(
+        nome="Responsavel", senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR, id_usuario=1
+    )
+    usuario_alvo = Usuario(
+        nome="Alvo", senha_hash="hash_alvo",
+        papel=PapelUsuario.GERENTE, id_usuario=2, ativo=True
+    )
+    service.usuario_repository.usuarios[usuario_alvo.id_usuario] = usuario_alvo
+
+    resultado = service.atualizar_status(usuario_logado, 2, False)
+
+    assert resultado == usuario_alvo
+    assert resultado.ativo is False
+    assert service.usuario_repository.buscar_por_id(2).ativo is False
+    assert resultado.senha_hash == "hash_alvo"
+    assert resultado.papel == PapelUsuario.GERENTE
+
+
+def test_administrador_pode_desativar_funcionario(service):
+    usuario_logado = Usuario(
+        nome="Responsavel", senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR, id_usuario=1
+    )
+    usuario_alvo = Usuario(
+        nome="Alvo", senha_hash="hash_alvo",
+        papel=PapelUsuario.FUNCIONARIO, id_usuario=2, ativo=True
+    )
+    service.usuario_repository.usuarios[usuario_alvo.id_usuario] = usuario_alvo
+
+    resultado = service.atualizar_status(usuario_logado, 2, False)
+
+    assert resultado == usuario_alvo
+    assert resultado.ativo is False
+    assert service.usuario_repository.buscar_por_id(2).ativo is False
+    assert resultado.senha_hash == "hash_alvo"
+    assert resultado.papel == PapelUsuario.FUNCIONARIO
+
+
+def test_administrador_nao_pode_ativar_outro_administrador(service):
+    usuario_logado = Usuario(
+        nome="Responsavel", senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR, id_usuario=1
+    )
+    usuario_alvo = Usuario(
+        nome="Alvo", senha_hash="hash_alvo",
+        papel=PapelUsuario.ADMINISTRADOR, id_usuario=2, ativo=False
+    )
+    service.usuario_repository.usuarios[usuario_alvo.id_usuario] = usuario_alvo
+
+    with pytest.raises(PermissionError, match="Contas de administradores"):
+        service.atualizar_status(usuario_logado, 2, True)
+
+    assert usuario_alvo.ativo is False
+
+
+def test_administrador_nao_pode_desativar_outro_administrador(service):
+    usuario_logado = Usuario(
+        nome="Responsavel", senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR, id_usuario=1
+    )
+    usuario_alvo = Usuario(
+        nome="Alvo", senha_hash="hash_alvo",
+        papel=PapelUsuario.ADMINISTRADOR, id_usuario=2, ativo=True
+    )
+    service.usuario_repository.usuarios[usuario_alvo.id_usuario] = usuario_alvo
+
+    with pytest.raises(PermissionError, match="Contas de administradores"):
+        service.atualizar_status(usuario_logado, 2, False)
+
+    assert usuario_alvo.ativo is True
+
+
+def test_gerente_nao_pode_ativar_outro_gerente(service):
+    usuario_logado = Usuario(
+        nome="Responsavel", senha_hash="hash",
+        papel=PapelUsuario.GERENTE, id_usuario=1
+    )
+    usuario_alvo = Usuario(
+        nome="Alvo", senha_hash="hash_alvo",
+        papel=PapelUsuario.GERENTE, id_usuario=2, ativo=False
+    )
+    service.usuario_repository.usuarios[usuario_alvo.id_usuario] = usuario_alvo
+
+    with pytest.raises(PermissionError, match="Voce nao tem permissao"):
+        service.atualizar_status(usuario_logado, 2, True)
+
+    assert usuario_alvo.ativo is False
+
+
+def test_funcionario_nao_pode_ativar_outro_funcionario(service):
+    usuario_logado = Usuario(
+        nome="Responsavel", senha_hash="hash",
+        papel=PapelUsuario.FUNCIONARIO, id_usuario=1
+    )
+    usuario_alvo = Usuario(
+        nome="Alvo", senha_hash="hash_alvo",
+        papel=PapelUsuario.FUNCIONARIO, id_usuario=2, ativo=False
+    )
+    service.usuario_repository.usuarios[usuario_alvo.id_usuario] = usuario_alvo
+
+    with pytest.raises(PermissionError, match="Voce nao tem permissao"):
+        service.atualizar_status(usuario_logado, 2, True)
+
+    assert usuario_alvo.ativo is False
+
+
+def test_funcionario_nao_pode_desativar_outro_funcionario(service):
+    usuario_logado = Usuario(
+        nome="Responsavel", senha_hash="hash",
+        papel=PapelUsuario.FUNCIONARIO, id_usuario=1
+    )
+    usuario_alvo = Usuario(
+        nome="Alvo", senha_hash="hash_alvo",
+        papel=PapelUsuario.FUNCIONARIO, id_usuario=2, ativo=True
+    )
+    service.usuario_repository.usuarios[usuario_alvo.id_usuario] = usuario_alvo
+
+    with pytest.raises(PermissionError, match="Voce nao tem permissao"):
+        service.atualizar_status(usuario_logado, 2, False)
+
+    assert usuario_alvo.ativo is True
+
+
+def test_gerente_nao_pode_desativar_propria_conta(service):
+    usuario_logado = Usuario(
+        nome="Responsavel", senha_hash="hash",
+        papel=PapelUsuario.GERENTE, id_usuario=1
+    )
+    usuario_alvo = Usuario(
+        nome="Alvo", senha_hash="hash_alvo",
+        papel=PapelUsuario.GERENTE, id_usuario=1, ativo=True
+    )
+    service.usuario_repository.usuarios[usuario_alvo.id_usuario] = usuario_alvo
+
+    with pytest.raises(ValueError, match="Voce nao pode desativar a propria conta"):
+        service.atualizar_status(usuario_logado, 1, False)
+
+    assert usuario_alvo.ativo is True
+
+
+def test_ativar_usuario_ja_ativo(service):
+    usuario_logado = Usuario(
+        nome="Responsavel", senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR, id_usuario=1
+    )
+    usuario_alvo = Usuario(
+        nome="Alvo", senha_hash="hash_alvo",
+        papel=PapelUsuario.FUNCIONARIO, id_usuario=2, ativo=True
+    )
+    service.usuario_repository.usuarios[usuario_alvo.id_usuario] = usuario_alvo
+
+    with pytest.raises(ValueError, match="Usuario ja esta ativo"):
+        service.atualizar_status(usuario_logado, 2, True)
+
+    assert usuario_alvo.ativo is True
+
+
+def test_gerente_sem_permissao_mesmo_com_status_igual(service):
+    usuario_logado = Usuario(
+        nome="Responsavel", senha_hash="hash",
+        papel=PapelUsuario.GERENTE, id_usuario=1
+    )
+    usuario_alvo = Usuario(
+        nome="Alvo", senha_hash="hash_alvo",
+        papel=PapelUsuario.GERENTE, id_usuario=2, ativo=True
+    )
+    service.usuario_repository.usuarios[usuario_alvo.id_usuario] = usuario_alvo
+
+    with pytest.raises(PermissionError, match="Voce nao tem permissao"):
+        service.atualizar_status(usuario_logado, 2, True)
+
+    assert usuario_alvo.ativo is True
+
+
+def test_atualizar_status_com_status_texto(service):
+    usuario_logado = Usuario(
+        nome="Responsavel", senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR, id_usuario=1
+    )
+    usuario_alvo = Usuario(
+        nome="Alvo", senha_hash="hash_alvo",
+        papel=PapelUsuario.FUNCIONARIO, id_usuario=2, ativo=True
+    )
+    service.usuario_repository.usuarios[usuario_alvo.id_usuario] = usuario_alvo
+
+    with pytest.raises(TypeError, match="Status deve ser True ou False"):
+        service.atualizar_status(usuario_logado, 2, "False")
+
+    assert usuario_alvo.ativo is True
+
+
+def test_atualizar_status_com_status_none(service):
+    usuario_logado = Usuario(
+        nome="Responsavel", senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR, id_usuario=1
+    )
+    usuario_alvo = Usuario(
+        nome="Alvo", senha_hash="hash_alvo",
+        papel=PapelUsuario.FUNCIONARIO, id_usuario=2, ativo=True
+    )
+    service.usuario_repository.usuarios[usuario_alvo.id_usuario] = usuario_alvo
+
+    with pytest.raises(TypeError, match="Status deve ser True ou False"):
+        service.atualizar_status(usuario_logado, 2, None)
+
+    assert usuario_alvo.ativo is True
+
+
+def test_atualizar_status_com_status_zero(service):
+    usuario_logado = Usuario(
+        nome="Responsavel", senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR, id_usuario=1
+    )
+    usuario_alvo = Usuario(
+        nome="Alvo", senha_hash="hash_alvo",
+        papel=PapelUsuario.FUNCIONARIO, id_usuario=2, ativo=True
+    )
+    service.usuario_repository.usuarios[usuario_alvo.id_usuario] = usuario_alvo
+
+    with pytest.raises(TypeError, match="Status deve ser True ou False"):
+        service.atualizar_status(usuario_logado, 2, 0)
+
+    assert usuario_alvo.ativo is True
+
+
+def test_atualizar_status_com_status_um(service):
+    usuario_logado = Usuario(
+        nome="Responsavel", senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR, id_usuario=1
+    )
+    usuario_alvo = Usuario(
+        nome="Alvo", senha_hash="hash_alvo",
+        papel=PapelUsuario.FUNCIONARIO, id_usuario=2, ativo=True
+    )
+    service.usuario_repository.usuarios[usuario_alvo.id_usuario] = usuario_alvo
+
+    with pytest.raises(TypeError, match="Status deve ser True ou False"):
+        service.atualizar_status(usuario_logado, 2, 1)
+
+    assert usuario_alvo.ativo is True
+
+
+def test_ativar_usuario_inexistente(service):
+    admin = Usuario(
+        nome="Admin", senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR, id_usuario=1
+    )
+
+    with pytest.raises(ValueError, match="Usuário com id 999 não encontrado"):
+        service.atualizar_status(admin, 999, True)
+
+    assert service.usuario_repository.usuarios == {}
+
+
+def test_desativar_usuario_inexistente(service):
+    admin = Usuario(
+        nome="Admin", senha_hash="hash",
+        papel=PapelUsuario.ADMINISTRADOR, id_usuario=1
+    )
+
+    with pytest.raises(ValueError, match="Usuário com id 999 não encontrado"):
+        service.atualizar_status(admin, 999, False)
+
+    assert service.usuario_repository.usuarios == {}

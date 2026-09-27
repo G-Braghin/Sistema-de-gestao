@@ -69,7 +69,7 @@ def menu_gerenciamento(usuario_logado):
     print("\n=== Menu Gerenciamento ===")
     print("1 - Criar usuario")
     print("2 - Resetar Senha de usuario")
-    print("3 - Desativar usuario")
+    print("3 - Alterar status usuario")
     print("4 - Listar usuarios")
     if usuario_logado.papel == PapelUsuario.ADMINISTRADOR:
         print("5 - Promover a gerente")
@@ -86,7 +86,7 @@ def processar_menu_gerenciamento(usuario_controller, usuario_logado):
         elif opcao == "2":
             resetar_senha_alvo(usuario_controller, usuario_logado)
         elif opcao == "3":
-            desligar_usuario(usuario_controller, usuario_logado)
+            alterar_status_menu(usuario_controller, usuario_logado)
         elif opcao == "4":
             listar_menu(usuario_controller, usuario_logado)
         elif opcao == "5":
@@ -156,24 +156,35 @@ def resetar_senha_alvo(usuario_controller, usuario_logado):
         input(PRESSIONE_ENTER)
 
 
-def desligar_usuario(usuario_controller, usuario_logado):
-    try:
-        id_usuario = int(input(PEDIR_ID))
-        usuario_alvo = usuario_controller.desativar_usuario(usuario_logado, id_usuario)
-        print(f"Conta do usuario {usuario_alvo.nome} desativada com Sucesso!")
-        input(PRESSIONE_ENTER)
-    except (ValueError, TypeError, PermissionError) as e:
-        print(f"\n{e}")
-        input(PRESSIONE_ENTER)
+def alterar_status_menu(usuario_controller, usuario_logado):
+    while True:
+        print("\n===Alterar status ===")
+        print("1 - Desativar usuario")
+        print("2 - Ativar usuario")
+        print(VOLTAR)
+        opcao = input("> ")
+
+        if opcao == "1":
+            alterar_status_ativo(usuario_controller, usuario_logado, False)
+        elif opcao == "2":
+            alterar_status_ativo(usuario_controller, usuario_logado, True)
+        elif opcao == "0":
+            return
+        else:
+            print(INVALIDO)
 
 
-def promover(usuario_controller, usuario_logado):
+def alterar_status_ativo(usuario_controller, usuario_logado, status_ativo):
     try:
         id_usuario = int(input(PEDIR_ID))
-        usuario_promovido = usuario_controller.promover_gerente(
-            usuario_logado, id_usuario
+
+        usuario_alvo = usuario_controller.atualizar_status(
+            usuario_logado, id_usuario, status_ativo
         )
-        print(f"{usuario_promovido.nome} promovido a Gerente!")
+
+        print(
+            f"Conta do usuario {usuario_alvo.nome} {'ativado' if status_ativo else 'desativado'} com sucesso."
+        )
         input(PRESSIONE_ENTER)
     except (ValueError, TypeError, PermissionError) as e:
         print(f"\n{e}")
@@ -187,6 +198,7 @@ def listar_menu(usuario_controller, usuario_logado):
         print("2 - Usuarios desativados")
         print(VOLTAR)
         opcao = input("> ")
+
         if opcao == "1":
             listar(usuario_controller, usuario_logado, True)
         elif opcao == "2":
@@ -227,3 +239,16 @@ def exibir_tabela(usuarios):
         )
 
     input(PRESSIONE_ENTER)
+
+
+def promover(usuario_controller, usuario_logado):
+    try:
+        id_usuario = int(input(PEDIR_ID))
+        usuario_promovido = usuario_controller.promover_gerente(
+            usuario_logado, id_usuario
+        )
+        print(f"{usuario_promovido.nome} promovido a Gerente!")
+        input(PRESSIONE_ENTER)
+    except (ValueError, TypeError, PermissionError) as e:
+        print(f"\n{e}")
+        input(PRESSIONE_ENTER)

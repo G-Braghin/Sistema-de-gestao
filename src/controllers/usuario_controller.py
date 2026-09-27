@@ -34,8 +34,12 @@ class UsuarioController:
             usuario_logado, id_usuario_alvo, nova_senha
         )
 
-    def desativar_usuario(self, usuario_logado, id_usuario_alvo: int) -> Usuario:
-        return self.usuario_service.desativar_usuario(usuario_logado, id_usuario_alvo)
+    def atualizar_status(
+        self, usuario_logado: Usuario, id_usuario_alvo: int, status_ativo: bool
+    ) -> Usuario:
+        return self.usuario_service.atualizar_status(
+            usuario_logado, id_usuario_alvo, status_ativo
+        )
 
     def atualizar_senha_usuario(
         self, usuario_logado, senha_atual: str, senha_nova: str

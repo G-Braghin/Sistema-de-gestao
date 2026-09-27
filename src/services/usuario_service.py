@@ -83,25 +83,37 @@ class UsuarioService:
         usuario_alvo.senha_hash = nova_senha_hash
         return self.usuario_repository.atualizar(usuario_alvo)
 
-    def desativar_usuario(
-        self, usuario_logado: Usuario, id_usuario_alvo: int
+    def atualizar_status(
+        self, usuario_logado: Usuario, id_usuario_alvo: int, status_ativo: bool
     ) -> Usuario:
         self._checar_id(id_usuario_alvo)
+
+        if not isinstance(status_ativo, bool):
+            raise TypeError("Status deve ser True ou False.")
 
         usuario_alvo = self.usuario_repository.buscar_por_id(id_usuario_alvo)
         if not usuario_alvo:
             raise ValueError(f"Usuário com id {id_usuario_alvo} não encontrado.")
 
-        if usuario_logado.id_usuario == usuario_alvo.id_usuario:
+        if usuario_alvo.papel == PapelUsuario.ADMINISTRADOR:
+            raise PermissionError(
+                "Contas de administradores nao podem ser ativadas ou desativas pelo sistema."
+            )
+
+        if not status_ativo and usuario_logado.id_usuario == usuario_alvo.id_usuario:
             raise ValueError("Voce nao pode desativar a propria conta.")
 
         if not self.pode_gerenciar(usuario_logado, usuario_alvo):
-            raise PermissionError("Você não tem permissão para desativar este usuário.")
+            raise PermissionError(
+                "Voce nao tem permissao para alterar status deste usuario."
+            )
 
-        if not usuario_alvo.ativo:
-            raise ValueError("Usuario ja esta desativado.")
+        if status_ativo == usuario_alvo.ativo:
+            raise ValueError(
+                f"Usuario ja esta {'ativo.' if status_ativo else 'desativado.'}"
+            )
 
-        usuario_alvo.ativo = False
+        usuario_alvo.ativo = status_ativo
         return self.usuario_repository.atualizar(usuario_alvo)
 
     def obter_papeis_cadastro(self, usuario_logado: Usuario) -> list[PapelUsuario]:
