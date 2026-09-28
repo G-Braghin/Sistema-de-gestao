@@ -6,8 +6,10 @@ from src.entities.produto import Produto
 from src.entities.usuario import Usuario
 from src.repositories.movimentacao_repository import MovimentacaoRepository
 from src.repositories.produto_repository import ProdutoRepository
+from src.utils.validacoes import verificar_id
 
 PRODUTO_NAO_ENCONTRADO = "Produto nao encontrado!"
+ID_INVALIDO = "ID de produto invalido."
 
 
 class EstoqueService:
@@ -24,8 +26,8 @@ class EstoqueService:
     def dar_entrada(
         self, usuario_logado: Usuario, id_produto: int, entrada_estoque: int
     ) -> Produto:
-        if entrada_estoque <= 0:
-            raise ValueError("Quantidade deve ser maior que 0")
+        self._verificar_quantidade(entrada_estoque)
+        verificar_id(id_produto, ID_INVALIDO)
 
         conn = self.conexao.get_connection()
         with conn:
@@ -49,9 +51,8 @@ class EstoqueService:
     def dar_saida(
         self, usuario_logado: Usuario, id_produto: int, saida_estoque: int
     ) -> Produto:
-
-        if saida_estoque <= 0:
-            raise ValueError("Quantidade deve ser maior que 0")
+        self._verificar_quantidade(saida_estoque)
+        verificar_id(id_produto, ID_INVALIDO)
 
         conn = self.conexao.get_connection()
         with conn:
@@ -94,8 +95,9 @@ class EstoqueService:
     def validar_disponibilidade(
         self, id_produto: int, quantidade_desejada: int
     ) -> bool:
-        if quantidade_desejada <= 0:
-            raise ValueError("Quantidade deve ser maior que 0.")
+        self._verificar_quantidade(quantidade_desejada)
+        verificar_id(id_produto, ID_INVALIDO)
+
         conn = self.conexao.get_connection()
         with conn:
             produto = self.produto_repository.buscar_por_id(id_produto)
@@ -103,3 +105,10 @@ class EstoqueService:
                 raise ValueError(PRODUTO_NAO_ENCONTRADO)
 
         return produto.quantidade_estoque >= quantidade_desejada
+
+    def _verificar_quantidade(self, quantidade: int) -> None:
+        if not isinstance(quantidade, int) or isinstance(quantidade, bool):
+            raise TypeError("Quantidade deve ser um numero inteiro.")
+
+        if quantidade <= 0:
+            raise ValueError("Quantidade deve ser maior que 0.")

@@ -32,6 +32,9 @@ class ProdutoService:
         except (InvalidOperation, ValueError, TypeError):
             return False
 
+        if not preco.is_finite():
+            return False
+
         if preco <= 0:
             return False
 
