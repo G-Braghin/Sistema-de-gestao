@@ -9,76 +9,53 @@ from src.entities.produto import Produto
 from src.entities.usuario import Usuario
 from src.repositories.movimentacao_repository import MovimentacaoRepository
 from src.repositories.produto_repository import ProdutoRepository
-from src.repositories.usuario_repository import UsuarioRepository
 
 
 @pytest.fixture
 def repositories():
     conexao = Conexao()
-
+    conn = conexao.get_connection()
     movimentacao_repository = MovimentacaoRepository(conexao)
     produto_repository = ProdutoRepository(conexao)
-    usuario_repository = UsuarioRepository(conexao)
 
-    produto = Produto(
-        nome="TESTE_PRODUTO_MOVIMENTACAO",
-        marca="TESTE_MARCA",
-        preco=Decimal("100.00"),
-        quantidade_estoque=10,
-    )
+    try:
+        produto = Produto(
+            nome="TESTE_PRODUTO_MOVIMENTACAO",
+            marca="TESTE_MARCA",
+            preco=Decimal("100.00"),
+            quantidade_estoque=10,
+        )
+        produto = produto_repository.criar(produto)
 
-    produto = produto_repository.criar(produto)
-
-    usuario = Usuario(
-        nome="TESTE_USUARIO_MOVIMENTACAO",
-        senha_hash="teste_hash",
-        papel=PapelUsuario.FUNCIONARIO,
-        ativo=True,
-    )
-
-    usuario = usuario_repository.criar(usuario)
-
-    yield {
-        "movimentacao": movimentacao_repository,
-        "produto": produto,
-        "usuario": usuario,
-    }
-
-    conn = conexao.get_connection()
-
-    with conn.cursor() as cursor:
-        cursor.execute(
-            """
-            DELETE FROM movimentacoes_estoque
-            WHERE id_produto = %s
-            AND id_usuario = %s
-            """,
-            (produto.id_produto, usuario.id_usuario),
+        usuario = Usuario(
+            nome="TESTE_USUARIO_MOVIMENTACAO",
+            senha_hash="teste_hash",
+            papel=PapelUsuario.FUNCIONARIO,
+            ativo=True,
         )
 
-    conn.commit()
+        # O repository de usuario ainda faz commit; aqui mantemos tudo sem commit.
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO usuarios (nome, senha_hash, papel, ativo)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id_usuario
+                """,
+                (usuario.nome, usuario.senha_hash, usuario.papel.value, usuario.ativo),
+            )
+            usuario.id_usuario = cursor.fetchone()[0]
 
-    with conn.cursor() as cursor:
-        cursor.execute(
-            """
-            DELETE FROM produtos
-            WHERE id_produto = %s
-            """,
-            (produto.id_produto,),
-        )
-
-    conn.commit()
-
-    with conn.cursor() as cursor:
-        cursor.execute(
-            """
-            DELETE FROM usuarios
-            WHERE id_usuario = %s
-            """,
-            (usuario.id_usuario,),
-        )
-
-    conn.commit()
+        yield {
+            "movimentacao": movimentacao_repository,
+            "produto_repository": produto_repository,
+            "produto": produto,
+            "usuario": usuario,
+            "conexao": conexao,
+        }
+    finally:
+        conn.rollback()
+        conn.close()
 
 
 def test_criar_movimentacao_e_buscar_por_id(repositories):
@@ -113,6 +90,29 @@ def test_buscar_movimentacao_inexistente(repositories):
     movimentacao = repository.buscar_por_id(9999999)
 
     assert movimentacao is None
+
+
+def test_produto_e_movimentacao_permitem_rollback(repositories):
+    repository = repositories["movimentacao"]
+    produto_repository = repositories["produto_repository"]
+    produto = repositories["produto"]
+    usuario = repositories["usuario"]
+
+    produto.quantidade_estoque += 5
+    produto_repository.atualizar(produto)
+    movimentacao = MovimentacaoEstoque(
+        id_produto=produto.id_produto,
+        id_usuario=usuario.id_usuario,
+        tipo=TipoMovimentacao.ENTRADA,
+        quantidade=5,
+    )
+    repository.criar(movimentacao)
+
+    conn = repositories["conexao"].get_connection()
+    conn.rollback()
+
+    assert repository.buscar_por_id(movimentacao.id_movimentacao) is None
+    assert produto_repository.buscar_por_id(produto.id_produto) is None
 
 
 def test_listar_movimentacoes(repositories):

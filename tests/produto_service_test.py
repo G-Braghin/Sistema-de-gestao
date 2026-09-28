@@ -1,7 +1,7 @@
-import pytest
 from decimal import Decimal
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
+import pytest
 from src.entities.produto import Produto
 from src.services.produto_service import ProdutoService
 
@@ -12,8 +12,15 @@ def repository():
 
 
 @pytest.fixture
-def service(repository):
-    return ProdutoService(repository)
+def conexao():
+    conexao = Mock()
+    conexao.get_connection.return_value = MagicMock()
+    return conexao
+
+
+@pytest.fixture
+def service(repository, conexao):
+    return ProdutoService(repository, conexao)
 
 
 def test_validar_nome_valido(service):
@@ -320,3 +327,27 @@ def test_atualizar_marca_invalida(service, repository):
         )
 
     repository.atualizar.assert_not_called()
+
+
+def test_cadastrar_produto_finaliza_transacao(service, repository, conexao):
+    conn = conexao.get_connection.return_value
+
+    resultado = service.cadastrar_produto("Teclado", "Logitech", "150.00")
+
+    assert resultado == repository.criar.return_value
+    conn.__enter__.assert_called_once()
+    conn.__exit__.assert_called_once_with(None, None, None)
+
+
+def test_cadastrar_produto_propaga_erro_na_transacao(service, repository, conexao):
+    conn = conexao.get_connection.return_value
+    erro = RuntimeError("Erro ao salvar produto")
+    repository.criar.side_effect = erro
+
+    with pytest.raises(RuntimeError, match="Erro ao salvar produto"):
+        service.cadastrar_produto("Teclado", "Logitech", "150.00")
+
+    conn.__enter__.assert_called_once()
+    conn.__exit__.assert_called_once()
+    assert conn.__exit__.call_args.args[0] is RuntimeError
+    assert conn.__exit__.call_args.args[1] is erro

@@ -1,7 +1,6 @@
-import pytest
-
 from decimal import Decimal
 
+import pytest
 from src.database.conexao import Conexao
 from src.entities.produto import Produto
 from src.repositories.produto_repository import ProdutoRepository
@@ -12,15 +11,12 @@ def repository():
     conexao = Conexao()
     repository = ProdutoRepository(conexao)
 
-    yield repository
-
     conn = conexao.get_connection()
-
-    with conn.cursor() as cursor:
-        cursor.execute(
-            "DELETE FROM produtos WHERE nome LIKE 'TESTE_%'"
-        )
-    conn.commit()
+    try:
+        yield repository
+    finally:
+        conn.rollback()
+        conn.close()
 
 
 
@@ -50,6 +46,23 @@ def test_buscar_produto_inexistente(repository):
     produto = repository.buscar_por_id(9999999)
 
     assert produto is None
+
+
+def test_criar_produto_permite_rollback(repository):
+    produto = Produto(
+        nome="TESTE_PRODUTO_ROLLBACK",
+        marca="TESTE_MARCA",
+        preco=Decimal("10.00"),
+        quantidade_estoque=5,
+    )
+    repository.criar(produto)
+    produto.quantidade_estoque = 8
+    repository.atualizar(produto)
+
+    conn = repository.conexao.get_connection()
+    conn.rollback()
+
+    assert repository.buscar_por_id(produto.id_produto) is None
 
 
 def test_listar_produto(repository):

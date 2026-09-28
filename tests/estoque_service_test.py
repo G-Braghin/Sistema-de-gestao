@@ -1,5 +1,5 @@
 from decimal import Decimal
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from src.entities.enums.papel_usuario import PapelUsuario
@@ -21,10 +21,18 @@ def movimentacao_repository():
 
 
 @pytest.fixture
-def service(produto_repository, movimentacao_repository):
+def conexao():
+    conexao = Mock()
+    conexao.get_connection.return_value = MagicMock()
+    return conexao
+
+
+@pytest.fixture
+def service(produto_repository, movimentacao_repository, conexao):
     return EstoqueService(
         produto_repository,
-        movimentacao_repository
+        movimentacao_repository,
+        conexao
     )
 
 
@@ -48,6 +56,42 @@ def produto():
         preco=Decimal("150.00"),
         quantidade_estoque=10
     )
+
+
+def test_dar_entrada_propaga_erro_da_movimentacao(
+    service, produto_repository, movimentacao_repository, conexao, usuario, produto
+):
+    conn = conexao.get_connection.return_value
+    produto_repository.buscar_por_id.return_value = produto
+    erro = RuntimeError("Erro ao salvar movimentacao")
+    movimentacao_repository.criar.side_effect = erro
+
+    with pytest.raises(RuntimeError, match="Erro ao salvar movimentacao"):
+        service.dar_entrada(usuario, produto.id_produto, 5)
+
+    produto_repository.atualizar.assert_called_once_with(produto)
+    conn.__enter__.assert_called_once()
+    conn.__exit__.assert_called_once()
+    assert conn.__exit__.call_args.args[0] is RuntimeError
+    assert conn.__exit__.call_args.args[1] is erro
+
+
+def test_dar_saida_propaga_erro_da_movimentacao(
+    service, produto_repository, movimentacao_repository, conexao, usuario, produto
+):
+    conn = conexao.get_connection.return_value
+    produto_repository.buscar_por_id.return_value = produto
+    erro = RuntimeError("Erro ao salvar movimentacao")
+    movimentacao_repository.criar.side_effect = erro
+
+    with pytest.raises(RuntimeError, match="Erro ao salvar movimentacao"):
+        service.dar_saida(usuario, produto.id_produto, 4)
+
+    produto_repository.atualizar.assert_called_once_with(produto)
+    conn.__enter__.assert_called_once()
+    conn.__exit__.assert_called_once()
+    assert conn.__exit__.call_args.args[0] is RuntimeError
+    assert conn.__exit__.call_args.args[1] is erro
 
 
 def test_dar_entrada_com_quantidade_valida(

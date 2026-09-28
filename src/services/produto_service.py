@@ -1,6 +1,7 @@
 import re
 from decimal import Decimal, InvalidOperation
 
+from src.database.conexao import Conexao
 from src.entities.produto import Produto
 from src.repositories.produto_repository import ProdutoRepository
 
@@ -8,8 +9,9 @@ PRODUTO_NAO_ENCONTRADO = "Produto nao encontrado!"
 
 
 class ProdutoService:
-    def __init__(self, produto_repository: ProdutoRepository):
+    def __init__(self, produto_repository: ProdutoRepository, conexao: Conexao):
         self.produto_repository = produto_repository
+        self.conexao = conexao
 
     def validar_nome(self, nome: str) -> bool:
         nome = nome.strip()
@@ -47,40 +49,58 @@ class ProdutoService:
             marca=marca.strip().upper(),
             preco=Decimal(str(preco)),
         )
-        return self.produto_repository.criar(novo_produto)
+        conn = self.conexao.get_connection()
+        with conn:
+            produto_criado = self.produto_repository.criar(novo_produto)
+
+        return produto_criado
 
     def listar_produtos(self) -> list[Produto]:
-        return self.produto_repository.listar()
+        conn = self.conexao.get_connection()
+        with conn:
+            return self.produto_repository.listar()
 
     def atualizar_preco(self, id_produto: int, preco) -> Produto:
-        produto = self.produto_repository.buscar_por_id(id_produto)
-        if produto is None:
-            raise ValueError(PRODUTO_NAO_ENCONTRADO)
-
         if not self.validar_preco(preco):
             raise ValueError("O preco do produto e invalido!")
-        produto.preco = Decimal(str(preco))
 
-        return self.produto_repository.atualizar(produto)
+        conn = self.conexao.get_connection()
+        with conn:
+            produto = self.produto_repository.buscar_por_id(id_produto)
+            if produto is None:
+                raise ValueError(PRODUTO_NAO_ENCONTRADO)
+
+            produto.preco = Decimal(str(preco))
+            produto = self.produto_repository.atualizar(produto)
+
+        return produto
 
     def atualizar_nome(self, id_produto: int, nome: str) -> Produto:
-        produto = self.produto_repository.buscar_por_id(id_produto)
-        if produto is None:
-            raise ValueError(PRODUTO_NAO_ENCONTRADO)
-
         if not self.validar_nome(nome):
             raise ValueError("O nome do produto e invalido!")
-        produto.nome = nome.strip().upper()
 
-        return self.produto_repository.atualizar(produto)
+        conn = self.conexao.get_connection()
+        with conn:
+            produto = self.produto_repository.buscar_por_id(id_produto)
+            if produto is None:
+                raise ValueError(PRODUTO_NAO_ENCONTRADO)
+
+            produto.nome = nome.strip().upper()
+            produto = self.produto_repository.atualizar(produto)
+
+        return produto
 
     def atualizar_marca(self, id_produto: int, marca: str) -> Produto:
-        produto = self.produto_repository.buscar_por_id(id_produto)
-        if produto is None:
-            raise ValueError(PRODUTO_NAO_ENCONTRADO)
-
         if not self.validar_nome(marca):
             raise ValueError("A marca do produto e invalida!")
-        produto.marca = marca.strip().upper()
 
-        return self.produto_repository.atualizar(produto)
+        conn = self.conexao.get_connection()
+        with conn:
+            produto = self.produto_repository.buscar_por_id(id_produto)
+            if produto is None:
+                raise ValueError(PRODUTO_NAO_ENCONTRADO)
+
+            produto.marca = marca.strip().upper()
+            produto = self.produto_repository.atualizar(produto)
+
+        return produto

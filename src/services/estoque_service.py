@@ -1,3 +1,4 @@
+from src.database.conexao import Conexao
 from src.entities.enums.papel_usuario import PapelUsuario
 from src.entities.enums.tipo_movimentacao import TipoMovimentacao
 from src.entities.movimentacao_estoque import MovimentacaoEstoque
@@ -14,9 +15,11 @@ class EstoqueService:
         self,
         produto_repository: ProdutoRepository,
         movimentacao_repository: MovimentacaoRepository,
+        conexao: Conexao,
     ):
         self.produto_repository = produto_repository
         self.movimentacao_repository = movimentacao_repository
+        self.conexao = conexao
 
     def dar_entrada(
         self, usuario_logado: Usuario, id_produto: int, entrada_estoque: int
@@ -24,20 +27,22 @@ class EstoqueService:
         if entrada_estoque <= 0:
             raise ValueError("Quantidade deve ser maior que 0")
 
-        produto = self.produto_repository.buscar_por_id(id_produto)
-        if not produto:
-            raise ValueError(PRODUTO_NAO_ENCONTRADO)
+        conn = self.conexao.get_connection()
+        with conn:
+            produto = self.produto_repository.buscar_por_id(id_produto)
+            if not produto:
+                raise ValueError(PRODUTO_NAO_ENCONTRADO)
 
-        produto.quantidade_estoque += entrada_estoque
-        self.produto_repository.atualizar(produto)
+            produto.quantidade_estoque += entrada_estoque
+            self.produto_repository.atualizar(produto)
 
-        movimentacao = MovimentacaoEstoque(
-            id_produto=id_produto,
-            id_usuario=usuario_logado.id_usuario,
-            tipo=TipoMovimentacao.ENTRADA,
-            quantidade=entrada_estoque,
-        )
-        self.movimentacao_repository.criar(movimentacao)
+            movimentacao = MovimentacaoEstoque(
+                id_produto=id_produto,
+                id_usuario=usuario_logado.id_usuario,
+                tipo=TipoMovimentacao.ENTRADA,
+                quantidade=entrada_estoque,
+            )
+            self.movimentacao_repository.criar(movimentacao)
 
         return produto
 
@@ -48,24 +53,27 @@ class EstoqueService:
         if saida_estoque <= 0:
             raise ValueError("Quantidade deve ser maior que 0")
 
-        produto = self.produto_repository.buscar_por_id(id_produto)
-        if not produto:
-            raise ValueError(PRODUTO_NAO_ENCONTRADO)
+        conn = self.conexao.get_connection()
+        with conn:
+            produto = self.produto_repository.buscar_por_id(id_produto)
+            if not produto:
+                raise ValueError(PRODUTO_NAO_ENCONTRADO)
 
-        if saida_estoque > produto.quantidade_estoque:
-            raise ValueError(
-                f"Estoque indisponivel! Disponivel {produto.quantidade_estoque}."
+            if saida_estoque > produto.quantidade_estoque:
+                raise ValueError(
+                    f"Estoque indisponivel! Disponivel {produto.quantidade_estoque}."
+                )
+
+            produto.quantidade_estoque -= saida_estoque
+            self.produto_repository.atualizar(produto)
+
+            movimentacao = MovimentacaoEstoque(
+                id_produto=id_produto,
+                id_usuario=usuario_logado.id_usuario,
+                tipo=TipoMovimentacao.SAIDA,
+                quantidade=saida_estoque,
             )
-        produto.quantidade_estoque -= saida_estoque
-        self.produto_repository.atualizar(produto)
-
-        movimentacao = MovimentacaoEstoque(
-            id_produto=id_produto,
-            id_usuario=usuario_logado.id_usuario,
-            tipo=TipoMovimentacao.SAIDA,
-            quantidade=saida_estoque,
-        )
-        self.movimentacao_repository.criar(movimentacao)
+            self.movimentacao_repository.criar(movimentacao)
 
         return produto
 
@@ -79,16 +87,19 @@ class EstoqueService:
             raise PermissionError(
                 "Você não tem permissão para ver o histórico de movimentações."
             )
-        return self.movimentacao_repository.listar()
+        conn = self.conexao.get_connection()
+        with conn:
+            return self.movimentacao_repository.listar()
 
     def validar_disponibilidade(
         self, id_produto: int, quantidade_desejada: int
     ) -> bool:
         if quantidade_desejada <= 0:
             raise ValueError("Quantidade deve ser maior que 0.")
-
-        produto = self.produto_repository.buscar_por_id(id_produto)
-        if not produto:
-            raise ValueError(PRODUTO_NAO_ENCONTRADO)
+        conn = self.conexao.get_connection()
+        with conn:
+            produto = self.produto_repository.buscar_por_id(id_produto)
+            if not produto:
+                raise ValueError(PRODUTO_NAO_ENCONTRADO)
 
         return produto.quantidade_estoque >= quantidade_desejada
