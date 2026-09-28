@@ -27,6 +27,33 @@ def test_validar_nome_valido(service):
     assert service.validar_nome("Teclado Mecânico") is True
 
 
+def test_atualizar_preco_com_id_zero(service, repository, conexao):
+    with pytest.raises(ValueError, match="ID de produto invalido"):
+        service.atualizar_preco(0, "180.50")
+
+    repository.buscar_por_id.assert_not_called()
+    repository.atualizar.assert_not_called()
+    conexao.get_connection.assert_not_called()
+
+
+def test_atualizar_nome_com_id_negativo(service, repository, conexao):
+    with pytest.raises(ValueError, match="ID de produto invalido"):
+        service.atualizar_nome(-1, "Teclado")
+
+    repository.buscar_por_id.assert_not_called()
+    repository.atualizar.assert_not_called()
+    conexao.get_connection.assert_not_called()
+
+
+def test_atualizar_marca_com_id_booleano(service, repository, conexao):
+    with pytest.raises(TypeError, match="ID tem que ser um numero inteiro"):
+        service.atualizar_marca(True, "Logitech")
+
+    repository.buscar_por_id.assert_not_called()
+    repository.atualizar.assert_not_called()
+    conexao.get_connection.assert_not_called()
+
+
 def test_validar_nome_muito_curto(service):
     assert service.validar_nome("AB") is False
 
@@ -47,6 +74,22 @@ def test_validar_nome_vazio(service):
 
 def test_validar_nome_com_apenas_espacos(service):
     assert service.validar_nome("   ") is False
+
+
+def test_validar_nome_none(service):
+    assert service.validar_nome(None) is False
+
+
+def test_validar_nome_numerico(service):
+    assert service.validar_nome(123) is False
+
+
+def test_validar_nome_com_tabulacao(service):
+    assert service.validar_nome("Teclado\tMecanico") is False
+
+
+def test_validar_nome_com_quebra_de_linha(service):
+    assert service.validar_nome("Teclado\nMecanico") is False
 
 
 def test_validar_preco_valido(service):

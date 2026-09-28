@@ -4,8 +4,10 @@ from decimal import Decimal, InvalidOperation
 from src.database.conexao import Conexao
 from src.entities.produto import Produto
 from src.repositories.produto_repository import ProdutoRepository
+from src.utils.validacoes import verificar_id
 
 PRODUTO_NAO_ENCONTRADO = "Produto nao encontrado!"
+ID_INVALIDO = "ID de produto invalido."
 
 
 class ProdutoService:
@@ -14,14 +16,15 @@ class ProdutoService:
         self.conexao = conexao
 
     def validar_nome(self, nome: str) -> bool:
+        if not isinstance(nome, str):
+            return False
+
         nome = nome.strip()
         if not 3 <= len(nome) <= 60:
             return False
 
-        regex_caracteres_validos = (
-            r"^[a-zA-Z0-9áàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ\s.\-/]+$"
-        )
-        return re.match(regex_caracteres_validos, nome) is not None
+        regex_caracteres_validos = r"[a-zA-Z0-9áàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ .\-/]+"
+        return re.fullmatch(regex_caracteres_validos, nome) is not None
 
     def validar_preco(self, preco: str | float) -> bool:
         try:
@@ -61,6 +64,8 @@ class ProdutoService:
             return self.produto_repository.listar()
 
     def atualizar_preco(self, id_produto: int, preco) -> Produto:
+        verificar_id(id_produto, ID_INVALIDO)
+
         if not self.validar_preco(preco):
             raise ValueError("O preco do produto e invalido!")
 
@@ -76,6 +81,8 @@ class ProdutoService:
         return produto
 
     def atualizar_nome(self, id_produto: int, nome: str) -> Produto:
+        verificar_id(id_produto, ID_INVALIDO)
+
         if not self.validar_nome(nome):
             raise ValueError("O nome do produto e invalido!")
 
@@ -91,6 +98,8 @@ class ProdutoService:
         return produto
 
     def atualizar_marca(self, id_produto: int, marca: str) -> Produto:
+        verificar_id(id_produto, ID_INVALIDO)
+
         if not self.validar_nome(marca):
             raise ValueError("A marca do produto e invalida!")
 

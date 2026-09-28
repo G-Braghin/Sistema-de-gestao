@@ -4,6 +4,7 @@ from src.entities.cliente import Cliente
 from src.entities.enums.papel_usuario import PapelUsuario
 from src.entities.usuario import Usuario
 from src.repositories.cliente_repository import ClienteRepository
+from src.utils.validacoes import verificar_texto_obrigatorio
 
 CLIENTE_NAO_ATIVO = "Cliente esta desativado."
 CLIENTE_NAO_ENCONTRADO = "Cliente nao encontrado."
@@ -61,8 +62,7 @@ class ClienteService:
         self, nome: str, cpf: str, telefone: str, endereco: str | None = None
     ) -> Cliente:
 
-        if not nome or not nome.strip():
-            raise ValueError("O nome nao pode estar vazio.")
+        verificar_texto_obrigatorio(nome, "O nome nao pode estar vazio.")
 
         if not cpf:
             raise ValueError(CPF_NAO_INSERIDO)
@@ -119,8 +119,7 @@ class ClienteService:
     def atualizar_nome(self, cpf_cliente: str, nome: str) -> Cliente:
         cliente = self._buscar_cliente_ativo(cpf_cliente)
 
-        if not nome or not nome.strip():
-            raise ValueError("O nome nao pode estar vazio.")
+        verificar_texto_obrigatorio(nome, "O nome nao pode estar vazio.")
 
         cliente.nome = nome.strip()
         return self.cliente_repository.atualizar(cliente)

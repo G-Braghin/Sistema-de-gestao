@@ -4,6 +4,7 @@ from src.entities.enums.papel_usuario import PapelUsuario
 from src.entities.usuario import Usuario
 from src.repositories.usuario_repository import UsuarioRepository
 from src.services.autenticacao_service import AutenticacaoService
+from src.utils.validacoes import verificar_id, verificar_texto_obrigatorio
 
 
 class UsuarioService:
@@ -30,11 +31,9 @@ class UsuarioService:
         senha: str,
         papel: PapelUsuario = PapelUsuario.FUNCIONARIO,
     ) -> Usuario:
-        if not nome or not nome.strip():
-            raise ValueError("O nome nao pode estar vazio.")
+        verificar_texto_obrigatorio(nome, "O nome nao pode estar vazio.")
 
-        if not senha or not senha.strip():
-            raise ValueError("Senha nao pode estar vazio.")
+        verificar_texto_obrigatorio(senha, "Senha nao pode estar vazio.")
 
         papeis_permitidos = self.obter_papeis_cadastro(usuario_logado)
 
@@ -50,7 +49,7 @@ class UsuarioService:
             raise PermissionError(
                 "Apenas administradores podem promover funcionários a gerentes."
             )
-        self._checar_id(id_usuario)
+        verificar_id(id_usuario, "ID de usuario invalido.")
 
         usuario = self.usuario_repository.buscar_por_id(id_usuario)
         if not usuario:
@@ -65,10 +64,9 @@ class UsuarioService:
     def resetar_senha(
         self, usuario_logado: Usuario, id_usuario_alvo: int, nova_senha: str
     ) -> Usuario:
-        self._checar_id(id_usuario_alvo)
+        verificar_id(id_usuario_alvo, "ID de usuario invalido.")
 
-        if not nova_senha or not nova_senha.strip():
-            raise ValueError("Senha nao pode estar vazio.")
+        verificar_texto_obrigatorio(nova_senha, "Senha nao pode estar vazio.")
 
         usuario_alvo = self.usuario_repository.buscar_por_id(id_usuario_alvo)
         if not usuario_alvo:
@@ -86,7 +84,7 @@ class UsuarioService:
     def atualizar_status(
         self, usuario_logado: Usuario, id_usuario_alvo: int, status_ativo: bool
     ) -> Usuario:
-        self._checar_id(id_usuario_alvo)
+        verificar_id(id_usuario_alvo, "ID de usuario invalido.")
 
         if not isinstance(status_ativo, bool):
             raise TypeError("Status deve ser True ou False.")
@@ -136,13 +134,6 @@ class UsuarioService:
             nome="admin", senha_hash=senha_hash, papel=PapelUsuario.ADMINISTRADOR
         )
         return self.usuario_repository.criar(admin_padrao)
-
-    def _checar_id(self, id_usuario: int):
-        if not isinstance(id_usuario, int) or isinstance(id_usuario, bool):
-            raise TypeError("ID tem que ser um numero inteiro.")
-
-        if id_usuario <= 0:
-            raise ValueError("ID de usuario invalido.")
 
     def listar_usuarios(
         self, usuario_logado: Usuario, status_ativo: bool = True

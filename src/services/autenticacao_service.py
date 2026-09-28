@@ -1,5 +1,6 @@
 import bcrypt
 from src.repositories.usuario_repository import UsuarioRepository
+from src.utils.validacoes import verificar_id, verificar_texto_obrigatorio
 
 
 class AutenticacaoService:
@@ -7,14 +8,9 @@ class AutenticacaoService:
         self.usuario_repository = usuario_repository
 
     def autenticar(self, id_usuario: int, senha: str):
-        if not isinstance(id_usuario, int) or isinstance(id_usuario, bool):
-            raise TypeError("ID tem que ser um numero inteiro.")
+        verificar_id(id_usuario, "ID de usuario invalido.")
 
-        if id_usuario <= 0:
-            raise ValueError("ID de usuario invalido.")
-
-        if not senha or not senha.strip():
-            raise ValueError("Senha nao pode estar vazio.")
+        verificar_texto_obrigatorio(senha, "Senha nao pode estar vazio.")
         usuario = self.usuario_repository.buscar_por_id(id_usuario)
         if not usuario or not self.verificar_senha(senha, usuario.senha_hash):
             raise ValueError("ID ou Senha Invalidos.")
@@ -33,17 +29,11 @@ class AutenticacaoService:
     def atualizar_senha_usuario(
         self, id_usuario: int, senha_atual: str, nova_senha: str
     ):
-        if not isinstance(id_usuario, int) or isinstance(id_usuario, bool):
-            raise TypeError("ID tem que ser um numero inteiro.")
+        verificar_id(id_usuario, "ID de usuario invalido.")
 
-        if id_usuario <= 0:
-            raise ValueError("ID de usuario invalido.")
+        verificar_texto_obrigatorio(senha_atual, "A senha atual nao pode estar vazio.")
 
-        if not senha_atual or not senha_atual.strip():
-            raise ValueError("A senha atual nao pode estar vazio.")
-
-        if not nova_senha or not nova_senha.strip():
-            raise ValueError("A nova senha nao pode estar vazio.")
+        verificar_texto_obrigatorio(nova_senha, "A nova senha nao pode estar vazio.")
 
         if senha_atual == nova_senha:
             raise ValueError("A nova senha nao pode ser igual a atual.")
