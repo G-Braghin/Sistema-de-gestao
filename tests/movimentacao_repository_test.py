@@ -2,6 +2,7 @@ from decimal import Decimal
 
 import pytest
 from src.database.conexao import Conexao
+from src.entities.enums.motivo_movimentacao import MotivoMovimentacao
 from src.entities.enums.papel_usuario import PapelUsuario
 from src.entities.enums.tipo_movimentacao import TipoMovimentacao
 from src.entities.movimentacao_estoque import MovimentacaoEstoque
@@ -67,6 +68,7 @@ def test_criar_movimentacao_e_buscar_por_id(repositories):
         id_produto=produto.id_produto,
         id_usuario=usuario.id_usuario,
         tipo=TipoMovimentacao.ENTRADA,
+        motivo=MotivoMovimentacao.REPOSICAO,
         quantidade=5,
     )
 
@@ -82,6 +84,8 @@ def test_criar_movimentacao_e_buscar_por_id(repositories):
     assert movimentacao_buscada.tipo == TipoMovimentacao.ENTRADA
     assert movimentacao_buscada.quantidade == 5
     assert movimentacao_buscada.data_hora is not None
+    assert movimentacao_buscada.motivo == MotivoMovimentacao.REPOSICAO
+    assert movimentacao_buscada.id_venda is None
 
 
 def test_buscar_movimentacao_inexistente(repositories):
@@ -104,6 +108,7 @@ def test_produto_e_movimentacao_permitem_rollback(repositories):
         id_produto=produto.id_produto,
         id_usuario=usuario.id_usuario,
         tipo=TipoMovimentacao.ENTRADA,
+        motivo=MotivoMovimentacao.REPOSICAO,
         quantidade=5,
     )
     repository.criar(movimentacao)
@@ -124,6 +129,7 @@ def test_listar_movimentacoes(repositories):
         id_produto=produto.id_produto,
         id_usuario=usuario.id_usuario,
         tipo=TipoMovimentacao.ENTRADA,
+        motivo=MotivoMovimentacao.REPOSICAO,
         quantidade=10,
     )
 
@@ -131,6 +137,7 @@ def test_listar_movimentacoes(repositories):
         id_produto=produto.id_produto,
         id_usuario=usuario.id_usuario,
         tipo=TipoMovimentacao.SAIDA,
+        motivo=MotivoMovimentacao.AJUSTE,
         quantidade=3,
     )
 
@@ -154,6 +161,7 @@ def test_criar_movimentacao_de_saida(repositories):
         id_produto=produto.id_produto,
         id_usuario=usuario.id_usuario,
         tipo=TipoMovimentacao.SAIDA,
+        motivo=MotivoMovimentacao.AJUSTE,
         quantidade=3,
     )
 

@@ -2,6 +2,7 @@ from decimal import Decimal
 from unittest.mock import MagicMock, Mock
 
 import pytest
+from src.entities.enums.motivo_movimentacao import MotivoMovimentacao
 from src.entities.enums.papel_usuario import PapelUsuario
 from src.entities.enums.tipo_movimentacao import TipoMovimentacao
 from src.entities.movimentacao_estoque import MovimentacaoEstoque
@@ -67,7 +68,7 @@ def test_dar_entrada_propaga_erro_da_movimentacao(
     movimentacao_repository.criar.side_effect = erro
 
     with pytest.raises(RuntimeError, match="Erro ao salvar movimentacao"):
-        service.dar_entrada(usuario, produto.id_produto, 5)
+        service.dar_entrada(usuario, produto.id_produto, 5, MotivoMovimentacao.REPOSICAO)
 
     produto_repository.atualizar.assert_called_once_with(produto)
     conn.__enter__.assert_called_once()
@@ -85,7 +86,7 @@ def test_dar_saida_propaga_erro_da_movimentacao(
     movimentacao_repository.criar.side_effect = erro
 
     with pytest.raises(RuntimeError, match="Erro ao salvar movimentacao"):
-        service.dar_saida(usuario, produto.id_produto, 4)
+        service.dar_saida(usuario, produto.id_produto, 4, MotivoMovimentacao.AJUSTE)
 
     produto_repository.atualizar.assert_called_once_with(produto)
     conn.__enter__.assert_called_once()
@@ -108,7 +109,8 @@ def test_dar_entrada_com_quantidade_valida(
     resultado = service.dar_entrada(
         usuario_logado=usuario,
         id_produto=1,
-        entrada_estoque=5
+        entrada_estoque=5,
+        motivo=MotivoMovimentacao.REPOSICAO
     )
 
     assert resultado == produto
@@ -124,6 +126,8 @@ def test_dar_entrada_com_quantidade_valida(
     assert isinstance(movimentacao, MovimentacaoEstoque)
     assert movimentacao.id_produto == 1
     assert movimentacao.id_usuario == usuario.id_usuario
+    assert movimentacao.motivo == MotivoMovimentacao.REPOSICAO
+    assert movimentacao.id_venda is None
     assert movimentacao.tipo == TipoMovimentacao.ENTRADA
     assert movimentacao.quantidade == 5
 
@@ -141,7 +145,8 @@ def test_dar_entrada_com_quantidade_zero(
         service.dar_entrada(
             usuario_logado=usuario,
             id_produto=1,
-            entrada_estoque=0
+            entrada_estoque=0,
+            motivo=MotivoMovimentacao.REPOSICAO
         )
 
     produto_repository.buscar_por_id.assert_not_called()
@@ -162,7 +167,8 @@ def test_dar_entrada_com_quantidade_negativa(
         service.dar_entrada(
             usuario_logado=usuario,
             id_produto=1,
-            entrada_estoque=-5
+            entrada_estoque=-5,
+            motivo=MotivoMovimentacao.REPOSICAO
         )
 
     produto_repository.buscar_por_id.assert_not_called()
@@ -185,7 +191,8 @@ def test_dar_entrada_com_produto_inexistente(
         service.dar_entrada(
             usuario_logado=usuario,
             id_produto=999999,
-            entrada_estoque=5
+            entrada_estoque=5,
+            motivo=MotivoMovimentacao.REPOSICAO
         )
 
     produto_repository.atualizar.assert_not_called()
@@ -206,7 +213,8 @@ def test_dar_saida_com_quantidade_valida(
     resultado = service.dar_saida(
         usuario_logado=usuario,
         id_produto=1,
-        saida_estoque=4
+        saida_estoque=4,
+        motivo=MotivoMovimentacao.AJUSTE
     )
 
     assert resultado == produto
@@ -222,6 +230,8 @@ def test_dar_saida_com_quantidade_valida(
     assert isinstance(movimentacao, MovimentacaoEstoque)
     assert movimentacao.id_produto == 1
     assert movimentacao.id_usuario == usuario.id_usuario
+    assert movimentacao.motivo == MotivoMovimentacao.AJUSTE
+    assert movimentacao.id_venda is None
     assert movimentacao.tipo == TipoMovimentacao.SAIDA
     assert movimentacao.quantidade == 4
 
@@ -239,7 +249,8 @@ def test_dar_saida_com_quantidade_zero(
         service.dar_saida(
             usuario_logado=usuario,
             id_produto=1,
-            saida_estoque=0
+            saida_estoque=0,
+            motivo=MotivoMovimentacao.AJUSTE
         )
 
     produto_repository.buscar_por_id.assert_not_called()
@@ -260,7 +271,8 @@ def test_dar_saida_com_quantidade_negativa(
         service.dar_saida(
             usuario_logado=usuario,
             id_produto=1,
-            saida_estoque=-3
+            saida_estoque=-3,
+            motivo=MotivoMovimentacao.AJUSTE
         )
 
     produto_repository.buscar_por_id.assert_not_called()
@@ -283,7 +295,8 @@ def test_dar_saida_com_produto_inexistente(
         service.dar_saida(
             usuario_logado=usuario,
             id_produto=999999,
-            saida_estoque=5
+            saida_estoque=5,
+            motivo=MotivoMovimentacao.AJUSTE
         )
 
     produto_repository.atualizar.assert_not_called()
@@ -306,7 +319,8 @@ def test_dar_saida_com_estoque_insuficiente(
         service.dar_saida(
             usuario_logado=usuario,
             id_produto=1,
-            saida_estoque=11
+            saida_estoque=11,
+            motivo=MotivoMovimentacao.AJUSTE
         )
 
     assert produto.quantidade_estoque == 10
@@ -332,12 +346,14 @@ def test_listar_movimentacoes_com_administrador(
             id_produto=1,
             id_usuario=1,
             tipo=TipoMovimentacao.ENTRADA,
+            motivo=MotivoMovimentacao.REPOSICAO,
             quantidade=10
         ),
         MovimentacaoEstoque(
             id_produto=1,
             id_usuario=1,
             tipo=TipoMovimentacao.SAIDA,
+            motivo=MotivoMovimentacao.AJUSTE,
             quantidade=3
         )
     ]
@@ -367,6 +383,7 @@ def test_listar_movimentacoes_com_gerente(
             id_produto=1,
             id_usuario=2,
             tipo=TipoMovimentacao.ENTRADA,
+            motivo=MotivoMovimentacao.REPOSICAO,
             quantidade=5
         )
     ]

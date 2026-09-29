@@ -1,4 +1,5 @@
 from src.database.conexao import Conexao
+from src.entities.enums.motivo_movimentacao import MotivoMovimentacao
 from src.entities.enums.tipo_movimentacao import TipoMovimentacao
 from src.entities.movimentacao_estoque import MovimentacaoEstoque
 
@@ -14,8 +15,8 @@ class MovimentacaoRepository:
             cursor.execute(
                 """
             INSERT INTO movimentacoes_estoque
-            (id_produto,id_usuario,tipo,quantidade,data_hora)
-            VALUES (%s,%s,%s,%s,%s)
+            (id_produto,id_usuario,tipo,quantidade,data_hora,motivo,id_venda)
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
             RETURNING id_movimentacao
             """,
                 (
@@ -24,6 +25,8 @@ class MovimentacaoRepository:
                     movimentacao.tipo.value,
                     movimentacao.quantidade,
                     movimentacao.data_hora,
+                    movimentacao.motivo.value,
+                    movimentacao.id_venda,
                 ),
             )
             movimentacao.id_movimentacao = cursor.fetchone()[0]
@@ -36,7 +39,7 @@ class MovimentacaoRepository:
             cursor.execute(
                 """
             SELECT id_movimentacao,
-            id_produto,id_usuario,tipo,quantidade,data_hora
+            id_produto,id_usuario,tipo,quantidade,data_hora,motivo,id_venda
             FROM movimentacoes_estoque
             where id_movimentacao = %s
             """,
@@ -51,6 +54,8 @@ class MovimentacaoRepository:
                 tipo=TipoMovimentacao(row[3]),
                 quantidade=row[4],
                 data_hora=row[5],
+                motivo=MotivoMovimentacao(row[6]),
+                id_venda=row[7],
             )
         return None
 
@@ -60,7 +65,7 @@ class MovimentacaoRepository:
         with conn.cursor() as cursor:
             cursor.execute("""   
                 SELECT id_movimentacao,
-                id_produto,id_usuario,tipo,quantidade,data_hora
+                id_produto,id_usuario,tipo,quantidade,data_hora,motivo,id_venda
                 FROM movimentacoes_estoque
                 ORDER by data_hora     
                 """)
@@ -74,6 +79,8 @@ class MovimentacaoRepository:
                 tipo=TipoMovimentacao(row[3]),
                 quantidade=row[4],
                 data_hora=row[5],
+                motivo=MotivoMovimentacao(row[6]),
+                id_venda=row[7],
             )
             for row in rows
         ]

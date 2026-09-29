@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+from src.entities.enums.motivo_movimentacao import MotivoMovimentacao
 from src.entities.enums.tipo_movimentacao import TipoMovimentacao
 
 
@@ -10,14 +11,18 @@ class MovimentacaoEstoque:
         id_usuario: int,
         tipo: TipoMovimentacao,
         quantidade: int,
+        motivo: MotivoMovimentacao,
         data_hora: datetime | None = None,
         id_movimentacao: int | None = None,
+        id_venda: int | None = None,
     ):
         self.id_produto = id_produto
         self.id_usuario = id_usuario
         self.tipo = tipo
         self.id_movimentacao = id_movimentacao
         self.quantidade = quantidade
+        self.motivo = motivo
+        self.id_venda = id_venda
         self.data_hora = (
             data_hora if data_hora is not None else datetime.now(timezone.utc)
         )
