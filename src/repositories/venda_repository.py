@@ -77,7 +77,7 @@ class VendaRepository:
                 data_hora=venda_data[4],
                 status=StatusVenda(venda_data[5]),
                 data_cancelamento=venda_data[6],
-                id_usuario_cancelamento= venda_data[7],
+                id_usuario_cancelamento=venda_data[7],
                 itens=[],
             )
 
@@ -105,34 +105,6 @@ class VendaRepository:
             ]
 
             return venda
-
-    def listar_itens(self, id_venda: int) -> list[VendaItem]:
-        conn = self.conexao.get_connection()
-        with conn.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT id_venda_item,id_venda,id_produto,
-                nome_produto,quantidade,preco_unitario
-                FROM venda_itens
-                WHERE id_venda = %s
-                ORDER BY id_venda_item
-                """,
-                (id_venda,),
-            )
-
-            rows = cursor.fetchall()
-
-            return [
-                VendaItem(
-                    id_venda_item=row[0],
-                    id_venda=row[1],
-                    id_produto=row[2],
-                    nome_produto=row[3],
-                    quantidade=row[4],
-                    preco_unitario=row[5],
-                )
-                for row in rows
-            ]
 
     def listar_resumo(
         self, venda_status: StatusVenda = StatusVenda.CONCLUIDO

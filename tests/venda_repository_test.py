@@ -132,7 +132,7 @@ def test_buscar_venda_inexistente(dados):
     assert dados["repository"].buscar_por_id(-1) is None
 
 
-def test_listar_itens_apenas_da_venda_solicitada(dados, venda):
+def test_buscar_venda_retorna_apenas_seus_itens(dados, venda):
     repository = dados["repository"]
     repository.criar(venda)
     outra_venda = Venda(
@@ -151,16 +151,14 @@ def test_listar_itens_apenas_da_venda_solicitada(dados, venda):
     )
     repository.criar(outra_venda)
 
-    itens = repository.listar_itens(venda.id_venda)
+    buscada = repository.buscar_por_id(venda.id_venda)
+    assert buscada is not None
+    itens = buscada.itens
 
-    assert [item.id_venda_item for item in itens] == [
+    assert sorted(item.id_venda_item for item in itens) == sorted(
         item.id_venda_item for item in venda.itens
-    ]
+    )
     assert all(item.id_venda == venda.id_venda for item in itens)
-
-
-def test_listar_itens_de_venda_inexistente(dados):
-    assert dados["repository"].listar_itens(-1) == []
 
 
 def test_listar_resumo_filtra_status(dados, venda):
@@ -242,4 +240,9 @@ def test_criar_venda_e_itens_permite_rollback(dados, venda):
     dados["conn"].rollback()
 
     assert repository.buscar_por_id(venda.id_venda) is None
-    assert repository.listar_itens(venda.id_venda) == []
+    with dados["conn"].cursor() as cursor:
+        cursor.execute(
+            "SELECT COUNT(*) FROM venda_itens WHERE id_venda = %s",
+            (venda.id_venda,),
+        )
+        assert cursor.fetchone()[0] == 0
