@@ -31,9 +31,12 @@ class EstoqueService:
         entrada_estoque: int,
         motivo: MotivoMovimentacao,
     ) -> Produto:
+        if usuario_logado.papel == PapelUsuario.FUNCIONARIO:
+            raise PermissionError("Sem permissao para mecher no estoque")
+
         self._verificar_quantidade(entrada_estoque)
         verificar_id(id_produto, ID_INVALIDO)
-
+        
         conn = self.conexao.get_connection()
         with conn:
             produto = self.produto_repository.buscar_por_id(id_produto)
@@ -61,6 +64,9 @@ class EstoqueService:
         saida_estoque: int,
         motivo: MotivoMovimentacao,
     ) -> Produto:
+        if usuario_logado.papel == PapelUsuario.FUNCIONARIO:
+            raise PermissionError("Sem permissao para mecher no estoque")
+
         self._verificar_quantidade(saida_estoque)
         verificar_id(id_produto, ID_INVALIDO)
 
