@@ -116,8 +116,8 @@ class VendaService:
         self,
         usuario_logado: Usuario,
         id_venda: int,
-    ) -> None:
-        verificar_id(id_venda),
+    ) -> None | Venda:
+        verificar_id(id_venda)
 
         if usuario_logado.papel == PapelUsuario.FUNCIONARIO:
             raise PermissionError("Sem permissao para cancelar vendas.")
@@ -138,6 +138,8 @@ class VendaService:
                     entrada_estoque=item.quantidade,
                     id_venda=item.id_venda,
                 )
+
+        return venda
 
     def listar_resumo(
         self, usuario_logado: Usuario, status_venda: StatusVenda = StatusVenda.CONCLUIDO

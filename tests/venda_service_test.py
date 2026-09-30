@@ -298,6 +298,28 @@ def test_cancelar_venda_propaga_falha_na_devolucao(dados, usuario, venda_salva):
     assert dados["conn"].__exit__.call_args.args[1] is erro
 
 
+def test_cancelar_venda_retorna_venda_cancelada(dados, usuario, venda_salva):
+    data_cancelamento = datetime.now(timezone.utc)
+
+    venda_salva.status = StatusVenda.CANCELADO
+    venda_salva.data_cancelamento = data_cancelamento
+    venda_salva.id_usuario_cancelamento = usuario.id_usuario
+
+    dados["venda_repository"].buscar_por_id.return_value = venda_salva
+
+    resultado = dados["service"].cancelar_venda(usuario, venda_salva.id_venda)
+
+    assert resultado is venda_salva
+    assert resultado.status == StatusVenda.CANCELADO
+    assert resultado.data_cancelamento == data_cancelamento
+    assert resultado.id_usuario_cancelamento == usuario.id_usuario
+
+    dados["venda_repository"].buscar_por_id.assert_called_once_with(
+        venda_salva.id_venda
+    )
+    dados["conn"].__exit__.assert_called_once_with(None, None, None)
+
+
 def test_listar_resumo_de_vendas_canceladas(dados, usuario):
     resumos = [Mock(status=StatusVenda.CANCELADO)]
     dados["venda_repository"].listar_resumo.return_value = resumos
