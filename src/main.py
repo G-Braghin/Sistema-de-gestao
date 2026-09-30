@@ -7,15 +7,18 @@ from src.cli.usuario_cli import (
     realizar_login,
 )
 from src.controllers.cliente_controller import ClienteController
+from src.controllers.estoque_controller import EstoqueController
 from src.controllers.produto_controller import ProdutoController
 from src.controllers.usuario_controller import UsuarioController
 from src.database.conexao import Conexao
 from src.entities.enums.papel_usuario import PapelUsuario
 from src.repositories.cliente_repository import ClienteRepository
+from src.repositories.movimentacao_repository import MovimentacaoRepository
 from src.repositories.produto_repository import ProdutoRepository
 from src.repositories.usuario_repository import UsuarioRepository
 from src.services.autenticacao_service import AutenticacaoService
 from src.services.cliente_service import ClienteService
+from src.services.estoque_service import EstoqueService
 from src.services.produto_service import ProdutoService
 from src.services.usuario_service import UsuarioService
 
@@ -36,7 +39,11 @@ def exibir_menu(usuario_logado):
 
 
 def processar_menu_principal(
-    usuario_controller, usuario_logado, cliente_controller, produto_controller
+    usuario_controller,
+    usuario_logado,
+    cliente_controller,
+    produto_controller,
+    estoque_controller,
 ):
     opcao = exibir_menu(usuario_logado)
     if opcao == "1":
@@ -47,7 +54,9 @@ def processar_menu_principal(
         processar_menu_produto(produto_controller)
     elif opcao == "4":
         if usuario_logado.papel in (PapelUsuario.ADMINISTRADOR, PapelUsuario.GERENTE):
-            processar_menu_gerenciamento(usuario_controller, usuario_logado)
+            processar_menu_gerenciamento(
+                usuario_controller, usuario_logado, estoque_controller
+            )
         else:
             print(INVALIDO)
     elif opcao == "0":
@@ -79,9 +88,18 @@ def main():
     produto_serv = ProdutoService(produto_repo, conexao_db)
     produto_controller = ProdutoController(produto_serv)
 
+    # estoque movimentacoes
+    movimentacao_repo = MovimentacaoRepository(conexao_db)
+    estoque_serv = EstoqueService(produto_repo, movimentacao_repo, conexao_db)
+    estoque_controller = EstoqueController(estoque_serv)
+
     usuario_logado = realizar_login(usuario_controller)
     while processar_menu_principal(
-        usuario_controller, usuario_logado, cliente_controller, produto_controller
+        usuario_controller,
+        usuario_logado,
+        cliente_controller,
+        produto_controller,
+        estoque_controller,
     ):
         continue
 
