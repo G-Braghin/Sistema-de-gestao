@@ -1,4 +1,5 @@
 from src.cli.estoque_cli import processar_menu_estoque_gerenciamento
+from src.cli.venda_cli import processar_menu_venda_gerenciamento
 from src.entities.enums.papel_usuario import PapelUsuario
 
 INVALIDO = "Opção inválida."
@@ -73,14 +74,16 @@ def menu_gerenciamento(usuario_logado):
     print("3 - Alterar status usuario")
     print("4 - Listar usuarios")
     print("5 - Estoque")
+    print("6 - Gerenciamento de Vendas")
     if usuario_logado.papel == PapelUsuario.ADMINISTRADOR:
-        print("6 - Promover a gerente")
+        print("7 - Promover a gerente")
+
 
     print(VOLTAR)
     return input("> ")
 
 
-def processar_menu_gerenciamento(usuario_controller, usuario_logado, estoque_controller):
+def processar_menu_gerenciamento(usuario_controller, usuario_logado, estoque_controller,venda_controller):
     while True:
         opcao = menu_gerenciamento(usuario_logado)
         if opcao == "1":
@@ -94,6 +97,8 @@ def processar_menu_gerenciamento(usuario_controller, usuario_logado, estoque_con
         elif opcao == "5":
             processar_menu_estoque_gerenciamento(estoque_controller, usuario_logado)
         elif opcao == "6":
+            processar_menu_venda_gerenciamento(venda_controller, usuario_logado)
+        elif opcao == "7":
             if usuario_logado.papel == PapelUsuario.ADMINISTRADOR:
                 promover(usuario_controller, usuario_logado)
             else:
