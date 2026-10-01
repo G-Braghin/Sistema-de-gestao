@@ -1,3 +1,4 @@
+from copy import deepcopy
 from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import uuid4
@@ -165,7 +166,7 @@ def test_listar_resumo_filtra_status(dados, venda):
     repository = dados["repository"]
     repository.criar(venda)
 
-    resumos = repository.listar_resumo()
+    resumos = repository.listar_resumo(StatusVenda.CONCLUIDO)
     resumo = next(item for item in resumos if item.id_venda == venda.id_venda)
 
     assert isinstance(resumo, VendaResumo)
@@ -179,12 +180,29 @@ def test_listar_resumo_filtra_status(dados, venda):
         venda.id_venda, datetime.now(timezone.utc), dados["id_usuario"]
     )
 
-    concluidas = repository.listar_resumo()
+    concluidas = repository.listar_resumo(StatusVenda.CONCLUIDO)
     canceladas = repository.listar_resumo(StatusVenda.CANCELADO)
 
     assert venda.id_venda not in [item.id_venda for item in concluidas]
     assert venda.id_venda in [item.id_venda for item in canceladas]
     assert all(item.status == StatusVenda.CANCELADO for item in canceladas)
+
+
+@pytest.mark.parametrize('explicito', [False, True])
+def test_listar_resumo_sem_filtro_inclui_todos_os_status(dados, venda, explicito):
+    repository = dados['repository']
+    outra_venda = deepcopy(venda)
+    repository.criar(venda)
+    repository.criar(outra_venda)
+    repository.cancelar_venda(
+        outra_venda.id_venda, datetime.now(timezone.utc), dados['id_usuario']
+    )
+
+    resumos = repository.listar_resumo(None) if explicito else repository.listar_resumo()
+    status_por_id = {item.id_venda: item.status for item in resumos}
+
+    assert status_por_id[venda.id_venda] == StatusVenda.CONCLUIDO
+    assert status_por_id[outra_venda.id_venda] == StatusVenda.CANCELADO
 
 
 def test_cancelar_venda_preserva_dados_e_itens(dados, venda):

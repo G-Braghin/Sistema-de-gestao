@@ -142,7 +142,7 @@ class VendaService:
         return venda
 
     def listar_resumo(
-        self, usuario_logado: Usuario, status_venda: StatusVenda = StatusVenda.CONCLUIDO
+        self, usuario_logado: Usuario, status_venda: StatusVenda | None = None
     ) -> list[VendaResumo]:
         if usuario_logado.papel == PapelUsuario.FUNCIONARIO:
             raise PermissionError("Sem permissao para ver lista vendas.")

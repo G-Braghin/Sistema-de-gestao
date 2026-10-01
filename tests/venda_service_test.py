@@ -338,9 +338,7 @@ def test_listar_resumo_sem_vendas(dados, usuario):
     resultado = dados["service"].listar_resumo(usuario)
 
     assert resultado == []
-    dados["venda_repository"].listar_resumo.assert_called_once_with(
-        StatusVenda.CONCLUIDO
-    )
+    dados["venda_repository"].listar_resumo.assert_called_once_with(None)
 
 
 def test_listar_resumo_sem_permissao(dados, usuario):

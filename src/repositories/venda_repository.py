@@ -107,12 +107,11 @@ class VendaRepository:
             return venda
 
     def listar_resumo(
-        self, venda_status: StatusVenda = StatusVenda.CONCLUIDO
+        self, venda_status: StatusVenda | None = None
     ) -> list[VendaResumo]:
         conn = self.conexao.get_connection()
         with conn.cursor() as cursor:
-            cursor.execute(
-                """ 
+            sql = """ 
                 SELECT vendas.id_venda, 
                 clientes.nome AS nome_cliente,
                 usuarios.nome AS nome_usuario,
@@ -122,11 +121,16 @@ class VendaRepository:
                 FROM vendas
                 INNER JOIN clientes ON vendas.id_cliente = clientes.id_cliente
                 INNER JOIN usuarios ON vendas.id_usuario = usuarios.id_usuario
-                WHERE vendas.status = %s
-                ORDER BY vendas.data_hora DESC
-                """,
-                (venda_status.value,),
-            )
+            """
+            params = []
+
+            if venda_status is not None:
+                sql += " WHERE vendas.status = %s"
+                params.append(venda_status.value)
+
+            sql += " ORDER BY vendas.data_hora DESC"
+
+            cursor.execute(sql, tuple(params))
             rows = cursor.fetchall()
 
             return [
