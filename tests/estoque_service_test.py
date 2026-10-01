@@ -43,7 +43,7 @@ def usuario():
         id_usuario=1,
         nome="TESTE_USUARIO",
         senha_hash="teste_hash",
-        papel=PapelUsuario.FUNCIONARIO,
+        papel=PapelUsuario.GERENTE,
         ativo=True
     )
 
@@ -57,6 +57,21 @@ def produto():
         preco=Decimal("150.00"),
         quantidade_estoque=10
     )
+
+
+@pytest.mark.parametrize('operacao', ['dar_entrada', 'dar_saida'])
+def test_funcionario_nao_pode_alterar_estoque(
+    service, produto_repository, movimentacao_repository, conexao, usuario, operacao
+):
+    usuario.papel = PapelUsuario.FUNCIONARIO
+
+    with pytest.raises(PermissionError, match='Sem permissao'):
+        getattr(service, operacao)(usuario, 1, 5, MotivoMovimentacao.AJUSTE)
+
+    conexao.get_connection.assert_not_called()
+    produto_repository.buscar_por_id.assert_not_called()
+    produto_repository.atualizar.assert_not_called()
+    movimentacao_repository.criar.assert_not_called()
 
 
 def test_dar_entrada_propaga_erro_da_movimentacao(
@@ -401,6 +416,7 @@ def test_listar_movimentacoes_sem_permissao(
     movimentacao_repository,
     usuario
 ):
+    usuario.papel = PapelUsuario.FUNCIONARIO
     with pytest.raises(
         PermissionError,
         match="Você não tem permissão"
