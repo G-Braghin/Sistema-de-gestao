@@ -1,5 +1,8 @@
+from datetime import datetime
+
 from src.cli.produto_cli import listar_produto
 from src.entities.enums.status_venda import StatusVenda
+from src.utils.filtro_datas import FiltroDatas
 
 VOLTAR = "0 - Voltar"
 INVALIDO = "Opção inválida."
@@ -26,6 +29,19 @@ def processar_menu_venda_gerenciamento(venda_controller, usuario_logado):
             processar_menu_listar_vendas(venda_controller, usuario_logado)
         elif opcao == "2":
             cancelar_venda(venda_controller, usuario_logado)
+        elif opcao == "0":
+            return
+        else:
+            print(INVALIDO)
+
+
+def processar_menu_listar_vendas(venda_controller, usuario_logado):
+    while True:
+        opcao = menu_listar_vendas()
+        if opcao == "1":
+            listar_resumo_venda(venda_controller, usuario_logado)
+        elif opcao == "2":
+            listar_venda(venda_controller, usuario_logado)
         elif opcao == "0":
             return
         else:
@@ -73,9 +89,22 @@ def cancelar_venda(venda_controller, usuario_logado):
 
 def listar_resumo_venda(venda_controller, usuario_logado):
     status_venda = processar_escolha_status_venda()
-    print("\n=== Visualizar Venda ===")    
+    print("\n=== Visualizar Venda ===")
+    filtro_data = processar_filtro()
+    
+    if filtro_data == "0":
+        return
+    
+    inicio_filtro = None
+    final_filtro = None
+
     try:
-        vendas = venda_controller.listar_resumo(usuario_logado, status_venda)
+        if filtro_data == FiltroDatas.PERSONALIZADO:
+            inicio_filtro, final_filtro = processar_invervalo_personalizado()
+
+        vendas = venda_controller.listar_resumo(
+            usuario_logado, status_venda, filtro_data, inicio_filtro, final_filtro
+        )
         exibir_tabela_resumo(vendas)
         input(PRESSIONE_ENTER)
     except (ValueError, TypeError, PermissionError) as e:
@@ -94,7 +123,63 @@ def listar_venda(venda_controller, usuario_logado):
         input(PRESSIONE_ENTER)
 
 
-# Menus
+# Processamento das escolhas
+def processar_escolha_status_venda():
+    opcao = escolher_status_venda()
+    if opcao == "1":
+        return StatusVenda.CONCLUIDO
+    elif opcao == "2":
+        return StatusVenda.CANCELADO
+    elif opcao == "3":
+        return None
+    else:
+        print(INVALIDO)
+        return processar_escolha_status_venda()
+
+
+def processar_filtro():
+    while True:
+        opcao = filtro_data_menu().strip()
+        if opcao == "":
+            return FiltroDatas.MES_ATUAL
+        elif opcao == "1":
+            return FiltroDatas.HOJE
+        elif opcao == "2":
+            return FiltroDatas.ONTEM
+        elif opcao == "3":
+            return FiltroDatas.ULTIMOS_7_DIAS
+        elif opcao == "4":
+            return FiltroDatas.ULTIMOS_30_DIAS
+        elif opcao == "5":
+            return FiltroDatas.MES_ATUAL
+        elif opcao == "6":
+            return FiltroDatas.MES_ANTERIOR
+        elif opcao == "7":
+            return FiltroDatas.ANO_ATUAL
+        elif opcao == "8":
+            return FiltroDatas.ANO_ANTERIOR
+        elif opcao == "9":
+            return FiltroDatas.PERSONALIZADO
+        elif opcao == "0":
+            return "0"
+        else:
+            print(INVALIDO)
+
+
+def processar_invervalo_personalizado():  # TODO: padronizar o tratamento de fuso horário no sistema (UTC x horário local)
+    while True:
+        inicio = input("Digite a data inicial (DD/MM/AAAA): ")
+        final = input("Digite a data final (DD/MM/AAAA): ")
+        try:
+            inicio_filtro = datetime.strptime(inicio, "%d/%m/%Y").date()  # noqa: DTZ007
+            final_filtro = datetime.strptime(final, "%d/%m/%Y").date()  # noqa: DTZ007
+            return inicio_filtro, final_filtro
+
+        except ValueError:
+            print("Formato Invalido! Use DD/MM/AAAA.")
+
+
+# Menus e exibicao
 def menu_venda():
     print("\n=== Menu Venda ===")
     print("1 - Realizar Venda")
@@ -110,40 +195,6 @@ def menu_venda_gerenciamento():
     return input("> ")
 
 
-def escolher_status_venda():
-    print("\n=== Escolher Status da Venda ===")
-    print("1 - Concluido")
-    print("2 - Cancelado")
-    print("3 - Todos")
-    return input("> ")
-
-
-def processar_escolha_status_venda():
-    opcao = escolher_status_venda()
-    if opcao == "1":
-        return StatusVenda.CONCLUIDO
-    elif opcao == "2":
-        return StatusVenda.CANCELADO
-    elif opcao == "3":
-        return None
-    else:
-        print(INVALIDO)
-        return processar_escolha_status_venda()
-
-
-def processar_menu_listar_vendas(venda_controller, usuario_logado):
-    while True:
-        opcao = menu_listar_vendas()
-        if opcao == "1":
-            listar_resumo_venda(venda_controller, usuario_logado)
-        elif opcao == "2":
-            listar_venda(venda_controller, usuario_logado)
-        elif opcao == "0":
-            return
-        else:
-            print(INVALIDO)
-
-
 def menu_listar_vendas():
     print("\n=== Menu Visualizar Vendas ===")
     print("1 - Visualizar Resumo Vendas")
@@ -152,7 +203,30 @@ def menu_listar_vendas():
     return input("> ")
 
 
-# Funcoes auxiliares de exibicao
+def escolher_status_venda():
+    print("\n=== Escolher Status da Venda ===")
+    print("1 - Concluido")
+    print("2 - Cancelado")
+    print("3 - Todos")
+    return input("> ")
+
+
+def filtro_data_menu():
+    print("\n=== Filtros ===")
+    print("ENTER - Padrao")
+    print("1 - Dia")
+    print("2 - Ontem")
+    print("3 - 7 dias")
+    print("4 - 30 dias")
+    print("5 - Neste Mes")
+    print("6 - Mes anterior")
+    print("7 - Deste ano")
+    print("8 - Ano passado")
+    print("9 - Personalizado")
+    print("0 - Voltar")
+    return input("> ")
+
+
 def exibir_tabela_resumo(vendas):
     if not vendas:
         print("\nNenhuma venda encontrada.")

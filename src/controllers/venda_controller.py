@@ -14,8 +14,17 @@ class VendaController:
         venda_cancelada = self.venda_service.cancelar_venda(usuario_logado, id_venda)
         return venda_cancelada
 
-    def listar_resumo(self, usuario_logado, status_venda: StatusVenda | None = None):
-        venda_resumo = self.venda_service.listar_resumo(usuario_logado, status_venda)
+    def listar_resumo(
+        self,
+        usuario_logado,
+        status_venda: StatusVenda | None = None,
+        filtro_data=None,
+        inicio_filtro=None,
+        final_filtro=None,
+    ):
+        venda_resumo = self.venda_service.listar_resumo(
+            usuario_logado, status_venda, filtro_data, inicio_filtro, final_filtro
+        )
         return venda_resumo
 
     def listar_venda(self, usuario_logado, id_venda):

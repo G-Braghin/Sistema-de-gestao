@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from src.database.conexao import Conexao
 from src.entities.dtos.venda_resumo import VendaResumo
@@ -107,27 +107,32 @@ class VendaRepository:
             return venda
 
     def listar_resumo(
-        self, venda_status: StatusVenda | None = None
+        self,
+        data_inicio: date,
+        data_fim: date,
+        venda_status: StatusVenda | None = None,
     ) -> list[VendaResumo]:
         conn = self.conexao.get_connection()
         with conn.cursor() as cursor:
-            sql = """ 
-                SELECT vendas.id_venda, 
+            sql = """
+                SELECT vendas.id_venda,
                 clientes.nome AS nome_cliente,
                 usuarios.nome AS nome_usuario,
-                vendas.data_hora, 
+                vendas.data_hora,
                 vendas.preco_total,
                 vendas.status
                 FROM vendas
                 INNER JOIN clientes ON vendas.id_cliente = clientes.id_cliente
                 INNER JOIN usuarios ON vendas.id_usuario = usuarios.id_usuario
             """
-            params = []
+            params: list[object] = [data_inicio, data_fim]
+            filtros = ["vendas.data_hora >= %s AND vendas.data_hora < %s"]
 
             if venda_status is not None:
-                sql += " WHERE vendas.status = %s"
+                filtros.append("vendas.status = %s")
                 params.append(venda_status.value)
 
+            sql += " WHERE " + " AND ".join(filtros)
             sql += " ORDER BY vendas.data_hora DESC"
 
             cursor.execute(sql, tuple(params))

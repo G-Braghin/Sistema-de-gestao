@@ -1,5 +1,5 @@
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import uuid4
 
@@ -165,8 +165,12 @@ def test_buscar_venda_retorna_apenas_seus_itens(dados, venda):
 def test_listar_resumo_filtra_status(dados, venda):
     repository = dados["repository"]
     repository.criar(venda)
+    data_inicio = venda.data_hora.date()
+    data_fim = data_inicio + timedelta(days=1)
 
-    resumos = repository.listar_resumo(StatusVenda.CONCLUIDO)
+    resumos = repository.listar_resumo(
+        data_inicio, data_fim, StatusVenda.CONCLUIDO
+    )
     resumo = next(item for item in resumos if item.id_venda == venda.id_venda)
 
     assert isinstance(resumo, VendaResumo)
@@ -180,8 +184,10 @@ def test_listar_resumo_filtra_status(dados, venda):
         venda.id_venda, datetime.now(timezone.utc), dados["id_usuario"]
     )
 
-    concluidas = repository.listar_resumo(StatusVenda.CONCLUIDO)
-    canceladas = repository.listar_resumo(StatusVenda.CANCELADO)
+    concluidas = repository.listar_resumo(
+        data_inicio, data_fim, StatusVenda.CONCLUIDO
+    )
+    canceladas = repository.listar_resumo(data_inicio, data_fim, StatusVenda.CANCELADO)
 
     assert venda.id_venda not in [item.id_venda for item in concluidas]
     assert venda.id_venda in [item.id_venda for item in canceladas]
@@ -198,7 +204,13 @@ def test_listar_resumo_sem_filtro_inclui_todos_os_status(dados, venda, explicito
         outra_venda.id_venda, datetime.now(timezone.utc), dados['id_usuario']
     )
 
-    resumos = repository.listar_resumo(None) if explicito else repository.listar_resumo()
+    data_inicio = venda.data_hora.date()
+    data_fim = data_inicio + timedelta(days=1)
+    resumos = (
+        repository.listar_resumo(data_inicio, data_fim, None)
+        if explicito
+        else repository.listar_resumo(data_inicio, data_fim)
+    )
     status_por_id = {item.id_venda: item.status for item in resumos}
 
     assert status_por_id[venda.id_venda] == StatusVenda.CONCLUIDO

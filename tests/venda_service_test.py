@@ -8,6 +8,7 @@ from src.entities.enums.status_venda import StatusVenda
 from src.entities.produto import Produto
 from src.entities.usuario import Usuario
 from src.services.venda_service import VendaService
+from src.utils.filtro_datas import FiltroDatas
 
 
 @pytest.fixture
@@ -323,22 +324,30 @@ def test_cancelar_venda_retorna_venda_cancelada(dados, usuario, venda_salva):
 def test_listar_resumo_de_vendas_canceladas(dados, usuario):
     resumos = [Mock(status=StatusVenda.CANCELADO)]
     dados["venda_repository"].listar_resumo.return_value = resumos
+    data_inicio, data_fim = dados["service"]._obter_intervalo_filtro_datas(
+        FiltroDatas.MES_ATUAL
+    )
 
     resultado = dados["service"].listar_resumo(usuario, StatusVenda.CANCELADO)
 
     assert resultado == resumos
     dados["venda_repository"].listar_resumo.assert_called_once_with(
-        StatusVenda.CANCELADO
+        data_inicio, data_fim, StatusVenda.CANCELADO
     )
 
 
 def test_listar_resumo_sem_vendas(dados, usuario):
     dados["venda_repository"].listar_resumo.return_value = []
+    data_inicio, data_fim = dados["service"]._obter_intervalo_filtro_datas(
+        FiltroDatas.MES_ATUAL
+    )
 
     resultado = dados["service"].listar_resumo(usuario)
 
     assert resultado == []
-    dados["venda_repository"].listar_resumo.assert_called_once_with(None)
+    dados["venda_repository"].listar_resumo.assert_called_once_with(
+        data_inicio, data_fim, None
+    )
 
 
 def test_listar_resumo_sem_permissao(dados, usuario):

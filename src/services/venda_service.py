@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from src.database.conexao import Conexao
 from src.entities.enums.papel_usuario import PapelUsuario
@@ -10,6 +10,7 @@ from src.repositories.cliente_repository import ClienteRepository
 from src.repositories.produto_repository import ProdutoRepository
 from src.repositories.venda_repository import VendaRepository
 from src.services.estoque_service import EstoqueService
+from src.utils.filtro_datas import FiltroDatas
 from src.utils.validacoes import verificar_id
 
 from ..entities.dtos.venda_resumo import VendaResumo
@@ -142,14 +143,26 @@ class VendaService:
         return venda
 
     def listar_resumo(
-        self, usuario_logado: Usuario, status_venda: StatusVenda | None = None
+        self,
+        usuario_logado: Usuario,
+        status_venda: StatusVenda | None = None,
+        filtro_data: FiltroDatas | None = None,
+        inicio_filtro: date | None = None,
+        final_filtro: date | None = None,
     ) -> list[VendaResumo]:
         if usuario_logado.papel == PapelUsuario.FUNCIONARIO:
             raise PermissionError("Sem permissao para ver lista vendas.")
 
+        if filtro_data is None:
+            filtro_data = FiltroDatas.MES_ATUAL
+
+        data_inicial, data_final = self._obter_intervalo_filtro_datas(filtro_data,inicio_filtro,final_filtro)
+
         conn = self.conexao.get_connection()
         with conn:
-            vendas = self.venda_repository.listar_resumo(status_venda)
+            vendas = self.venda_repository.listar_resumo(
+                data_inicial, data_final, status_venda
+            )
 
         return vendas
 
@@ -165,3 +178,70 @@ class VendaService:
                 raise ValueError("ID nao encontrado.")
 
             return vendas
+
+    def _obter_intervalo_filtro_datas(
+        self, filtro_datas: FiltroDatas,inicio_filtro= None, final_filtro = None
+    ) -> tuple[date, date]:
+        hoje = datetime.now(timezone.utc).date()
+
+        if filtro_datas == FiltroDatas.HOJE:
+            amanha = hoje + timedelta(days=1)
+
+            return hoje, amanha
+
+        elif filtro_datas == FiltroDatas.ONTEM:
+            ontem = hoje - timedelta(days=1)
+
+            return ontem, hoje
+
+        elif filtro_datas == FiltroDatas.ULTIMOS_7_DIAS:
+            amanha = hoje + timedelta(days=1)
+            sete_dias_atras = hoje - timedelta(days=6)
+
+            return sete_dias_atras, amanha
+
+        elif filtro_datas == FiltroDatas.ULTIMOS_30_DIAS:
+            amanha = hoje + timedelta(days=1)
+            trinta_dias_atras = hoje - timedelta(days=29)
+
+            return trinta_dias_atras, amanha
+
+        elif filtro_datas == FiltroDatas.MES_ATUAL:
+            inicio_mes_atual = hoje.replace(day=1)
+            if hoje.month == 12:
+                inicio_proximo_mes = date(hoje.year + 1, 1, 1)
+            else:
+                inicio_proximo_mes = date(hoje.year, hoje.month + 1, 1)
+
+            return inicio_mes_atual, inicio_proximo_mes
+
+        elif filtro_datas == FiltroDatas.MES_ANTERIOR:
+            inicio_mes_atual = hoje.replace(day=1)
+            final_mes_anterior = inicio_mes_atual - timedelta(days=1)
+            inicio_mes_anterior = final_mes_anterior.replace(day=1)
+
+            return inicio_mes_anterior, inicio_mes_atual
+
+        elif filtro_datas == FiltroDatas.ANO_ATUAL:
+            inicio_proximo_ano = date(hoje.year + 1, 1, 1)
+            inicio_ano_atual = date(hoje.year, 1, 1)
+
+            return inicio_ano_atual, inicio_proximo_ano
+
+        elif filtro_datas == FiltroDatas.ANO_ANTERIOR:
+            inicio_ano_atual = date(hoje.year, 1, 1)
+            inicio_ano_anterior = date(hoje.year - 1, 1, 1)
+
+            return inicio_ano_anterior, inicio_ano_atual
+
+        elif filtro_datas == FiltroDatas.PERSONALIZADO:
+            if inicio_filtro == None or final_filtro == None:
+                raise ValueError("As duas datas devem estar preenchidas.")
+
+            if final_filtro < inicio_filtro:
+                raise ValueError("A data final nao pode ser anterior a data inicial.")
+            
+            return inicio_filtro, final_filtro + timedelta(days=1)
+
+
+        raise ValueError(f"Filtro de data não suportado: {filtro_datas}")
