@@ -1,6 +1,7 @@
 from datetime import date, datetime
 
 from src.database.conexao import Conexao
+from src.entities.dtos.produtos_vendidos_resumo import ProdutosVendidosResumo
 from src.entities.dtos.venda_resumo import VendaResumo
 from src.entities.enums.status_venda import StatusVenda
 from src.entities.venda import Venda
@@ -175,3 +176,42 @@ class VendaRepository:
             raise ValueError(
                 f"Venda com id {id_venda} nao encontrada ou ja esta Cancelada."
             )
+
+    def listar_produtos_mais_vendidos(
+        self, data_inicio: date, data_fim: date
+    ) -> list[ProdutosVendidosResumo]:
+        conn = self.conexao.get_connection()
+        with conn.cursor() as cursor:
+            sql = """
+                    SELECT produtos.id_produto, produtos.nome,
+                    SUM(venda_itens.quantidade) AS total_vendido,
+                    SUM(venda_itens.quantidade * venda_itens.preco_unitario) AS faturamento_total
+                    FROM venda_itens
+                    INNER JOIN produtos ON venda_itens.id_produto = produtos.id_produto
+                    INNER JOIN vendas on venda_itens.id_venda = vendas.id_venda
+                    WHERE vendas.status = %s 
+                        AND vendas.data_hora >= %s
+                        AND vendas.data_hora < %s
+                    GROUP BY 
+                        produtos.id_produto, 
+                        produtos.nome
+                    ORDER BY
+                        total_vendido DESC,
+                        faturamento_total DESC,
+                        produtos.nome ASC,
+                        produtos.id_produto ASC   
+                """
+
+            params: list[object] = [StatusVenda.CONCLUIDO.value, data_inicio, data_fim]
+            cursor.execute(sql, tuple(params))
+            rows = cursor.fetchall()
+
+            return [
+                ProdutosVendidosResumo(
+                    id_produto=row[0],
+                    nome_produto=row[1],
+                    quantidade_vendida=row[2],
+                    valor_total=row[3],
+                )
+                for row in rows
+            ]
