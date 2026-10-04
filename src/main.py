@@ -1,8 +1,8 @@
 from src.cli.cliente_cli import processar_menu_cliente
+from src.cli.gerenciamento_cli import processar_menu_gerenciamento
 from src.cli.produto_cli import processar_menu_produto
 from src.cli.usuario_cli import (
     garantir_admin_padrao,
-    processar_menu_gerenciamento,
     processar_menu_perfil,
     realizar_login,
 )
