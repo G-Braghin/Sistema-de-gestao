@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from unittest.mock import MagicMock, Mock, call
 
@@ -383,3 +383,107 @@ def test_consultar_venda_sem_permissao(dados, usuario):
         dados["service"].listar_venda_itens(usuario, 10)
 
     dados["venda_repository"].buscar_por_id.assert_not_called()
+
+
+def test_criar_resumo_relatorio_calcula_total_quantidade_e_ticket(dados, usuario):
+    dados["venda_repository"].listar_resumo.return_value = [
+        Mock(valor_total=Decimal("20.10")),
+        Mock(valor_total=Decimal("40.20")),
+    ]
+    data_inicial = date(2026, 9, 1)
+    data_final = date(2026, 9, 30)
+
+    relatorio = dados["service"].criar_resumo_relatorio(
+        usuario, data_inicial, data_final
+    )
+
+    assert relatorio.data_inicial == data_inicial
+    assert relatorio.data_final == data_final
+    assert relatorio.vendas_concluidas == 2
+    assert relatorio.total_periodo == Decimal("60.30")
+    assert relatorio.ticket_medio == Decimal("30.15")
+    assert isinstance(relatorio.total_periodo, Decimal)
+    assert isinstance(relatorio.ticket_medio, Decimal)
+    dados["venda_repository"].listar_resumo.assert_called_once_with(
+        data_inicial, date(2026, 10, 1), StatusVenda.CONCLUIDO
+    )
+
+
+def test_criar_resumo_relatorio_com_gerente_e_uma_venda_no_mesmo_dia(dados, usuario):
+    usuario.papel = PapelUsuario.GERENTE
+    dados["venda_repository"].listar_resumo.return_value = [
+        Mock(valor_total=Decimal("19.90"))
+    ]
+    dia = date(2025, 12, 31)
+
+    relatorio = dados["service"].criar_resumo_relatorio(usuario, dia, dia)
+
+    assert relatorio.data_inicial == dia
+    assert relatorio.data_final == dia
+    assert relatorio.vendas_concluidas == 1
+    assert relatorio.total_periodo == Decimal("19.90")
+    assert relatorio.ticket_medio == Decimal("19.90")
+    dados["venda_repository"].listar_resumo.assert_called_once_with(
+        dia, date(2026, 1, 1), StatusVenda.CONCLUIDO
+    )
+
+
+def test_criar_resumo_relatorio_sem_vendas(dados, usuario):
+    dados["venda_repository"].listar_resumo.return_value = []
+
+    resultado = dados["service"].criar_resumo_relatorio(
+        usuario, date(2026, 9, 1), date(2026, 9, 30)
+    )
+
+    assert resultado is None
+    dados["venda_repository"].listar_resumo.assert_called_once_with(
+        date(2026, 9, 1), date(2026, 10, 1), StatusVenda.CONCLUIDO
+    )
+
+
+def test_criar_resumo_relatorio_sem_permissao(dados, usuario):
+    usuario.papel = PapelUsuario.FUNCIONARIO
+
+    with pytest.raises(PermissionError, match="Sem permissao para ver relatorios"):
+        dados["service"].criar_resumo_relatorio(
+            usuario, date(2026, 9, 1), date(2026, 9, 30)
+        )
+
+    dados["venda_repository"].listar_resumo.assert_not_called()
+
+
+def test_criar_resumo_relatorio_com_datas_invertidas(dados, usuario):
+    with pytest.raises(ValueError, match="data final nao pode ser anterior"):
+        dados["service"].criar_resumo_relatorio(
+            usuario, date(2026, 9, 30), date(2026, 9, 1)
+        )
+
+    dados["venda_repository"].listar_resumo.assert_not_called()
+
+
+def test_criar_resumo_relatorio_sem_data_inicial(dados, usuario):
+    with pytest.raises(ValueError, match="As duas datas devem estar preenchidas"):
+        dados["service"].criar_resumo_relatorio(usuario, None, date(2026, 9, 30))
+
+    dados["venda_repository"].listar_resumo.assert_not_called()
+
+
+def test_criar_resumo_relatorio_sem_data_final(dados, usuario):
+    with pytest.raises(ValueError, match="As duas datas devem estar preenchidas"):
+        dados["service"].criar_resumo_relatorio(usuario, date(2026, 9, 1), None)
+
+    dados["venda_repository"].listar_resumo.assert_not_called()
+
+
+def test_criar_resumo_relatorio_propaga_falha_na_consulta(dados, usuario):
+    erro = RuntimeError("Erro ao consultar vendas")
+    dados["venda_repository"].listar_resumo.side_effect = erro
+
+    with pytest.raises(RuntimeError, match="Erro ao consultar vendas"):
+        dados["service"].criar_resumo_relatorio(
+            usuario, date(2026, 9, 1), date(2026, 9, 30)
+        )
+
+    dados["conn"].__exit__.assert_called_once()
+    assert dados["conn"].__exit__.call_args.args[0] is RuntimeError
+    assert dados["conn"].__exit__.call_args.args[1] is erro

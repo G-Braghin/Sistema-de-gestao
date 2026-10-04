@@ -30,3 +30,9 @@ class VendaController:
     def listar_venda(self, usuario_logado, id_venda):
         venda = self.venda_service.listar_venda_itens(usuario_logado, id_venda)
         return venda
+
+    def resumo_relatorio(self, usuario_logado, data_inicial, data_final):
+        relatorio = self.venda_service.criar_resumo_relatorio(
+            usuario_logado, data_inicial, data_final
+        )
+        return relatorio

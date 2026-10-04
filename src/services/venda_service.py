@@ -13,6 +13,7 @@ from src.services.estoque_service import EstoqueService
 from src.utils.filtro_datas import FiltroDatas
 from src.utils.validacoes import verificar_id
 
+from ..entities.dtos.relatorio_venda_resumo import RelatorioVendaResumo
 from ..entities.dtos.venda_resumo import VendaResumo
 
 
@@ -156,7 +157,9 @@ class VendaService:
         if filtro_data is None:
             filtro_data = FiltroDatas.MES_ATUAL
 
-        data_inicial, data_final = self._obter_intervalo_filtro_datas(filtro_data,inicio_filtro,final_filtro)
+        data_inicial, data_final = self._obter_intervalo_filtro_datas(
+            filtro_data, inicio_filtro, final_filtro
+        )
 
         conn = self.conexao.get_connection()
         with conn:
@@ -180,7 +183,7 @@ class VendaService:
             return vendas
 
     def _obter_intervalo_filtro_datas(
-        self, filtro_datas: FiltroDatas,inicio_filtro= None, final_filtro = None
+        self, filtro_datas: FiltroDatas, inicio_filtro=None, final_filtro=None
     ) -> tuple[date, date]:
         hoje = datetime.now(timezone.utc).date()
 
@@ -240,8 +243,44 @@ class VendaService:
 
             if final_filtro < inicio_filtro:
                 raise ValueError("A data final nao pode ser anterior a data inicial.")
-            
+
             return inicio_filtro, final_filtro + timedelta(days=1)
 
-
         raise ValueError(f"Filtro de data não suportado: {filtro_datas}")
+
+    def criar_resumo_relatorio(
+        self, usuario_logado: Usuario, data_inicial: date, data_final: date
+    ):
+        conn = self.conexao.get_connection()
+        if usuario_logado.papel == PapelUsuario.FUNCIONARIO:
+            raise PermissionError("Sem permissao para ver relatorios.")
+
+        with conn:
+            inicio, final = self._obter_intervalo_filtro_datas(
+                FiltroDatas.PERSONALIZADO, data_inicial, data_final
+            )
+
+            vendas = self.venda_repository.listar_resumo(
+                inicio, final, StatusVenda.CONCLUIDO
+            )
+            if not vendas:
+                return None
+
+            num_vendas_concluidas = 0
+            total_periodo = 0
+
+            for venda in vendas:
+                total_periodo += venda.valor_total
+                num_vendas_concluidas += 1
+
+            ticket_medio = total_periodo / num_vendas_concluidas
+
+            relatorio = RelatorioVendaResumo(
+                data_inicial=data_inicial,
+                data_final=data_final,
+                vendas_concluidas=num_vendas_concluidas,
+                total_periodo=total_periodo,
+                ticket_medio=ticket_medio,
+            )
+
+        return relatorio
