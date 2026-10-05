@@ -36,3 +36,9 @@ class VendaController:
             usuario_logado, data_inicial, data_final
         )
         return relatorio
+
+    def relatorio_produtos(self, usuario_logado, data_inicial, data_final):
+        relatorio = self.venda_service.relatorio_produtos(
+            usuario_logado, data_inicial, data_final
+        )
+        return relatorio

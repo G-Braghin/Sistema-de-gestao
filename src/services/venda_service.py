@@ -1,6 +1,8 @@
 from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
 
 from src.database.conexao import Conexao
+from src.entities.dtos.produtos_vendidos_resumo import ProdutosVendidosResumo
 from src.entities.enums.papel_usuario import PapelUsuario
 from src.entities.enums.status_venda import StatusVenda
 from src.entities.usuario import Usuario
@@ -267,7 +269,7 @@ class VendaService:
                 return None
 
             num_vendas_concluidas = 0
-            total_periodo = 0
+            total_periodo = Decimal(0)
 
             for venda in vendas:
                 total_periodo += venda.valor_total
@@ -283,4 +285,19 @@ class VendaService:
                 ticket_medio=ticket_medio,
             )
 
+        return relatorio
+
+    def relatorio_produtos(
+        self, usuario_logado: Usuario, data_inicial: date, data_final: date
+    ) -> list[ProdutosVendidosResumo]:
+        if usuario_logado.papel == PapelUsuario.FUNCIONARIO:
+            raise PermissionError("Sem permissao para ver relatorios.")
+
+        conn = self.conexao.get_connection()
+        with conn:
+            inicio, final = self._obter_intervalo_filtro_datas(
+                FiltroDatas.PERSONALIZADO, data_inicial, data_final
+            )
+            relatorio = self.venda_repository.listar_produtos_mais_vendidos(inicio,final)
+        
         return relatorio
