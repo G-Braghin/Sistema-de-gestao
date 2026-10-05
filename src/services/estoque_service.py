@@ -195,16 +195,18 @@ class EstoqueService:
 
     def relatorio_estoque(self, usuario_logado: Usuario):
         if usuario_logado.papel == PapelUsuario.FUNCIONARIO:
-            raise PermissionError("Você não tem permissão para ver o relatorio de estoque.")
+            raise PermissionError(
+                "Você não tem permissão para ver o relatorio de estoque."
+            )
         conn = self.conexao.get_connection()
-        
+
         with conn:
             produtos = self.produto_repository.listar()
-            
+
             total = len(produtos)
             total_quantidade = 0
             total_zero = 0
-            
+
             for produto in produtos:
                 total_quantidade += produto.quantidade_estoque
                 if produto.quantidade_estoque == 0:
@@ -218,3 +220,31 @@ class EstoqueService:
             )
 
         return relatorio
+
+    def relatorio_estoque_baixo(
+        self, usuario_logado: Usuario, limite: int
+    ) -> list[Produto]:
+        if usuario_logado.papel == PapelUsuario.FUNCIONARIO:
+            raise PermissionError(
+                "Você não tem permissão para ver o relatorio de estoque."
+            )
+
+        if not isinstance(limite, int) or isinstance(limite, bool):
+            raise TypeError("Limite deve ser um numero inteiro.")
+
+        if limite < 0:
+            raise ValueError("Limite nao pode ser menor que 0.")
+
+        conn = self.conexao.get_connection()
+        with conn:
+            produtos = self.produto_repository.listar()
+            produtos_limite = []
+            for produto in produtos:
+                if produto.quantidade_estoque <= limite:
+                    produtos_limite.append(produto)
+
+        produtos_limite.sort(
+            key=lambda produto: (produto.quantidade_estoque, produto.nome)
+        )
+
+        return produtos_limite

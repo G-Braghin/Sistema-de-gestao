@@ -145,6 +145,111 @@ def test_relatorio_estoque_propaga_erro_da_consulta(
     assert conn.__exit__.call_args.args[1] is erro
 
 
+@pytest.mark.parametrize('papel', [PapelUsuario.ADMINISTRADOR, PapelUsuario.GERENTE])
+def test_relatorio_estoque_baixo_filtra_e_ordena(
+    service, produto_repository, movimentacao_repository, conexao, usuario, papel
+):
+    usuario.papel = papel
+    produtos = [
+        Produto('TECLADO', 'LOGITECH', Decimal('150.00'), 5, 1),
+        Produto('ADAPTADOR', 'INTELBRAS', Decimal('20.00'), 6, 2),
+        Produto('CABO', 'INTELBRAS', Decimal('15.00'), 5, 3),
+        Produto('MOUSE', 'LOGITECH', Decimal('25.00'), 0, 4),
+        Produto('PILHA', 'ELGIN', Decimal('5.00'), 2, 5),
+    ]
+    produto_repository.listar.return_value = produtos
+
+    resultado = service.relatorio_estoque_baixo(usuario, 5)
+
+    assert resultado == [produtos[3], produtos[4], produtos[2], produtos[0]]
+    assert [produto.id_produto for produto in produtos] == [1, 2, 3, 4, 5]
+    assert [produto.quantidade_estoque for produto in produtos] == [5, 6, 5, 0, 2]
+    produto_repository.listar.assert_called_once_with()
+    produto_repository.atualizar.assert_not_called()
+    movimentacao_repository.criar.assert_not_called()
+    conn = conexao.get_connection.return_value
+    conn.__enter__.assert_called_once()
+    conn.__exit__.assert_called_once_with(None, None, None)
+
+
+def test_relatorio_estoque_baixo_com_limite_zero(
+    service, produto_repository, usuario
+):
+    produto_zerado = Produto('CABO', 'INTELBRAS', Decimal('15.00'), 0, 1)
+    produto_com_estoque = Produto('MOUSE', 'LOGITECH', Decimal('25.00'), 1, 2)
+    produto_repository.listar.return_value = [produto_com_estoque, produto_zerado]
+
+    resultado = service.relatorio_estoque_baixo(usuario, 0)
+
+    assert resultado == [produto_zerado]
+
+
+def test_relatorio_estoque_baixo_sem_produtos(service, produto_repository, usuario):
+    produto_repository.listar.return_value = []
+
+    resultado = service.relatorio_estoque_baixo(usuario, 5)
+
+    assert resultado == []
+
+
+def test_relatorio_estoque_baixo_sem_produtos_dentro_do_limite(
+    service, produto_repository, usuario, produto
+):
+    produto_repository.listar.return_value = [produto]
+
+    resultado = service.relatorio_estoque_baixo(usuario, 5)
+
+    assert resultado == []
+
+
+def test_relatorio_estoque_baixo_com_limite_negativo(
+    service, produto_repository, conexao, usuario
+):
+    with pytest.raises(ValueError, match='Limite nao pode ser menor que 0'):
+        service.relatorio_estoque_baixo(usuario, -1)
+
+    conexao.get_connection.assert_not_called()
+    produto_repository.listar.assert_not_called()
+
+
+@pytest.mark.parametrize('limite', ['5', 5.0, None, True, False])
+def test_relatorio_estoque_baixo_com_tipo_de_limite_invalido(
+    service, produto_repository, conexao, usuario, limite
+):
+    with pytest.raises(TypeError, match='Limite deve ser um numero inteiro'):
+        service.relatorio_estoque_baixo(usuario, limite)
+
+    conexao.get_connection.assert_not_called()
+    produto_repository.listar.assert_not_called()
+
+
+def test_relatorio_estoque_baixo_sem_permissao(
+    service, produto_repository, conexao, usuario
+):
+    usuario.papel = PapelUsuario.FUNCIONARIO
+
+    with pytest.raises(PermissionError, match='Você não tem permissão'):
+        service.relatorio_estoque_baixo(usuario, 5)
+
+    conexao.get_connection.assert_not_called()
+    produto_repository.listar.assert_not_called()
+
+
+def test_relatorio_estoque_baixo_propaga_erro_da_consulta(
+    service, produto_repository, conexao, usuario
+):
+    erro = RuntimeError('Erro ao consultar produtos')
+    produto_repository.listar.side_effect = erro
+
+    with pytest.raises(RuntimeError, match='Erro ao consultar produtos'):
+        service.relatorio_estoque_baixo(usuario, 5)
+
+    conn = conexao.get_connection.return_value
+    conn.__exit__.assert_called_once()
+    assert conn.__exit__.call_args.args[0] is RuntimeError
+    assert conn.__exit__.call_args.args[1] is erro
+
+
 @pytest.mark.parametrize('operacao', ['dar_entrada', 'dar_saida'])
 def test_funcionario_nao_pode_alterar_estoque(
     service, produto_repository, movimentacao_repository, conexao, usuario, operacao

@@ -11,7 +11,9 @@ def processar_menu_relatorio(venda_controller, usuario_logado, estoque_controlle
         elif opcao == "2":
             relatorio_produto(venda_controller, usuario_logado)
         elif opcao == "3":
-            relatorio_estoque(estoque_controller,usuario_logado)
+            relatorio_estoque(estoque_controller, usuario_logado)
+        elif opcao == "4":
+            relatorio_estoque_baixo(estoque_controller, usuario_logado)
         elif opcao == "0":
             return
         else:
@@ -61,7 +63,18 @@ def relatorio_estoque(estoque_controller, usuario_logado):
         input(PRESSIONE_ENTER)
     except PermissionError as e:
         print(f"\n{e}")
-        input(PRESSIONE_ENTER)     
+        input(PRESSIONE_ENTER)
+
+
+def relatorio_estoque_baixo(estoque_controller, usuario_logado):
+    try:
+        limite = int(input("Insira o limite para a consulta."))
+        relatorio = estoque_controller.relatorio_estoque_baixo(usuario_logado, limite)
+        exibir_relatorio_estoque_baixo(relatorio, limite)
+        input(PRESSIONE_ENTER)
+    except (ValueError, TypeError, PermissionError) as e:
+        print(f"\n{e}")
+        input(PRESSIONE_ENTER)
 
 
 # Menu e exibixoes
@@ -70,6 +83,7 @@ def menu_relatorio():
     print("1 - Relatorio de Vendas (Resumo)")
     print("2 - Relatorio de Vendas Produtos")
     print("3 - Relatorio de Estoque")
+    print("4 - Relatorio de Estoque Baixo")
     print("0 - Voltar")
     return input("> ")
 
@@ -160,4 +174,21 @@ def exibir_relatorio_estoque(relatorio):
     print(
         f"| Quantidade Produtos sem Estoque: {relatorio.quantidade_produtos_sem_estoque}\n"
     )
+    print("-" * 82)
+
+
+def exibir_relatorio_estoque_baixo(relatorio, limite):
+    if not relatorio:
+        print("Nenhum produto com estoque do limite informado.")
+        return
+
+    print("-" * 82)
+    print(f"| PRODUTOS COM ESTOQUE BAIXO  |    LIMITE: {limite} ")
+    print("-" * 82)
+    print(f"{'ID Prod.':<12}{'Nome':<35}{'Marca':<20}{'Quant. Estoque':<14}\n")
+    for produto in relatorio:
+
+        print(
+            f"{produto.id_produto:<12}{produto.nome:<35}{produto.marca:<20}{produto.quantidade_estoque:<14}"
+        )
     print("-" * 82)

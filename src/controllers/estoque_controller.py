@@ -29,3 +29,7 @@ class EstoqueController:
     def relatorio_estoque(self, usuario_logado):
         relatorio = self.estoque_service.relatorio_estoque(usuario_logado)
         return relatorio
+
+    def relatorio_estoque_baixo(self, usuario_logado, limite):
+        relatorio = self.estoque_service.relatorio_estoque_baixo(usuario_logado, limite)
+        return relatorio
