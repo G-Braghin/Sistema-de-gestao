@@ -9,6 +9,7 @@ from src.entities.produto import Produto
 from src.entities.usuario import Usuario
 from src.services.venda_service import VendaService
 from src.utils.filtro_datas import FiltroDatas
+from src.entities.dtos.produtos_vendidos_resumo import ProdutosVendidosResumo
 
 
 @pytest.fixture
@@ -80,6 +81,80 @@ def usuario():
         senha_hash="teste_hash",
         papel=PapelUsuario.ADMINISTRADOR,
     )
+
+
+@pytest.mark.parametrize('papel', [PapelUsuario.ADMINISTRADOR, PapelUsuario.GERENTE])
+def test_relatorio_produtos_retorna_dtos_e_ajusta_periodo(dados, usuario, papel):
+    usuario.papel = papel
+    produtos = [
+        ProdutosVendidosResumo(2, 'MOUSE', 4, Decimal('100.00')),
+        ProdutosVendidosResumo(1, 'TECLADO', 1, Decimal('150.00')),
+    ]
+    dados['venda_repository'].listar_produtos_mais_vendidos.return_value = produtos
+
+    resultado = dados['service'].relatorio_produtos(
+        usuario, date(2026, 9, 1), date(2026, 9, 30)
+    )
+
+    assert resultado == produtos
+    dados['venda_repository'].listar_produtos_mais_vendidos.assert_called_once_with(
+        date(2026, 9, 1), date(2026, 10, 1)
+    )
+    dados['conn'].__exit__.assert_called_once_with(None, None, None)
+
+
+def test_relatorio_produtos_permite_consulta_de_um_dia(dados, usuario):
+    dados['venda_repository'].listar_produtos_mais_vendidos.return_value = []
+
+    dados['service'].relatorio_produtos(usuario, date(2025, 12, 31), date(2025, 12, 31))
+
+    dados['venda_repository'].listar_produtos_mais_vendidos.assert_called_once_with(
+        date(2025, 12, 31), date(2026, 1, 1)
+    )
+
+
+def test_relatorio_produtos_sem_resultados(dados, usuario):
+    dados['venda_repository'].listar_produtos_mais_vendidos.return_value = []
+
+    resultado = dados['service'].relatorio_produtos(
+        usuario, date(2026, 9, 1), date(2026, 9, 30)
+    )
+
+    assert resultado == []
+
+
+def test_relatorio_produtos_sem_permissao(dados, usuario):
+    usuario.papel = PapelUsuario.FUNCIONARIO
+
+    with pytest.raises(PermissionError, match='Sem permissao'):
+        dados['service'].relatorio_produtos(usuario, date(2026, 9, 1), date(2026, 9, 30))
+
+    dados['venda_repository'].listar_produtos_mais_vendidos.assert_not_called()
+    dados['conn'].__enter__.assert_not_called()
+
+
+@pytest.mark.parametrize('inicio, final, mensagem', [
+    (date(2026, 9, 30), date(2026, 9, 1), 'data final nao pode ser anterior'),
+    (None, date(2026, 9, 30), 'As duas datas devem estar preenchidas'),
+    (date(2026, 9, 1), None, 'As duas datas devem estar preenchidas'),
+])
+def test_relatorio_produtos_com_datas_invalidas(dados, usuario, inicio, final, mensagem):
+    with pytest.raises(ValueError, match=mensagem):
+        dados['service'].relatorio_produtos(usuario, inicio, final)
+
+    dados['venda_repository'].listar_produtos_mais_vendidos.assert_not_called()
+
+
+def test_relatorio_produtos_propaga_erro_da_consulta(dados, usuario):
+    erro = RuntimeError('Erro ao consultar produtos vendidos')
+    dados['venda_repository'].listar_produtos_mais_vendidos.side_effect = erro
+
+    with pytest.raises(RuntimeError, match='Erro ao consultar produtos vendidos'):
+        dados['service'].relatorio_produtos(usuario, date(2026, 9, 1), date(2026, 9, 30))
+
+    dados['conn'].__exit__.assert_called_once()
+    assert dados['conn'].__exit__.call_args.args[0] is RuntimeError
+    assert dados['conn'].__exit__.call_args.args[1] is erro
 
 
 @pytest.fixture

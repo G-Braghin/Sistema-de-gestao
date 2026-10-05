@@ -1,11 +1,12 @@
 from copy import deepcopy
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import uuid4
 
 import pytest
 from src.database.conexao import Conexao
 from src.entities.dtos.venda_resumo import VendaResumo
+from src.entities.dtos.produtos_vendidos_resumo import ProdutosVendidosResumo
 from src.entities.enums.papel_usuario import PapelUsuario
 from src.entities.enums.status_venda import StatusVenda
 from src.entities.produto import Produto
@@ -97,6 +98,132 @@ def venda(dados):
         preco_total=Decimal("150.00"),
         status=StatusVenda.CONCLUIDO,
     )
+
+
+@pytest.fixture
+def dados_relatorio(dados):
+    # Isola as vendas do ranking sem apagar registros existentes.
+    # As identidades temporarias nao usam as sequencias das tabelas reais.
+    with dados['conn'].cursor() as cursor:
+        cursor.execute("SET LOCAL TIME ZONE 'UTC'")
+        for tabela, coluna in [('vendas', 'id_venda'), ('venda_itens', 'id_venda_item')]:
+            cursor.execute(
+                f'CREATE TEMP TABLE {tabela} (LIKE public.{tabela} INCLUDING ALL)'
+            )
+            cursor.execute(f'ALTER TABLE pg_temp.{tabela} ALTER COLUMN {coluna} DROP DEFAULT')
+            cursor.execute(
+                f'ALTER TABLE pg_temp.{tabela} ALTER COLUMN {coluna} ADD GENERATED ALWAYS AS IDENTITY'
+            )
+    return dados
+
+
+def test_produtos_mais_vendidos_agrupa_e_usa_precos_dos_itens(dados_relatorio, venda):
+    repository = dados_relatorio['repository']
+    venda.data_hora = datetime(2026, 1, 10, 12, tzinfo=timezone.utc)
+    repository.criar(venda)
+    outra = deepcopy(venda)
+    outra.itens[0].quantidade = 2
+    outra.itens[0].preco_unitario = Decimal('80.50')
+    outra.preco_total = Decimal('211.00')
+    repository.criar(outra)
+
+    resultado = repository.listar_produtos_mais_vendidos(date(2026, 1, 1), date(2026, 2, 1))
+
+    assert len(resultado) == 2
+    assert all(isinstance(item, ProdutosVendidosResumo) for item in resultado)
+    por_id = {item.id_produto: item for item in resultado}
+    teclado = por_id[dados_relatorio['teclado'].id_produto]
+    mouse = por_id[dados_relatorio['mouse'].id_produto]
+    assert teclado.nome_produto == 'TESTE_TECLADO'
+    assert teclado.quantidade_vendida == 3
+    assert teclado.valor_total == Decimal('261.00')
+    assert isinstance(teclado.valor_total, Decimal)
+    assert mouse.nome_produto == 'TESTE_MOUSE'
+    assert mouse.quantidade_vendida == 4
+    assert mouse.valor_total == Decimal('100.00')
+
+
+def test_produtos_mais_vendidos_exclui_venda_cancelada(dados_relatorio, venda):
+    repository = dados_relatorio['repository']
+    venda.data_hora = datetime(2026, 1, 10, 12, tzinfo=timezone.utc)
+    repository.criar(venda)
+    outra = deepcopy(venda)
+    repository.criar(outra)
+    repository.cancelar_venda(
+        outra.id_venda, datetime(2026, 1, 11, tzinfo=timezone.utc), dados_relatorio['id_usuario']
+    )
+
+    resultado = repository.listar_produtos_mais_vendidos(date(2026, 1, 1), date(2026, 2, 1))
+
+    assert [(item.id_produto, item.quantidade_vendida, item.valor_total) for item in resultado] == [
+        (dados_relatorio['mouse'].id_produto, 2, Decimal('50.00')),
+        (dados_relatorio['teclado'].id_produto, 1, Decimal('100.00')),
+    ]
+    repository.cancelar_venda(
+        venda.id_venda, datetime(2026, 1, 11, tzinfo=timezone.utc), dados_relatorio['id_usuario']
+    )
+    assert repository.listar_produtos_mais_vendidos(date(2026, 1, 1), date(2026, 2, 1)) == []
+
+
+@pytest.mark.parametrize('instante, incluida', [
+    (datetime(2025, 12, 31, 23, 59, 59, 999999, tzinfo=timezone.utc), False),
+    (datetime(2026, 1, 1, tzinfo=timezone.utc), True),
+    (datetime(2026, 1, 31, 23, 59, 59, 999999, tzinfo=timezone.utc), True),
+    (datetime(2026, 2, 1, tzinfo=timezone.utc), False),
+])
+def test_produtos_mais_vendidos_respeita_limites_do_periodo(
+    dados_relatorio, venda, instante, incluida
+):
+    venda.data_hora = instante
+    repository = dados_relatorio['repository']
+    repository.criar(venda)
+
+    resultado = repository.listar_produtos_mais_vendidos(date(2026, 1, 1), date(2026, 2, 1))
+
+    assert len(resultado) == (2 if incluida else 0)
+
+
+def test_produtos_mais_vendidos_ordena_com_todos_os_desempates(dados_relatorio):
+    repository = dados_relatorio['repository']
+    produto_repository = ProdutoRepository(repository.conexao)
+    # Ordem de cadastro diferente do ranking; nomes iguais devem manter IDs separados.
+    cenarios = [
+        ('TESTE_ZETA', 2, '20.00'),
+        ('TESTE_ALFA', 2, '20.00'),
+        ('TESTE_ALFA', 2, '20.00'),
+        ('TESTE_FATURAMENTO', 2, '30.00'),
+        ('TESTE_QUANTIDADE', 3, '1.00'),
+        ('TESTE_UMA_UNIDADE', 1, '100.00'),
+    ]
+    produtos = []
+    for nome, quantidade, preco in cenarios:
+        produto = produto_repository.criar(Produto(nome, 'TESTE_MARCA', preco))
+        produtos.append(produto)
+        repository.criar(Venda(
+            id_cliente=dados_relatorio['id_cliente'],
+            id_usuario=dados_relatorio['id_usuario'],
+            itens=[VendaItem(
+                id_produto=produto.id_produto, nome_produto=nome,
+                quantidade=quantidade, preco_unitario=Decimal(preco),
+            )],
+            preco_total=Decimal(preco) * quantidade,
+            status=StatusVenda.CONCLUIDO,
+            data_hora=datetime(2026, 1, 10, 12, tzinfo=timezone.utc),
+        ))
+
+    resultado = repository.listar_produtos_mais_vendidos(date(2026, 1, 1), date(2026, 2, 1))
+
+    assert [item.id_produto for item in resultado] == [
+        produtos[i].id_produto for i in [4, 3, 1, 2, 0, 5]
+    ]
+
+
+def test_produtos_mais_vendidos_sem_vendas(dados_relatorio):
+    resultado = dados_relatorio['repository'].listar_produtos_mais_vendidos(
+        date(2026, 1, 1), date(2026, 2, 1)
+    )
+
+    assert resultado == []
 
 
 def test_criar_venda_e_buscar_por_id(dados, venda):
