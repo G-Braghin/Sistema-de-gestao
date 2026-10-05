@@ -2,6 +2,8 @@ from decimal import Decimal
 from unittest.mock import MagicMock, Mock
 
 import pytest
+
+from src.entities.dtos.relatorio_estoque_resumo import RelatorioEstoqueResumo
 from src.entities.enums.motivo_movimentacao import MotivoMovimentacao
 from src.entities.enums.papel_usuario import PapelUsuario
 from src.entities.enums.tipo_movimentacao import TipoMovimentacao
@@ -57,6 +59,90 @@ def produto():
         preco=Decimal("150.00"),
         quantidade_estoque=10
     )
+
+
+@pytest.mark.parametrize('papel', [PapelUsuario.ADMINISTRADOR, PapelUsuario.GERENTE])
+def test_relatorio_estoque_calcula_totais(
+    service, produto_repository, movimentacao_repository, conexao, usuario, papel
+):
+    usuario.papel = papel
+    produtos = [
+        Produto('TECLADO', 'LOGITECH', Decimal('150.00'), 5, 1),
+        Produto('MOUSE', 'LOGITECH', Decimal('25.00'), 10, 2),
+        Produto('CABO', 'INTELBRAS', Decimal('15.00'), 0, 3),
+    ]
+    produto_repository.listar.return_value = produtos
+
+    relatorio = service.relatorio_estoque(usuario)
+
+    assert isinstance(relatorio, RelatorioEstoqueResumo)
+    assert relatorio.produtos == produtos
+    assert relatorio.quantidade_produtos_cadastrados == 3
+    assert relatorio.total_unidades_estoque == 15
+    assert relatorio.quantidade_produtos_sem_estoque == 1
+    assert [produto.quantidade_estoque for produto in produtos] == [5, 10, 0]
+    produto_repository.listar.assert_called_once_with()
+    produto_repository.atualizar.assert_not_called()
+    movimentacao_repository.criar.assert_not_called()
+    conn = conexao.get_connection.return_value
+    conn.__enter__.assert_called_once()
+    conn.__exit__.assert_called_once_with(None, None, None)
+
+
+def test_relatorio_estoque_sem_produtos(service, produto_repository, usuario):
+    produto_repository.listar.return_value = []
+
+    relatorio = service.relatorio_estoque(usuario)
+
+    assert isinstance(relatorio, RelatorioEstoqueResumo)
+    assert relatorio.produtos == []
+    assert relatorio.quantidade_produtos_cadastrados == 0
+    assert relatorio.total_unidades_estoque == 0
+    assert relatorio.quantidade_produtos_sem_estoque == 0
+
+
+def test_relatorio_estoque_com_todos_os_produtos_zerados(
+    service, produto_repository, usuario
+):
+    produtos = [
+        Produto('TECLADO', 'LOGITECH', Decimal('150.00'), 0, 1),
+        Produto('MOUSE', 'LOGITECH', Decimal('25.00'), 0, 2),
+    ]
+    produto_repository.listar.return_value = produtos
+
+    relatorio = service.relatorio_estoque(usuario)
+
+    assert relatorio.produtos == produtos
+    assert relatorio.quantidade_produtos_cadastrados == 2
+    assert relatorio.total_unidades_estoque == 0
+    assert relatorio.quantidade_produtos_sem_estoque == 2
+
+
+def test_relatorio_estoque_sem_permissao(
+    service, produto_repository, conexao, usuario
+):
+    usuario.papel = PapelUsuario.FUNCIONARIO
+
+    with pytest.raises(PermissionError, match='Você não tem permissão'):
+        service.relatorio_estoque(usuario)
+
+    conexao.get_connection.assert_not_called()
+    produto_repository.listar.assert_not_called()
+
+
+def test_relatorio_estoque_propaga_erro_da_consulta(
+    service, produto_repository, conexao, usuario
+):
+    erro = RuntimeError('Erro ao consultar produtos')
+    produto_repository.listar.side_effect = erro
+
+    with pytest.raises(RuntimeError, match='Erro ao consultar produtos'):
+        service.relatorio_estoque(usuario)
+
+    conn = conexao.get_connection.return_value
+    conn.__exit__.assert_called_once()
+    assert conn.__exit__.call_args.args[0] is RuntimeError
+    assert conn.__exit__.call_args.args[1] is erro
 
 
 @pytest.mark.parametrize('operacao', ['dar_entrada', 'dar_saida'])

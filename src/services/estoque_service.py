@@ -8,6 +8,7 @@ from src.entities.usuario import Usuario
 from src.repositories.movimentacao_repository import MovimentacaoRepository
 from src.repositories.produto_repository import ProdutoRepository
 from src.utils.validacoes import verificar_id
+from src.entities.dtos.relatorio_estoque_resumo import RelatorioEstoqueResumo
 
 PRODUTO_NAO_ENCONTRADO = "Produto nao encontrado!"
 ID_INVALIDO = "ID de produto invalido."
@@ -36,7 +37,7 @@ class EstoqueService:
 
         self._verificar_quantidade(entrada_estoque)
         verificar_id(id_produto, ID_INVALIDO)
-        
+
         conn = self.conexao.get_connection()
         with conn:
             produto = self.produto_repository.buscar_por_id(id_produto)
@@ -191,3 +192,29 @@ class EstoqueService:
         self.movimentacao_repository.criar(movimentacao)
 
         return produto
+
+    def relatorio_estoque(self, usuario_logado: Usuario):
+        if usuario_logado.papel == PapelUsuario.FUNCIONARIO:
+            raise PermissionError("Você não tem permissão para ver o relatorio de estoque.")
+        conn = self.conexao.get_connection()
+        
+        with conn:
+            produtos = self.produto_repository.listar()
+            
+            total = len(produtos)
+            total_quantidade = 0
+            total_zero = 0
+            
+            for produto in produtos:
+                total_quantidade += produto.quantidade_estoque
+                if produto.quantidade_estoque == 0:
+                    total_zero += 1
+
+            relatorio = RelatorioEstoqueResumo(
+                produtos=produtos,
+                quantidade_produtos_cadastrados=total,
+                total_unidades_estoque=total_quantidade,
+                quantidade_produtos_sem_estoque=total_zero,
+            )
+
+        return relatorio

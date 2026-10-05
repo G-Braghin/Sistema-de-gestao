@@ -22,9 +22,9 @@ def menu_gerenciamento(usuario_logado):
     print("4 - Listar usuarios")
     print("5 - Estoque")
     print("6 - Gerenciamento de Vendas")
+    print("7 - Relatorios")
     if usuario_logado.papel == PapelUsuario.ADMINISTRADOR:
-        print("7 - Promover a gerente")
-    print("8 - Relatorios")
+        print("8 - Promover a gerente")
     print(VOLTAR)
     return input("> ")
 
@@ -47,12 +47,12 @@ def processar_menu_gerenciamento(
         elif opcao == "6":
             processar_menu_venda_gerenciamento(venda_controller, usuario_logado)
         elif opcao == "7":
+            processar_menu_relatorio(venda_controller, usuario_logado,estoque_controller)
+        elif opcao == "8":   
             if usuario_logado.papel == PapelUsuario.ADMINISTRADOR:
                 promover(usuario_controller, usuario_logado)
             else:
-                print(INVALIDO)
-        elif opcao == "8":
-            processar_menu_relatorio(venda_controller, usuario_logado)
+                print(INVALIDO)    
         elif opcao == "0":
             return
         else:

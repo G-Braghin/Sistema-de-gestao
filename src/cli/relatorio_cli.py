@@ -3,7 +3,7 @@ from src.cli.filtros_cli import processar_invervalo_personalizado
 PRESSIONE_ENTER = "\nPressione [ENTER] para voltar..."
 
 
-def processar_menu_relatorio(venda_controller, usuario_logado):
+def processar_menu_relatorio(venda_controller, usuario_logado, estoque_controller):
     while True:
         opcao = menu_relatorio()
         if opcao == "1":
@@ -11,7 +11,7 @@ def processar_menu_relatorio(venda_controller, usuario_logado):
         elif opcao == "2":
             relatorio_produto(venda_controller, usuario_logado)
         elif opcao == "3":
-            print("Relatorio ainda nao disponivel")
+            relatorio_estoque(estoque_controller,usuario_logado)
         elif opcao == "0":
             return
         else:
@@ -53,12 +53,23 @@ def relatorio_produto(venda_controller, usuario_logado):
         print(f"\n{e}")
         input(PRESSIONE_ENTER)
 
+
+def relatorio_estoque(estoque_controller, usuario_logado):
+    try:
+        relatorio = estoque_controller.relatorio_estoque(usuario_logado)
+        exibir_relatorio_estoque(relatorio)
+        input(PRESSIONE_ENTER)
+    except PermissionError as e:
+        print(f"\n{e}")
+        input(PRESSIONE_ENTER)     
+
+
 # Menu e exibixoes
 def menu_relatorio():
     print("\n === Menu Relatorios ===")
     print("1 - Relatorio de Vendas (Resumo)")
     print("2 - Relatorio de Vendas Produtos")
-    print("3 - Relatorio de Estoque(Em Breve)")
+    print("3 - Relatorio de Estoque")
     print("0 - Voltar")
     return input("> ")
 
@@ -125,3 +136,28 @@ def exibir_relatorio_produtos(produtos, inicio, final):
     print(
         f"\n| Total de unidades vendidas no periodo: {quantidade_total} | Valor total vendido no periodo: {valor_total_formatado}|"
     )
+
+
+def exibir_relatorio_estoque(relatorio):
+    if not relatorio.produtos:
+        print("Nenhum produto cadastrado.")
+        return
+
+    print("-" * 82)
+    print("| RELATORIO DE ESTOQUE - Produtos")
+    print("-" * 82)
+    print(f"{'ID Prod.':<12}{'Nome':<35}{'Marca':<20}{'Quant. Estoque':<14}\n")
+
+    for produto in relatorio.produtos:
+        print(
+            f"{produto.id_produto:<12}{produto.nome:<35}{produto.marca:<20}{produto.quantidade_estoque:<14}"
+        )
+    print("-" * 82)
+    print(
+        f"\n| Quantidade Produtos Cadastrados: {relatorio.quantidade_produtos_cadastrados}"
+    )
+    print(f"| Total Unidades em Estoque: {relatorio.total_unidades_estoque}")
+    print(
+        f"| Quantidade Produtos sem Estoque: {relatorio.quantidade_produtos_sem_estoque}\n"
+    )
+    print("-" * 82)
