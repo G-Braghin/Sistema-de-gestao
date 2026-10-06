@@ -218,6 +218,36 @@ def test_produtos_mais_vendidos_ordena_com_todos_os_desempates(dados_relatorio):
     ]
 
 
+@pytest.mark.parametrize('fuso_banco', ['UTC', 'America/Sao_Paulo'])
+def test_consultas_respeitam_periodo_com_fuso_independente_da_sessao(
+    dados_relatorio, venda, fuso_banco
+):
+    repository = dados_relatorio['repository']
+    with dados_relatorio['conn'].cursor() as cursor:
+        cursor.execute("SELECT set_config('TimeZone', %s, true)", (fuso_banco,))
+    instantes = [
+        datetime(2026, 10, 5, 2, 59, 59, tzinfo=timezone.utc),
+        datetime(2026, 10, 5, 3, tzinfo=timezone.utc),
+        datetime(2026, 10, 6, 2, 59, 59, tzinfo=timezone.utc),
+        datetime(2026, 10, 6, 3, tzinfo=timezone.utc),
+    ]
+    ids = []
+    for instante in instantes:
+        outra = deepcopy(venda)
+        outra.data_hora = instante
+        ids.append(repository.criar(outra).id_venda)
+    inicio = datetime(2026, 10, 5, 3, tzinfo=timezone.utc)
+    final = datetime(2026, 10, 6, 3, tzinfo=timezone.utc)
+
+    vendas = repository.listar_resumo(inicio, final, StatusVenda.CONCLUIDO)
+    produtos = repository.listar_produtos_mais_vendidos(inicio, final)
+
+    assert {item.id_venda for item in vendas} == {ids[1], ids[2]}
+    por_id = {item.id_produto: item for item in produtos}
+    assert por_id[dados_relatorio['teclado'].id_produto].quantidade_vendida == 2
+    assert por_id[dados_relatorio['mouse'].id_produto].quantidade_vendida == 4
+
+
 def test_produtos_mais_vendidos_sem_vendas(dados_relatorio):
     resultado = dados_relatorio['repository'].listar_produtos_mais_vendidos(
         date(2026, 1, 1), date(2026, 2, 1)

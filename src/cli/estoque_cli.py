@@ -1,4 +1,5 @@
 from src.entities.enums.motivo_movimentacao import MotivoMovimentacao
+from src.utils.fuso import FUSO_HORARIO
 
 INVALIDO = "\nOpção inválida."
 PRESSIONE_ENTER = "\nPressione [ENTER] para voltar..."
@@ -122,7 +123,7 @@ def exibir_tabela(movimentacoes):
     )
     print("-" * 105)
     for movimentacao in movimentacoes:
-        data_formatada = movimentacao.data_hora.strftime("%d/%m/%Y %H:%M")
+        data_formatada = movimentacao.data_hora.astimezone(FUSO_HORARIO).strftime("%d/%m/%Y %H:%M")
         id_vend = "-" if movimentacao.id_venda is None else movimentacao.id_venda
         print(
             f"{movimentacao.id_movimentacao:<10}{movimentacao.id_produto:<10}"

@@ -1,6 +1,6 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
-from unittest.mock import MagicMock, Mock, call
+from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 from src.entities.enums.papel_usuario import PapelUsuario
@@ -9,6 +9,7 @@ from src.entities.produto import Produto
 from src.entities.usuario import Usuario
 from src.services.venda_service import VendaService
 from src.utils.filtro_datas import FiltroDatas
+from src.utils.fuso import FUSO_HORARIO
 from src.entities.dtos.produtos_vendidos_resumo import ProdutosVendidosResumo
 
 
@@ -99,7 +100,7 @@ def test_relatorio_produtos_retorna_dtos_e_ajusta_periodo(dados, usuario, papel)
 
     assert resultado == produtos
     dados['venda_repository'].listar_produtos_mais_vendidos.assert_called_once_with(
-        date(2026, 9, 1), date(2026, 10, 1)
+        datetime(2026, 9, 1, 3, tzinfo=timezone.utc), datetime(2026, 10, 1, 3, tzinfo=timezone.utc)
     )
     dados['conn'].__exit__.assert_called_once_with(None, None, None)
 
@@ -110,7 +111,7 @@ def test_relatorio_produtos_permite_consulta_de_um_dia(dados, usuario):
     dados['service'].relatorio_produtos(usuario, date(2025, 12, 31), date(2025, 12, 31))
 
     dados['venda_repository'].listar_produtos_mais_vendidos.assert_called_once_with(
-        date(2025, 12, 31), date(2026, 1, 1)
+        datetime(2025, 12, 31, 3, tzinfo=timezone.utc), datetime(2026, 1, 1, 3, tzinfo=timezone.utc)
     )
 
 
@@ -156,6 +157,42 @@ def test_relatorio_produtos_propaga_erro_da_consulta(dados, usuario):
     dados['conn'].__exit__.assert_called_once()
     assert dados['conn'].__exit__.call_args.args[0] is RuntimeError
     assert dados['conn'].__exit__.call_args.args[1] is erro
+
+
+@pytest.mark.parametrize('filtro, inicio, final', [
+    (FiltroDatas.HOJE, (2025, 12, 31), (2026, 1, 1)),
+    (FiltroDatas.ONTEM, (2025, 12, 30), (2025, 12, 31)),
+    (FiltroDatas.ULTIMOS_7_DIAS, (2025, 12, 25), (2026, 1, 1)),
+    (FiltroDatas.ULTIMOS_30_DIAS, (2025, 12, 2), (2026, 1, 1)),
+    (FiltroDatas.MES_ATUAL, (2025, 12, 1), (2026, 1, 1)),
+    (FiltroDatas.MES_ANTERIOR, (2025, 11, 1), (2025, 12, 1)),
+    (FiltroDatas.ANO_ATUAL, (2025, 1, 1), (2026, 1, 1)),
+    (FiltroDatas.ANO_ANTERIOR, (2024, 1, 1), (2025, 1, 1)),
+])
+def test_filtros_usam_dia_de_brasilia_mesmo_quando_utc_ja_virou(
+    dados, filtro, inicio, final
+):
+    agora_utc = datetime(2026, 1, 1, 2, 30, tzinfo=timezone.utc)
+    with patch('src.services.venda_service.datetime', wraps=datetime) as relogio:
+        relogio.now.side_effect = lambda fuso: agora_utc.astimezone(fuso)
+        resultado = dados['service']._obter_intervalo_filtro_datas(filtro)
+
+    assert resultado == (
+        datetime(*inicio, 3, tzinfo=timezone.utc),
+        datetime(*final, 3, tzinfo=timezone.utc),
+    )
+    relogio.now.assert_called_once_with(FUSO_HORARIO)
+
+
+def test_filtro_personalizado_inclui_dia_inteiro_em_brasilia(dados):
+    inicio, final = dados['service']._obter_intervalo_filtro_datas(
+        FiltroDatas.PERSONALIZADO, date(2026, 10, 5), date(2026, 10, 5)
+    )
+
+    assert inicio == datetime(2026, 10, 5, 3, tzinfo=timezone.utc)
+    assert final == datetime(2026, 10, 6, 3, tzinfo=timezone.utc)
+    assert inicio <= datetime(2026, 10, 6, 2, 30, tzinfo=timezone.utc) < final
+    assert not inicio <= datetime(2026, 10, 5, 2, 59, tzinfo=timezone.utc) < final
 
 
 @pytest.fixture
@@ -500,7 +537,8 @@ def test_criar_resumo_relatorio_calcula_total_quantidade_e_ticket(dados, usuario
     assert isinstance(relatorio.total_periodo, Decimal)
     assert isinstance(relatorio.ticket_medio, Decimal)
     dados["venda_repository"].listar_resumo.assert_called_once_with(
-        data_inicial, date(2026, 10, 1), StatusVenda.CONCLUIDO
+        datetime(2026, 9, 1, 3, tzinfo=timezone.utc),
+        datetime(2026, 10, 1, 3, tzinfo=timezone.utc), StatusVenda.CONCLUIDO
     )
 
 
@@ -519,7 +557,8 @@ def test_criar_resumo_relatorio_com_gerente_e_uma_venda_no_mesmo_dia(dados, usua
     assert relatorio.total_periodo == Decimal("19.90")
     assert relatorio.ticket_medio == Decimal("19.90")
     dados["venda_repository"].listar_resumo.assert_called_once_with(
-        dia, date(2026, 1, 1), StatusVenda.CONCLUIDO
+        datetime(2025, 12, 31, 3, tzinfo=timezone.utc),
+        datetime(2026, 1, 1, 3, tzinfo=timezone.utc), StatusVenda.CONCLUIDO
     )
 
 
@@ -532,7 +571,7 @@ def test_criar_resumo_relatorio_sem_vendas(dados, usuario):
 
     assert resultado is None
     dados["venda_repository"].listar_resumo.assert_called_once_with(
-        date(2026, 9, 1), date(2026, 10, 1), StatusVenda.CONCLUIDO
+        datetime(2026, 9, 1, 3, tzinfo=timezone.utc), datetime(2026, 10, 1, 3, tzinfo=timezone.utc), StatusVenda.CONCLUIDO
     )
 
 

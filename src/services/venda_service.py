@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 
 from src.database.conexao import Conexao
@@ -14,6 +14,7 @@ from src.repositories.venda_repository import VendaRepository
 from src.services.estoque_service import EstoqueService
 from src.utils.filtro_datas import FiltroDatas
 from src.utils.validacoes import verificar_id
+from src.utils.fuso import FUSO_HORARIO
 
 from ..entities.dtos.relatorio_venda_resumo import RelatorioVendaResumo
 from ..entities.dtos.venda_resumo import VendaResumo
@@ -196,8 +197,24 @@ class VendaService:
 
     def _obter_intervalo_filtro_datas(
         self, filtro_datas: FiltroDatas, inicio_filtro=None, final_filtro=None
+    ) -> tuple[datetime, datetime]:
+        inicio, final = self._obter_datas_filtro(
+            filtro_datas, inicio_filtro, final_filtro
+        )
+
+        inicio_utc = datetime.combine(inicio, time.min, tzinfo=FUSO_HORARIO).astimezone(
+            timezone.utc
+        )
+        final_utc = datetime.combine(final, time.min, tzinfo=FUSO_HORARIO).astimezone(
+            timezone.utc
+        )
+
+        return inicio_utc, final_utc
+
+    def _obter_datas_filtro(
+        self, filtro_datas: FiltroDatas, inicio_filtro=None, final_filtro=None
     ) -> tuple[date, date]:
-        hoje = datetime.now(timezone.utc).date()
+        hoje = datetime.now(FUSO_HORARIO).date()
 
         if filtro_datas == FiltroDatas.HOJE:
             amanha = hoje + timedelta(days=1)

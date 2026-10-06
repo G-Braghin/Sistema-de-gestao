@@ -2,6 +2,7 @@ from src.cli.filtros_cli import processar_filtro, processar_invervalo_personaliz
 from src.cli.produto_cli import listar_produto
 from src.entities.enums.status_venda import StatusVenda
 from src.utils.filtro_datas import FiltroDatas
+from src.utils.fuso import FUSO_HORARIO
 
 VOLTAR = "0 - Voltar"
 INVALIDO = "Opção inválida."
@@ -181,7 +182,7 @@ def exibir_tabela_resumo(vendas):
     )
     print("-" * 100)
     for venda in vendas:
-        data_formatada = venda.data_venda.strftime(FORMATO_DATA_HORA)
+        data_formatada = venda.data_venda.astimezone(FUSO_HORARIO).strftime(FORMATO_DATA_HORA)
         valor_formatado = f"R$ {venda.valor_total:.2f}".replace(".", ",")
         print(
             f"{venda.id_venda:<10}{venda.nome_cliente:<20}{venda.nome_vendedor:<20}{data_formatada:<20}{valor_formatado:<15}{venda.status.value:<15}"
@@ -197,7 +198,7 @@ def exibir_tabela_venda(venda):
         f"\n{'ID Venda':<10}{'ID Cli.':<10}{'ID User':<10}{'Data Venda':<25}{'Valor Total':<15}{'Status':<15}"
     )
     print("-" * 80)
-    data_formatada = venda.data_hora.strftime(FORMATO_DATA_HORA)
+    data_formatada = venda.data_hora.astimezone(FUSO_HORARIO).strftime(FORMATO_DATA_HORA)
     valor_formatado = f"R$ {venda.preco_total:.2f}".replace(".", ",")
     print(
         f"{venda.id_venda:<10}{venda.id_cliente:<10}{venda.id_usuario:<10}"

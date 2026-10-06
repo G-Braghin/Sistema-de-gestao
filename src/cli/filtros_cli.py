@@ -33,7 +33,7 @@ def processar_filtro():
             print(INVALIDO)
 
 
-def processar_invervalo_personalizado():  # TODO: padronizar o tratamento de fuso horário no sistema (UTC x horário local)
+def processar_invervalo_personalizado():
     while True:
         inicio = input("Digite a data inicial (DD/MM/AAAA ou 0 para voltar): ").strip()
         if inicio == "0":
