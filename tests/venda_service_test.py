@@ -44,6 +44,7 @@ def dados():
     }
 
     produto_repository.buscar_por_id.side_effect = produtos.get
+    produto_repository.buscar_por_id_para_atualizar.side_effect = produtos.get
     estoque_service.validar_disponibilidade.return_value = True
 
     def criar(venda):
@@ -199,6 +200,25 @@ def test_realizar_venda_com_dados_validos(dados, usuario, itens):
         ),
     ]
     dados["conn"].__exit__.assert_called_once_with(None, None, None)
+
+
+def test_realizar_venda_bloqueia_produtos_em_ordem_antes_de_salvar(dados, usuario, itens):
+    operacoes = Mock()
+    operacoes.attach_mock(dados['produto_repository'].buscar_por_id_para_atualizar, 'bloquear')
+    operacoes.attach_mock(dados['venda_repository'].criar, 'criar')
+
+    venda = dados['service'].realizar_venda(usuario, 1, list(reversed(itens)))
+
+    assert operacoes.mock_calls == [call.bloquear(1), call.bloquear(2), call.criar(venda)]
+
+
+def test_cancelar_venda_devolve_em_ordem_de_produto(dados, usuario, venda_salva):
+    venda_salva.itens.reverse()
+
+    dados['service'].cancelar_venda(usuario, venda_salva.id_venda)
+
+    chamadas = dados['estoque_service'].registrar_entrada.call_args_list
+    assert [chamada.kwargs['id_produto'] for chamada in chamadas] == [1, 2]
 
 
 def test_realizar_venda_com_cliente_inexistente(dados, usuario, itens):

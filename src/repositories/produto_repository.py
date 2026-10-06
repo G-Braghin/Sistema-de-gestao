@@ -27,7 +27,7 @@ class ProdutoRepository:
 
         return produto
 
-    def buscar_por_id(self, id_produto: int) -> Produto:
+    def buscar_por_id(self, id_produto: int) -> Produto | None:
         conn = self.conexao.get_connection()
 
         with conn.cursor() as cursor:
@@ -50,6 +50,31 @@ class ProdutoRepository:
                 quantidade_estoque=row[4],
             )
         return None
+
+    def buscar_por_id_para_atualizar(self, id_produto: int) -> Produto | None:
+        # Quem chama deve manter a transacao aberta ate terminar a alteracao.
+        conn = self.conexao.get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id_produto, nome, marca, preco, quantidade_estoque
+                FROM produtos
+                WHERE id_produto = %s
+                FOR UPDATE
+                """,
+                (id_produto,),
+            )
+            row = cursor.fetchone()
+
+        if row is None:
+            return None
+        return Produto(
+            id_produto=row[0],
+            nome=row[1],
+            marca=row[2],
+            preco=row[3],
+            quantidade_estoque=row[4],
+        )
 
     def listar(self) -> list[Produto]:
         conn = self.conexao.get_connection()

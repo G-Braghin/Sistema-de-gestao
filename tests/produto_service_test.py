@@ -31,7 +31,7 @@ def test_atualizar_preco_com_id_zero(service, repository, conexao):
     with pytest.raises(ValueError, match="ID de produto invalido"):
         service.atualizar_preco(0, "180.50")
 
-    repository.buscar_por_id.assert_not_called()
+    repository.buscar_por_id_para_atualizar.assert_not_called()
     repository.atualizar.assert_not_called()
     conexao.get_connection.assert_not_called()
 
@@ -40,7 +40,7 @@ def test_atualizar_nome_com_id_negativo(service, repository, conexao):
     with pytest.raises(ValueError, match="ID de produto invalido"):
         service.atualizar_nome(-1, "Teclado")
 
-    repository.buscar_por_id.assert_not_called()
+    repository.buscar_por_id_para_atualizar.assert_not_called()
     repository.atualizar.assert_not_called()
     conexao.get_connection.assert_not_called()
 
@@ -49,7 +49,7 @@ def test_atualizar_marca_com_id_booleano(service, repository, conexao):
     with pytest.raises(TypeError, match="ID tem que ser um numero inteiro"):
         service.atualizar_marca(True, "Logitech")
 
-    repository.buscar_por_id.assert_not_called()
+    repository.buscar_por_id_para_atualizar.assert_not_called()
     repository.atualizar.assert_not_called()
     conexao.get_connection.assert_not_called()
 
@@ -218,7 +218,7 @@ def test_atualizar_preco_com_dados_validos(service, repository):
         preco="150.00"
     )
 
-    repository.buscar_por_id.return_value = produto
+    repository.buscar_por_id_para_atualizar.return_value = produto
     repository.atualizar.return_value = produto
 
     resultado = service.atualizar_preco(
@@ -229,12 +229,12 @@ def test_atualizar_preco_com_dados_validos(service, repository):
     assert resultado == produto
     assert produto.preco == Decimal("180.50")
 
-    repository.buscar_por_id.assert_called_once_with(1)
+    repository.buscar_por_id_para_atualizar.assert_called_once_with(1)
     repository.atualizar.assert_called_once_with(produto)
 
 
 def test_atualizar_preco_com_produto_inexistente(service, repository):
-    repository.buscar_por_id.return_value = None
+    repository.buscar_por_id_para_atualizar.return_value = None
 
     with pytest.raises(ValueError, match="Produto nao encontrado"):
         service.atualizar_preco(
@@ -253,7 +253,7 @@ def test_atualizar_preco_invalido(service, repository):
         preco="150.00"
     )
 
-    repository.buscar_por_id.return_value = produto
+    repository.buscar_por_id_para_atualizar.return_value = produto
 
     with pytest.raises(ValueError, match="preco do produto"):
         service.atualizar_preco(
@@ -272,7 +272,7 @@ def test_atualizar_nome_com_dados_validos(service, repository):
         preco="150.00"
     )
 
-    repository.buscar_por_id.return_value = produto
+    repository.buscar_por_id_para_atualizar.return_value = produto
     repository.atualizar.return_value = produto
 
     resultado = service.atualizar_nome(
@@ -283,12 +283,12 @@ def test_atualizar_nome_com_dados_validos(service, repository):
     assert resultado == produto
     assert produto.nome == "TECLADO MECÂNICO"
 
-    repository.buscar_por_id.assert_called_once_with(1)
+    repository.buscar_por_id_para_atualizar.assert_called_once_with(1)
     repository.atualizar.assert_called_once_with(produto)
 
 
 def test_atualizar_nome_com_produto_inexistente(service, repository):
-    repository.buscar_por_id.return_value = None
+    repository.buscar_por_id_para_atualizar.return_value = None
 
     with pytest.raises(ValueError, match="Produto nao encontrado"):
         service.atualizar_nome(
@@ -307,7 +307,7 @@ def test_atualizar_nome_invalido(service, repository):
         preco="150.00"
     )
 
-    repository.buscar_por_id.return_value = produto
+    repository.buscar_por_id_para_atualizar.return_value = produto
 
     with pytest.raises(ValueError, match="nome do produto"):
         service.atualizar_nome(
@@ -326,7 +326,7 @@ def test_atualizar_marca_com_dados_validos(service, repository):
         preco="150.00"
     )
 
-    repository.buscar_por_id.return_value = produto
+    repository.buscar_por_id_para_atualizar.return_value = produto
     repository.atualizar.return_value = produto
 
     resultado = service.atualizar_marca(
@@ -337,12 +337,12 @@ def test_atualizar_marca_com_dados_validos(service, repository):
     assert resultado == produto
     assert produto.marca == "REDRAGON"
 
-    repository.buscar_por_id.assert_called_once_with(1)
+    repository.buscar_por_id_para_atualizar.assert_called_once_with(1)
     repository.atualizar.assert_called_once_with(produto)
 
 
 def test_atualizar_marca_com_produto_inexistente(service, repository):
-    repository.buscar_por_id.return_value = None
+    repository.buscar_por_id_para_atualizar.return_value = None
 
     with pytest.raises(ValueError, match="Produto nao encontrado"):
         service.atualizar_marca(
@@ -361,7 +361,7 @@ def test_atualizar_marca_invalida(service, repository):
         preco="150.00"
     )
 
-    repository.buscar_por_id.return_value = produto
+    repository.buscar_por_id_para_atualizar.return_value = produto
 
     with pytest.raises(ValueError, match="marca do produto"):
         service.atualizar_marca(

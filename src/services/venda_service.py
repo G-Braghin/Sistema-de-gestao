@@ -52,6 +52,15 @@ class VendaService:
 
             venda_itens = self._criar_itens_venda(itens)
 
+            # Bloqueia antes de inserir os itens e suas referencias aos produtos.
+            # Todas as vendas adquirem os bloqueios na mesma ordem.
+            for id_produto in sorted({item.id_produto for item in venda_itens}):
+                produto = self.produto_repository.buscar_por_id_para_atualizar(
+                    id_produto
+                )
+                if produto is None:
+                    raise ValueError(f"Produto de id: {id_produto} nao encontrado")
+
             total = sum(item.preco_unitario * item.quantidade for item in venda_itens)
 
             venda = Venda(
@@ -134,8 +143,9 @@ class VendaService:
                 data_cancelamento=datetime.now(timezone.utc),
                 id_usuario_cancelamento=usuario_logado.id_usuario,
             )
+
             venda = self.venda_repository.buscar_por_id(id_venda)
-            for item in venda.itens:
+            for item in sorted(venda.itens, key=lambda item: item.id_produto):
                 self.estoque_service.registrar_entrada(
                     usuario_logado=usuario_logado,
                     id_produto=item.id_produto,
@@ -298,6 +308,8 @@ class VendaService:
             inicio, final = self._obter_intervalo_filtro_datas(
                 FiltroDatas.PERSONALIZADO, data_inicial, data_final
             )
-            relatorio = self.venda_repository.listar_produtos_mais_vendidos(inicio,final)
-        
+            relatorio = self.venda_repository.listar_produtos_mais_vendidos(
+                inicio, final
+            )
+
         return relatorio

@@ -260,7 +260,7 @@ def test_funcionario_nao_pode_alterar_estoque(
         getattr(service, operacao)(usuario, 1, 5, MotivoMovimentacao.AJUSTE)
 
     conexao.get_connection.assert_not_called()
-    produto_repository.buscar_por_id.assert_not_called()
+    produto_repository.buscar_por_id_para_atualizar.assert_not_called()
     produto_repository.atualizar.assert_not_called()
     movimentacao_repository.criar.assert_not_called()
 
@@ -269,7 +269,7 @@ def test_dar_entrada_propaga_erro_da_movimentacao(
     service, produto_repository, movimentacao_repository, conexao, usuario, produto
 ):
     conn = conexao.get_connection.return_value
-    produto_repository.buscar_por_id.return_value = produto
+    produto_repository.buscar_por_id_para_atualizar.return_value = produto
     erro = RuntimeError("Erro ao salvar movimentacao")
     movimentacao_repository.criar.side_effect = erro
 
@@ -287,7 +287,7 @@ def test_dar_saida_propaga_erro_da_movimentacao(
     service, produto_repository, movimentacao_repository, conexao, usuario, produto
 ):
     conn = conexao.get_connection.return_value
-    produto_repository.buscar_por_id.return_value = produto
+    produto_repository.buscar_por_id_para_atualizar.return_value = produto
     erro = RuntimeError("Erro ao salvar movimentacao")
     movimentacao_repository.criar.side_effect = erro
 
@@ -308,7 +308,7 @@ def test_dar_entrada_com_quantidade_valida(
     usuario,
     produto
 ):
-    produto_repository.buscar_por_id.return_value = produto
+    produto_repository.buscar_por_id_para_atualizar.return_value = produto
 
     movimentacao_repository.criar.return_value = None
 
@@ -322,7 +322,7 @@ def test_dar_entrada_com_quantidade_valida(
     assert resultado == produto
     assert produto.quantidade_estoque == 15
 
-    produto_repository.buscar_por_id.assert_called_once_with(1)
+    produto_repository.buscar_por_id_para_atualizar.assert_called_once_with(1)
     produto_repository.atualizar.assert_called_once_with(produto)
 
     movimentacao_repository.criar.assert_called_once()
@@ -355,7 +355,7 @@ def test_dar_entrada_com_quantidade_zero(
             motivo=MotivoMovimentacao.REPOSICAO
         )
 
-    produto_repository.buscar_por_id.assert_not_called()
+    produto_repository.buscar_por_id_para_atualizar.assert_not_called()
     produto_repository.atualizar.assert_not_called()
     movimentacao_repository.criar.assert_not_called()
 
@@ -377,7 +377,7 @@ def test_dar_entrada_com_quantidade_negativa(
             motivo=MotivoMovimentacao.REPOSICAO
         )
 
-    produto_repository.buscar_por_id.assert_not_called()
+    produto_repository.buscar_por_id_para_atualizar.assert_not_called()
     produto_repository.atualizar.assert_not_called()
     movimentacao_repository.criar.assert_not_called()
 
@@ -388,7 +388,7 @@ def test_dar_entrada_com_produto_inexistente(
     movimentacao_repository,
     usuario
 ):
-    produto_repository.buscar_por_id.return_value = None
+    produto_repository.buscar_por_id_para_atualizar.return_value = None
 
     with pytest.raises(
         ValueError,
@@ -412,7 +412,7 @@ def test_dar_saida_com_quantidade_valida(
     usuario,
     produto
 ):
-    produto_repository.buscar_por_id.return_value = produto
+    produto_repository.buscar_por_id_para_atualizar.return_value = produto
 
     movimentacao_repository.criar.return_value = None
 
@@ -426,7 +426,7 @@ def test_dar_saida_com_quantidade_valida(
     assert resultado == produto
     assert produto.quantidade_estoque == 6
 
-    produto_repository.buscar_por_id.assert_called_once_with(1)
+    produto_repository.buscar_por_id_para_atualizar.assert_called_once_with(1)
     produto_repository.atualizar.assert_called_once_with(produto)
 
     movimentacao_repository.criar.assert_called_once()
@@ -459,7 +459,7 @@ def test_dar_saida_com_quantidade_zero(
             motivo=MotivoMovimentacao.AJUSTE
         )
 
-    produto_repository.buscar_por_id.assert_not_called()
+    produto_repository.buscar_por_id_para_atualizar.assert_not_called()
     produto_repository.atualizar.assert_not_called()
     movimentacao_repository.criar.assert_not_called()
 
@@ -481,7 +481,7 @@ def test_dar_saida_com_quantidade_negativa(
             motivo=MotivoMovimentacao.AJUSTE
         )
 
-    produto_repository.buscar_por_id.assert_not_called()
+    produto_repository.buscar_por_id_para_atualizar.assert_not_called()
     produto_repository.atualizar.assert_not_called()
     movimentacao_repository.criar.assert_not_called()
 
@@ -492,7 +492,7 @@ def test_dar_saida_com_produto_inexistente(
     movimentacao_repository,
     usuario
 ):
-    produto_repository.buscar_por_id.return_value = None
+    produto_repository.buscar_por_id_para_atualizar.return_value = None
 
     with pytest.raises(
         ValueError,
@@ -516,7 +516,7 @@ def test_dar_saida_com_estoque_insuficiente(
     usuario,
     produto
 ):
-    produto_repository.buscar_por_id.return_value = produto
+    produto_repository.buscar_por_id_para_atualizar.return_value = produto
 
     with pytest.raises(
         ValueError,

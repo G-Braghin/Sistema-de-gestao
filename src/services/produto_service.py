@@ -26,7 +26,7 @@ class ProdutoService:
         regex_caracteres_validos = r"[a-zA-Z0-9áàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ .\-/]+"
         return re.fullmatch(regex_caracteres_validos, nome) is not None
 
-    def validar_preco(self, preco: str | float) -> bool:
+    def validar_preco(self, preco: str | float | Decimal) -> bool:
         try:
             preco = Decimal(str(preco))
         except (InvalidOperation, ValueError, TypeError):
@@ -74,7 +74,7 @@ class ProdutoService:
 
         conn = self.conexao.get_connection()
         with conn:
-            produto = self.produto_repository.buscar_por_id(id_produto)
+            produto = self.produto_repository.buscar_por_id_para_atualizar(id_produto)
             if produto is None:
                 raise ValueError(PRODUTO_NAO_ENCONTRADO)
 
@@ -91,7 +91,7 @@ class ProdutoService:
 
         conn = self.conexao.get_connection()
         with conn:
-            produto = self.produto_repository.buscar_por_id(id_produto)
+            produto = self.produto_repository.buscar_por_id_para_atualizar(id_produto)
             if produto is None:
                 raise ValueError(PRODUTO_NAO_ENCONTRADO)
 
@@ -108,7 +108,7 @@ class ProdutoService:
 
         conn = self.conexao.get_connection()
         with conn:
-            produto = self.produto_repository.buscar_por_id(id_produto)
+            produto = self.produto_repository.buscar_por_id_para_atualizar(id_produto)
             if produto is None:
                 raise ValueError(PRODUTO_NAO_ENCONTRADO)
 

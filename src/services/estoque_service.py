@@ -40,7 +40,7 @@ class EstoqueService:
 
         conn = self.conexao.get_connection()
         with conn:
-            produto = self.produto_repository.buscar_por_id(id_produto)
+            produto = self.produto_repository.buscar_por_id_para_atualizar(id_produto)
             if not produto:
                 raise ValueError(PRODUTO_NAO_ENCONTRADO)
 
@@ -73,7 +73,7 @@ class EstoqueService:
 
         conn = self.conexao.get_connection()
         with conn:
-            produto = self.produto_repository.buscar_por_id(id_produto)
+            produto = self.produto_repository.buscar_por_id_para_atualizar(id_produto)
             if not produto:
                 raise ValueError(PRODUTO_NAO_ENCONTRADO)
 
@@ -140,7 +140,7 @@ class EstoqueService:
         self._verificar_quantidade(saida_estoque)
         verificar_id(id_produto, ID_INVALIDO)
 
-        produto = self.produto_repository.buscar_por_id(id_produto)
+        produto = self.produto_repository.buscar_por_id_para_atualizar(id_produto)
         if not produto:
             raise ValueError(PRODUTO_NAO_ENCONTRADO)
 
@@ -174,7 +174,7 @@ class EstoqueService:
         self._verificar_quantidade(entrada_estoque)
         verificar_id(id_produto, ID_INVALIDO)
 
-        produto = self.produto_repository.buscar_por_id(id_produto)
+        produto = self.produto_repository.buscar_por_id_para_atualizar(id_produto)
         if not produto:
             raise ValueError(PRODUTO_NAO_ENCONTRADO)
 
