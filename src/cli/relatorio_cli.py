@@ -1,4 +1,8 @@
+from datetime import datetime
+
 from src.cli.filtros_cli import processar_invervalo_personalizado
+from src.utils.exportacao_csv import exportar_produtos_vendidos
+from src.utils.fuso import FUSO_HORARIO
 
 PRESSIONE_ENTER = "\nPressione [ENTER] para voltar..."
 
@@ -50,6 +54,8 @@ def relatorio_produto(venda_controller, usuario_logado):
             usuario_logado, data_inicial, data_final
         )
         exibir_relatorio_produtos(produtos, data_inicial, data_final)
+        if produtos:
+            exportar_relatorio_produto(produtos, data_inicial, data_final)
         input(PRESSIONE_ENTER)
     except (ValueError, PermissionError) as e:
         print(f"\n{e}")
@@ -75,6 +81,20 @@ def relatorio_estoque_baixo(estoque_controller, usuario_logado):
     except (ValueError, TypeError, PermissionError) as e:
         print(f"\n{e}")
         input(PRESSIONE_ENTER)
+
+
+# exportacoes
+def exportar_relatorio_produto(produtos, inicio, final):
+    opcao = input("Deseja exportar para CSV? [S/N]: ").strip().upper()
+
+    if opcao == "S":
+        try:
+            data_hora = datetime.now(FUSO_HORARIO).strftime("%Y%m%d%H%M%S%f")
+            nome_arquivo = f"produtos_vendidos_{inicio}_a_{final}_{data_hora}.csv"
+            exportar_produtos_vendidos(produtos, nome_arquivo)
+            print(f"Relatorio exportado: {nome_arquivo}")
+        except OSError as erro:
+            print(f"Nao foi possivel salvar o arquivo: {erro}")
 
 
 # Menu e exibixoes
