@@ -4,6 +4,7 @@ from src.cli.filtros_cli import processar_invervalo_personalizado
 from src.utils.exportacao_csv import (
     exportar_produtos_vendidos,
     exportar_relatorio_estoque,
+    exportar_resumo_vendas,
 )
 from src.utils.fuso import FUSO_HORARIO
 
@@ -39,6 +40,8 @@ def resumo_relatorio(venda_controller, usuario_logado):
             usuario_logado, data_inicial, data_final
         )
         exibir_resumo_relatorio(relatorio)
+        if relatorio:
+            exportar_relatorio_resumo_vendas(relatorio)
         input(PRESSIONE_ENTER)
     except (ValueError, PermissionError) as e:
         print(f"\n{e}")
@@ -91,6 +94,22 @@ def relatorio_estoque_baixo(estoque_controller, usuario_logado):
 
 
 # exportacoes
+def exportar_relatorio_resumo_vendas(relatorio):
+    opcao = input("Deseja exportar para CSV? [S/N]: ").strip().upper()
+
+    if opcao == "S":
+        try:
+            data_hora = datetime.now(FUSO_HORARIO).strftime("%Y%m%d_%H%M%S%f")
+            nome_arquivo = (
+                f"resumo_vendas_{relatorio.data_inicial}_a_"
+                f"{relatorio.data_final}_{data_hora}.csv"
+            )
+            exportar_resumo_vendas(relatorio, nome_arquivo)
+            print(f"Relatorio exportado: {nome_arquivo}")
+        except OSError as erro:
+            print(f"Nao foi possivel salvar o arquivo: {erro}")
+
+
 def exportar_relatorio_produto(produtos, inicio, final):
     opcao = input("Deseja exportar para CSV? [S/N]: ").strip().upper()
 
