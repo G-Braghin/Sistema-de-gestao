@@ -70,7 +70,7 @@ def relatorio_estoque(estoque_controller, usuario_logado):
         relatorio = estoque_controller.relatorio_estoque(usuario_logado)
         exibir_relatorio_estoque(relatorio)
         if relatorio.produtos:
-            exportar_relatorio_estoque_disponivel(relatorio)
+            exportar_relatorio_estoque_disponivel(relatorio.produtos)
         input(PRESSIONE_ENTER)
     except PermissionError as e:
         print(f"\n{e}")
@@ -82,6 +82,8 @@ def relatorio_estoque_baixo(estoque_controller, usuario_logado):
         limite = int(input("Insira o limite para a consulta."))
         relatorio = estoque_controller.relatorio_estoque_baixo(usuario_logado, limite)
         exibir_relatorio_estoque_baixo(relatorio, limite)
+        if relatorio:
+            exportar_relatorio_estoque_baixo(relatorio, limite)
         input(PRESSIONE_ENTER)
     except (ValueError, TypeError, PermissionError) as e:
         print(f"\n{e}")
@@ -109,6 +111,18 @@ def exportar_relatorio_estoque_disponivel(relatorio):
         try:
             data_hora = datetime.now(FUSO_HORARIO).strftime("%Y%m%d_%H%M%S%f")
             nome_arquivo = f"estoque_{data_hora}.csv"
+            exportar_relatorio_estoque(relatorio, nome_arquivo)
+            print(f"Relatorio exportado: {nome_arquivo}")
+        except OSError as erro:
+            print(f"Nao foi possivel salvar o arquivo: {erro}")
+
+
+def exportar_relatorio_estoque_baixo(relatorio, limite):
+    opcao = input("Deseja exportar para CSV? [S/N]: ").strip().upper()
+    if opcao == "S":
+        try:
+            data_hora = datetime.now(FUSO_HORARIO).strftime("%Y%m%d_%H%M%S%f")
+            nome_arquivo = f"Estoque_baixo_limite_{limite}_{data_hora}.csv"
             exportar_relatorio_estoque(relatorio, nome_arquivo)
             print(f"Relatorio exportado: {nome_arquivo}")
         except OSError as erro:

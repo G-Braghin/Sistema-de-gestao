@@ -25,7 +25,7 @@ def exportar_produtos_vendidos(produtos, caminho):
             )
 
 
-def exportar_relatorio_estoque(relatorio, caminho):
+def exportar_relatorio_estoque(produtos, caminho):
     with open(caminho, "w", newline="", encoding="utf-8-sig") as arquivo:
         escritor = csv.writer(arquivo, delimiter=";")
 
@@ -38,7 +38,7 @@ def exportar_relatorio_estoque(relatorio, caminho):
             ]
         )
 
-        for produto in relatorio.produtos:
+        for produto in produtos:
             escritor.writerow(
                 [
                     produto.id_produto,
