@@ -1,7 +1,10 @@
 from datetime import datetime
 
 from src.cli.filtros_cli import processar_invervalo_personalizado
-from src.utils.exportacao_csv import exportar_produtos_vendidos
+from src.utils.exportacao_csv import (
+    exportar_produtos_vendidos,
+    exportar_relatorio_estoque,
+)
 from src.utils.fuso import FUSO_HORARIO
 
 PRESSIONE_ENTER = "\nPressione [ENTER] para voltar..."
@@ -66,6 +69,8 @@ def relatorio_estoque(estoque_controller, usuario_logado):
     try:
         relatorio = estoque_controller.relatorio_estoque(usuario_logado)
         exibir_relatorio_estoque(relatorio)
+        if relatorio.produtos:
+            exportar_relatorio_estoque_disponivel(relatorio)
         input(PRESSIONE_ENTER)
     except PermissionError as e:
         print(f"\n{e}")
@@ -92,6 +97,19 @@ def exportar_relatorio_produto(produtos, inicio, final):
             data_hora = datetime.now(FUSO_HORARIO).strftime("%Y%m%d%H%M%S%f")
             nome_arquivo = f"produtos_vendidos_{inicio}_a_{final}_{data_hora}.csv"
             exportar_produtos_vendidos(produtos, nome_arquivo)
+            print(f"Relatorio exportado: {nome_arquivo}")
+        except OSError as erro:
+            print(f"Nao foi possivel salvar o arquivo: {erro}")
+
+
+def exportar_relatorio_estoque_disponivel(relatorio):
+    opcao = input("Deseja exportar para CSV? [S/N]: ").strip().upper()
+
+    if opcao == "S":
+        try:
+            data_hora = datetime.now(FUSO_HORARIO).strftime("%Y%m%d_%H%M%S%f")
+            nome_arquivo = f"estoque_{data_hora}.csv"
+            exportar_relatorio_estoque(relatorio, nome_arquivo)
             print(f"Relatorio exportado: {nome_arquivo}")
         except OSError as erro:
             print(f"Nao foi possivel salvar o arquivo: {erro}")
