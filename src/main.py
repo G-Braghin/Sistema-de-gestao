@@ -1,3 +1,4 @@
+from psycopg2 import OperationalError
 from src.cli.cliente_cli import processar_menu_cliente
 from src.cli.gerenciamento_cli import processar_menu_gerenciamento
 from src.cli.produto_cli import processar_menu_produto
@@ -77,47 +78,58 @@ def processar_menu_principal(
 
 def main():
     # Montagem das dependências
-    conexao_db = Conexao()
-    # Usuario
-    usuario_repo = UsuarioRepository(conexao_db)
-    autenticacao_serv = AutenticacaoService(usuario_repo)
-    usuario_serv = UsuarioService(usuario_repo, autenticacao_serv)
-    usuario_controller = UsuarioController(usuario_serv, autenticacao_serv)
+    try:
+        conexao_db = Conexao()
+    except OperationalError:
+        print(
+            "Erro ao conectar ao banco de dados."
+            "Confira as configuracoes do .env e se o banco de dados esta funcionando."
+        )
+        return
 
-    garantir_admin_padrao(usuario_controller)
+    try:
+        # usuario
+        usuario_repo = UsuarioRepository(conexao_db)
+        autenticacao_serv = AutenticacaoService(usuario_repo)
+        usuario_serv = UsuarioService(usuario_repo, autenticacao_serv)
+        usuario_controller = UsuarioController(usuario_serv, autenticacao_serv)
 
-    # cliente
-    cliente_repo = ClienteRepository(conexao_db)
-    cliente_serv = ClienteService(cliente_repo)
-    cliente_controller = ClienteController(cliente_serv)
+        garantir_admin_padrao(usuario_controller)
 
-    # produto
-    produto_repo = ProdutoRepository(conexao_db)
-    produto_serv = ProdutoService(produto_repo, conexao_db)
-    produto_controller = ProdutoController(produto_serv)
+        # cliente
+        cliente_repo = ClienteRepository(conexao_db)
+        cliente_serv = ClienteService(cliente_repo)
+        cliente_controller = ClienteController(cliente_serv)
 
-    # estoque movimentacoes
-    movimentacao_repo = MovimentacaoRepository(conexao_db)
-    estoque_serv = EstoqueService(produto_repo, movimentacao_repo, conexao_db)
-    estoque_controller = EstoqueController(estoque_serv)
+        # produto
+        produto_repo = ProdutoRepository(conexao_db)
+        produto_serv = ProdutoService(produto_repo, conexao_db)
+        produto_controller = ProdutoController(produto_serv)
 
-    # venda
-    venda_repo = VendaRepository(conexao_db)
-    venda_serv = VendaService(
-        conexao_db, venda_repo, produto_repo, cliente_repo, estoque_serv
-    )
-    venda_controller = VendaController(venda_serv)
+        # estoque movimentacoes
+        movimentacao_repo = MovimentacaoRepository(conexao_db)
+        estoque_serv = EstoqueService(produto_repo, movimentacao_repo, conexao_db)
+        estoque_controller = EstoqueController(estoque_serv)
 
-    usuario_logado = realizar_login(usuario_controller)
-    while processar_menu_principal(
-        usuario_controller,
-        usuario_logado,
-        cliente_controller,
-        produto_controller,
-        estoque_controller,
-        venda_controller,
-    ):
-        continue
+        # venda
+        venda_repo = VendaRepository(conexao_db)
+        venda_serv = VendaService(
+            conexao_db, venda_repo, produto_repo, cliente_repo, estoque_serv
+        )
+        venda_controller = VendaController(venda_serv)
+
+        usuario_logado = realizar_login(usuario_controller)
+        while processar_menu_principal(
+            usuario_controller,
+            usuario_logado,
+            cliente_controller,
+            produto_controller,
+            estoque_controller,
+            venda_controller,
+        ):
+            continue
+    finally:
+        conexao_db.get_connection().close()
 
 
 if __name__ == "__main__":
