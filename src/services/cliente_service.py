@@ -1,5 +1,7 @@
 import re
 
+from psycopg2.errors import UniqueViolation
+
 from src.entities.cliente import Cliente
 from src.entities.enums.papel_usuario import PapelUsuario
 from src.entities.usuario import Usuario
@@ -89,7 +91,12 @@ class ClienteService:
         novo_cliente = Cliente(
             nome=nome.strip(), cpf=cpf, telefone=telefone, endereco=endereco
         )
-        return self.cliente_repository.criar(novo_cliente)
+        try:
+            return self.cliente_repository.criar(novo_cliente)
+        except UniqueViolation as erro:
+            if erro.diag.constraint_name == "clientes_cpf_unico":
+                raise ValueError("O CPF já está cadastrado.") from erro
+            raise
 
     def atualizar_telefone(self, cpf_cliente: str, telefone: str) -> Cliente:
 

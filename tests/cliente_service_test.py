@@ -1,6 +1,8 @@
 from unittest.mock import Mock
 
 import pytest
+from psycopg2 import OperationalError
+from psycopg2.errors import UniqueViolation
 from src.entities.cliente import Cliente
 from src.entities.enums.papel_usuario import PapelUsuario
 from src.entities.usuario import Usuario
@@ -15,6 +17,14 @@ def repository():
 @pytest.fixture
 def service(repository):
     return ClienteService(repository)
+
+
+@pytest.fixture
+def erro_unicidade():
+    class ErroUnicidadeTeste(UniqueViolation):
+        diag = Mock()
+
+    return ErroUnicidadeTeste()
 
 
 @pytest.fixture
@@ -111,6 +121,43 @@ def test_cadastrar_cliente_com_cpf_ja_cadastrado(service, repository):
         )
 
     repository.criar.assert_not_called()
+
+
+def test_cadastrar_cliente_com_cpf_duplicado_no_banco(
+    service, repository, erro_unicidade
+):
+    repository.buscar_por_cpf.return_value = None
+    erro_unicidade.diag.constraint_name = "clientes_cpf_unico"
+    repository.criar.side_effect = erro_unicidade
+
+    with pytest.raises(ValueError, match="CPF já está cadastrado"):
+        service.cadastrar_cliente("João", "52998224725", "67999998888")
+
+    repository.criar.assert_called_once()
+
+
+def test_cadastrar_cliente_preserva_outra_violacao_de_unicidade(
+    service, repository, erro_unicidade
+):
+    repository.buscar_por_cpf.return_value = None
+    erro_unicidade.diag.constraint_name = "clientes_pkey"
+    repository.criar.side_effect = erro_unicidade
+
+    with pytest.raises(UniqueViolation) as erro:
+        service.cadastrar_cliente("João", "52998224725", "67999998888")
+
+    assert erro.value is erro_unicidade
+
+
+def test_cadastrar_cliente_preserva_erro_de_conexao(service, repository):
+    repository.buscar_por_cpf.return_value = None
+    erro_conexao = OperationalError("Falha na conexao")
+    repository.criar.side_effect = erro_conexao
+
+    with pytest.raises(OperationalError) as erro:
+        service.cadastrar_cliente("João", "52998224725", "67999998888")
+
+    assert erro.value is erro_conexao
 
 
 def test_cadastrar_cliente_com_telefone_vazio(service, repository):
