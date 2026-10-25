@@ -101,3 +101,18 @@ Em um banco separado para testes, confira o fluxo inicial:
 
 Faça essa conferência sem usar dados reais. Os CSVs são salvos na pasta em que
 o programa foi iniciado e não precisam ser incluídos nos commits.
+
+
+## Próximos passos
+
+O projeto está em desenvolvimento contínuo, com foco na evolução da arquitetura, implementação de uma interface web e aprimoramento das funcionalidades existentes.
+
+- [ ] **API REST:** desenvolver uma API utilizando FastAPI para disponibilizar as funcionalidades do sistema.
+- [ ] **Interface web:** implementar uma interface para interação com as funcionalidades por meio do navegador.
+- [ ] **Autenticação e autorização:** adaptar o sistema de autenticação e controle de permissões para o ambiente web.
+- [ ] **Banco de dados:** implementar migrações para gerenciar alterações na estrutura do PostgreSQL.
+- [ ] **Testes automatizados:** ampliar a cobertura de testes unitários e de integração, incluindo os endpoints da API.
+- [ ] **Segurança:** aprimorar a proteção de dados, o gerenciamento de sessões e a validação de entradas.
+- [ ] **Documentação:** documentar a arquitetura do sistema e os endpoints da API.
+- [ ] **Deploy:** preparar a aplicação para execução em um ambiente de produção.
+
