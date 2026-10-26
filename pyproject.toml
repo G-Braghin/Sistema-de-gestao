@@ -1,0 +1,81 @@
+[project]
+name = "sistema-de-gestao"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "G-Braghin",email = "braghing@hotmail.com"}
+]
+license = "MIT"
+readme = "README.md"
+requires-python = ">=3.14, <4.0"
+dependencies = [
+    "bcrypt (>=5.0.0,<6.0.0)",
+    "tzdata (>=2026.5,<2027.0)",
+    "python-dotenv (>=1.2.4,<2.0.0)",
+    "psycopg2-binary (>=2.9.13,<3.0.0)",
+    "sqlalchemy[asyncio] (>=2.1.6,<3.0.0)",
+    "alembic (>=1.20.1,<2.0.0)",
+    "psycopg[binary] (>=3.3.6,<4.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+[dependency-groups]
+dev = [
+    "ruff (>=0.17.2,<0.18.0)",
+    "pytest (>=9.1.1,<10.0.0)",
+    "pytest-cov (>=7.1.0,<8.0.0)",
+    "pre-commit (>=4.7.0,<5.0.0)",
+    "poethepoet (>=0.49.0,<0.50.0)"
+]
+
+
+[tool.ruff]
+line-length = 88
+extend-exclude = ['migrations']
+
+[tool.ruff.lint]
+preview = true
+select = ['I', 'F', 'E', 'W', 'PL', 'PT', 'B', 'C4']
+ignore = []
+
+[tool.ruff.format]
+preview = true
+quote-style = 'single'
+
+[tool.pytest]
+pythonpath = ['.']
+addopts = ['-p', 'no:warnings', '--cov=src', '--cov-context=test']
+asyncio_default_fixture_loop_scope = 'function'
+
+[tool.poe] 
+poetry_command = ""
+
+[tool.poe.tasks]
+
+lint.sequence = [
+  { cmd = "ruff check $caminho" }
+]
+
+form.sequence = [
+  { cmd = "ruff format $caminho" },
+  { cmd = "ruff check --fix $caminho" },
+]
+
+test.sequence = [
+  "lint $caminho",
+  { cmd = "pytest -s -x -vv $POE_EXTRA_ARGS" },
+  { cmd = "coverage html --show-contexts" },
+]
+
+[[tool.poe.tasks.lint.args]]
+name = "caminho"
+positional = true
+default = "."
+
+[[tool.poe.tasks.form.args]]
+name = "caminho"
+positional = true
+default = "."
