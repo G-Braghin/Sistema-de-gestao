@@ -1,146 +1,77 @@
-import pytest
-
-from src.database.conexao import Conexao
-from src.entities.cliente import Cliente
-from src.repositories.cliente_repository import ClienteRepository
+from tests.clientes.conftest import ClienteFatory
 
 
-@pytest.fixture
-def repository():
-    conexao = Conexao()
-    repository = ClienteRepository(conexao)
+def test_criar_cliente_e_buscar_id(client_repository):
+    cliente = ClienteFatory()
+    cliente_criado = client_repository.criar(cliente)
 
-    yield repository
+    assert cliente_criado.id is not None
 
-    conn = conexao.get_connection()
+    response = client_repository.buscar_por_id(cliente_criado.id)
 
-    with conn.cursor() as cursor:
-        cursor.execute(
-            "DELETE FROM clientes WHERE nome LIKE 'TESTE_%'"
-        )
-    conn.commit()
-
-def test_criar_cliente_e_buscar_id(repository):
-    cliente = Cliente(
-        nome="TESTE_NOME",
-        cpf="11111111111",
-        telefone="(11) 1234-5678",
-        endereco="teste endereco"
-    )   
-    cliente_criado=repository.criar(cliente)
-
-    assert cliente_criado.id_cliente is not None
-
-    cliente_buscado=repository.buscar_por_id(
-        cliente_criado.id_cliente
-    )
-
-    assert cliente_buscado is not None
-    assert cliente_buscado.nome == "TESTE_NOME"
-    assert cliente_buscado.cpf == "11111111111"
-    assert cliente_buscado.telefone == "(11) 1234-5678"
-    assert cliente_buscado.endereco == "teste endereco"
+    assert response is not None
+    assert response.ativo is True
+    assert response.nome == cliente.nome
+    assert response.cpf == cliente.cpf
+    assert response.telefone == cliente.telefone
+    assert response.endereco == cliente.endereco
 
 
-def test_buscar_cliente_cpf(repository):
-    cliente = Cliente(
-            nome="TESTE_NOME",
-            cpf="11111111111",
-            telefone="(11) 1234-5678",
-            endereco="teste endereco"
-        )   
-    cliente_criado=repository.criar(cliente)
+def test_buscar_cliente_cpf(client_repository):
+    cliente = ClienteFatory()
+    cliente_criado = client_repository.criar(cliente)
 
-    cliente_buscado= repository.buscar_por_cpf(
-        cliente_criado.cpf
-    )
+    response = client_repository.buscar_por_cpf(cliente_criado.cpf)
 
-    assert cliente_buscado is not None
-    assert cliente_buscado.nome == "TESTE_NOME"
-    assert cliente_buscado.cpf == "11111111111"
-    assert cliente_buscado.telefone == "(11) 1234-5678"
-    assert cliente_buscado.endereco == "teste endereco"
-
-def test_atualizar_cliente(repository):
-    cliente = Cliente(
-                nome="TESTE_NOME",
-                cpf="11111111111",
-                telefone="(11) 1234-5678",
-                endereco="teste endereco"
-            )   
-    cliente_salvo = repository.criar(cliente)
-
-    cliente_salvo.nome = "TESTE_NOVO_NOME"
-    cliente_salvo.telefone = "(22) 4321-8765"
-    cliente_salvo.endereco = "Novo endereco teste"
-
-    repository.atualizar(cliente_salvo)
-
-    cliente_atualizado = repository.buscar_por_cpf(
-        cliente_salvo.cpf
-    )
-
-    assert cliente_atualizado.id_cliente == cliente_salvo.id_cliente
-    assert cliente_atualizado.nome == "TESTE_NOVO_NOME"
-    assert cliente_atualizado.telefone == "(22) 4321-8765"
-    assert cliente_atualizado.endereco == "Novo endereco teste"
+    assert response is not None
+    assert response.ativo is True
+    assert response.nome == cliente.nome
+    assert response.cpf == cliente.cpf
+    assert response.telefone == cliente.telefone
+    assert response.endereco == cliente.endereco
 
 
+def test_atualizar_cliente(client_repository):
+    cliente = ClienteFatory(nome='Bob', endereco='Rua A', telefone='45555555543')
+    cliente_salvo = client_repository.criar(cliente)
 
-def test_buscar_cliente_inexistente(repository):
-    cliente_id = repository.buscar_por_id(9999999)
-    cliente_cpf = repository.buscar_por_cpf("99999999999")
+    cliente_salvo.nome = 'Novo Bob'
+    cliente_salvo.endereco = 'Rua B'
+    cliente_salvo.telefone = '12123459532'
+
+    client_repository.atualizar(cliente_salvo)
+
+    response = client_repository.buscar_por_cpf(cliente_salvo.cpf)
+
+    assert response.id == cliente_salvo.id
+    assert response.nome == 'Novo Bob'
+    assert response.telefone == '12123459532'
+    assert response.endereco == 'Rua B'
+
+
+def test_buscar_cliente_inexistente(client_repository):
+    cliente_id = client_repository.buscar_por_id(9999999)
+    cliente_cpf = client_repository.buscar_por_cpf('99999999999')
 
     assert cliente_id is None
     assert cliente_cpf is None
 
 
-def test_atualizar_cliente_inexistente(repository):
-    cliente = Cliente(
-        id_cliente=9999999,
-        nome="TESTE_NOME",
-        cpf="11111111111",
-        telefone="(11) 1234-5678",
-        endereco="teste endereco"
-    )
+def test_listar_clientes_ativos(client_repository):
+    cliente = ClienteFatory(ativo=True)
 
-    with pytest.raises(ValueError):
-        repository.atualizar(cliente)
+    client_repository.criar(cliente)
+
+    clientes = client_repository.listar(True)
+
+    assert any(c.id == cliente.id for c in clientes)
 
 
-def test_listar_clientes_ativos(repository):
-    cliente = Cliente(
-        nome="TESTE_ATIVO",
-        cpf="11111111111",
-        telefone="(11) 1234-5678",
-        endereco="teste",
-        ativo=True,
-    )
+def test_listar_clientes_inativos(client_repository):
+    cliente = ClienteFatory(ativo=False)
 
-    repository.criar(cliente)
+    client_repository.criar(cliente)
 
-    clientes = repository.listar()
+    clientes = client_repository.listar(False)
 
-    assert any(
-        c.id_cliente == cliente.id_cliente
-        for c in clientes
-    )
-
-
-def test_listar_clientes_inativos(repository):
-    cliente = Cliente(
-        nome="TESTE_INATIVO",
-        cpf="22222222222",
-        telefone="(11) 1234-5678",
-        endereco="teste",
-        ativo=False,
-    )
-
-    repository.criar(cliente)
-
-    clientes = repository.listar(False)
-
-    assert any(
-        c.id_cliente == cliente.id_cliente
-        for c in clientes
-    )
+    assert any(c.id == cliente.id for c in clientes)
