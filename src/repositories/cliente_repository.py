@@ -1,147 +1,39 @@
-from src.database.conexao import Conexao
-from src.entities.cliente import Cliente
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from src.models import Cliente
 
 
 class ClienteRepository:
-    def __init__(self, conexao: Conexao):
-        self.conexao = conexao
+    def __init__(self, session: Session):
+        self.session = session
 
-    def buscar_por_id(self, id_cliente: int) -> Cliente:
-        conn = self.conexao.get_connection()
-        try:
-            with conn.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT id_cliente, 
-                    nome, cpf, telefone, endereco, ativo
-                    FROM clientes 
-                    WHERE id_cliente = %s
-                    """,
-                    (id_cliente,),
-                )
-                row = cursor.fetchone()
-            if row:
-                return Cliente(
-                    id_cliente=row[0],
-                    nome=row[1],
-                    cpf=row[2],
-                    telefone=row[3],
-                    endereco=row[4],
-                    ativo=row[5],
-                )
-            return None
-        except Exception:
-            conn.rollback()
-            raise
+    def buscar_por_id(self, client_id) -> Cliente | None:
+        cliente = self.session.scalar(select(Cliente).where(Cliente.id == client_id))
+        return cliente
 
-    def buscar_por_cpf(self, cpf: str) -> Cliente:
-        conn = self.conexao.get_connection()
-        try:
-            with conn.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT id_cliente,
-                    nome, cpf, telefone, endereco, ativo
-                    FROM clientes
-                    WHERE cpf = %s
-                    """,
-                    (cpf,),
-                )
-                row = cursor.fetchone()
-            if row:
-                return Cliente(
-                    id_cliente=row[0],
-                    nome=row[1],
-                    cpf=row[2],
-                    telefone=row[3],
-                    endereco=row[4],
-                    ativo=row[5],
-                )
-            return None
-        except Exception:
-            conn.rollback()
-            raise
+    def buscar_por_cpf(self, client_cpf: str) -> Cliente | None:
+        cliente = self.session.scalar(select(Cliente).where(Cliente.cpf == client_cpf))
+        return cliente
 
     def criar(self, cliente: Cliente) -> Cliente:
-        conn = self.conexao.get_connection()
-        try:
-            with conn.cursor() as cursor:
-                cursor.execute(
-                    """
-                    INSERT INTO clientes
-                    (nome,cpf,telefone,endereco,ativo)
-                    VALUES (%s, %s, %s, %s, %s)
-                    RETURNING id_cliente
-                    """,
-                    (
-                        cliente.nome,
-                        cliente.cpf,
-                        cliente.telefone,
-                        cliente.endereco,
-                        cliente.ativo,
-                    ),
-                )
-                cliente.id_cliente = cursor.fetchone()[0]
-            conn.commit()
-            return cliente
-        except Exception:
-            conn.rollback()
-            raise
+        self.session.add(cliente)
+        self.session.flush()
+
+        return cliente
 
     def atualizar(self, cliente: Cliente) -> Cliente:
-        conn = self.conexao.get_connection()
-        try:
-            with conn.cursor() as cursor:
-                cursor.execute(
-                    """
-                    UPDATE clientes 
-                    SET nome = %s, cpf = %s, telefone = %s, endereco = %s, ativo = %s 
-                    WHERE id_cliente = %s
-                    """,
-                    (
-                        cliente.nome,
-                        cliente.cpf,
-                        cliente.telefone,
-                        cliente.endereco,
-                        cliente.ativo,
-                        cliente.id_cliente,
-                    ),
-                )
-                linhas_afetadas = cursor.rowcount
-            conn.commit()
-            if linhas_afetadas == 0:
-                raise ValueError(f"Cliente com id {cliente.id_cliente} não encontrado.")
-            return cliente
-        except Exception:
-            conn.rollback()
-            raise
+        cliente_atualizado = self.session.merge(cliente)
+        self.session.flush()
+
+        return cliente_atualizado
 
     def listar(self, status_ativo: bool = True) -> list[Cliente]:
-        conn = self.conexao.get_connection()
-        try:
-            with conn.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT id_cliente, nome, cpf, telefone, endereco, ativo
-                    FROM clientes
-                    WHERE ativo = %s
-                    ORDER BY nome
-                    """,
-                    (status_ativo,),
-                )
-                rows = cursor.fetchall()
+        query = select(Cliente).where(Cliente.ativo == status_ativo)
+        query = query.order_by(Cliente.nome)
+        lista_clientes = self.session.scalars(query).all()
 
-            return [
-                Cliente(
-                    id_cliente=row[0],
-                    nome=row[1],
-                    cpf=row[2],
-                    telefone=row[3],
-                    endereco=row[4],
-                    ativo=row[5],
-                )
-                for row in rows
-            ]
-        except Exception:
-            conn.rollback()
-            raise
+        return lista_clientes
+
+    def commit(self):
+        self.session.commit()
