@@ -38,8 +38,9 @@ class UsuarioService:
         novo_user.senha = self.autenticacao_service.gerar_senha_hash(
             dados_cadastro.senha
         )
-
-        return self.usuario_repository.criar(novo_user)
+        novo_user = self.usuario_repository.criar(novo_user)
+        self.usuario_repository.commit()
+        return novo_user
 
     def promover_a_gerente(self, usuario_logado: Usuario, id_usuario: int) -> Usuario:
         if usuario_logado.papel != PapelEnum.ADMIN:
@@ -141,7 +142,9 @@ class UsuarioService:
         senha_hash = self.autenticacao_service.gerar_senha_hash(senha_do_ambiente)
         admin_padrao = Usuario(nome='admin', senha=senha_hash, papel=PapelEnum.ADMIN)
         admin = self.usuario_repository.criar(admin_padrao)
+
         self.usuario_repository.commit()
+
         return admin
 
     def listar_usuarios(
