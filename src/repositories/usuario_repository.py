@@ -48,3 +48,6 @@ class UsuarioRepository:
         query = exists(select(1).select_from(Usuario)).select()
         existe = self.session.scalar(query)
         return existe
+
+    def commit(self):
+        self.session.commit()

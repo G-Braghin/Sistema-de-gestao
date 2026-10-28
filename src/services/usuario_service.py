@@ -55,9 +55,12 @@ class UsuarioService:
         if usuario.papel != PapelEnum.FUNCIONARIO:
             raise ValueError('Apenas funcionários podem ser promovidos a gerentes.')
 
-        return self.usuario_repository.atualizar(
+        usuario = self.usuario_repository.atualizar(
             usuario.id, {'papel': PapelEnum.GERENTE}
         )
+
+        self.usuario_repository.commit()
+        return usuario
 
     def resetar_senha(
         self, usuario_logado: Usuario, id_usuario_alvo: int, nova_senha: str
@@ -76,9 +79,11 @@ class UsuarioService:
             )
 
         nova_senha_hash = self.autenticacao_service.gerar_senha_hash(nova_senha)
-        return self.usuario_repository.atualizar(
+        usuario = self.usuario_repository.atualizar(
             usuario_alvo.id, {'senha': nova_senha_hash}
         )
+        self.usuario_repository.commit()
+        return usuario
 
     def atualizar_status(
         self, usuario_logado: Usuario, id_usuario_alvo: int, status_ativo: bool
@@ -110,10 +115,12 @@ class UsuarioService:
             raise ValueError(
                 f'Usuario ja esta {"ativo." if status_ativo else "desativado."}'
             )
-
-        return self.usuario_repository.atualizar(
+        usuario = self.usuario_repository.atualizar(
             usuario_alvo.id, {'ativo': status_ativo}
         )
+        self.usuario_repository.commit()
+
+        return usuario
 
     @staticmethod
     def obter_papeis_cadastro(usuario_logado: Usuario) -> list[PapelEnum]:
@@ -133,7 +140,9 @@ class UsuarioService:
         senha_do_ambiente = Settings().SENHA_PADRAO_FABRICA
         senha_hash = self.autenticacao_service.gerar_senha_hash(senha_do_ambiente)
         admin_padrao = Usuario(nome='admin', senha=senha_hash, papel=PapelEnum.ADMIN)
-        return self.usuario_repository.criar(admin_padrao)
+        admin = self.usuario_repository.criar(admin_padrao)
+        self.usuario_repository.commit()
+        return admin
 
     def listar_usuarios(
         self, usuario_logado: Usuario, status_ativo: bool = True
