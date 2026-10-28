@@ -1,3 +1,4 @@
+from sqlalchemy import Enum
 from sqlalchemy.orm import DeclarativeBase, Mapped, MappedAsDataclass, mapped_column
 
 from src.enums import PapelEnum
@@ -13,5 +14,18 @@ class Usuario(Base):
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
     nome: Mapped[str]
     senha: Mapped[str]
-    papel: Mapped[PapelEnum] = mapped_column(default=PapelEnum.FUNCIONARIO)
+    papel: Mapped[PapelEnum] = mapped_column(
+        Enum(PapelEnum), default=PapelEnum.FUNCIONARIO
+    )
+    ativo: Mapped[bool] = mapped_column(default=True)
+
+
+class Cliente(Base):
+    __tablename__ = 'clientes'
+
+    id: Mapped[int] = mapped_column(primary_key=True, init=False)
+    nome: Mapped[str]
+    cpf: Mapped[str] = mapped_column(unique=True)
+    telefone: Mapped[str | None] = mapped_column(default=None)
+    endereco: Mapped[str | None] = mapped_column(default=None)
     ativo: Mapped[bool] = mapped_column(default=True)
