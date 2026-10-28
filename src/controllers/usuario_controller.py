@@ -1,8 +1,7 @@
+from src.enums import PapelEnum
+from src.models import Usuario
 from src.services.autenticacao_service import AutenticacaoService
 from src.services.usuario_service import UsuarioService
-
-from ..entities.enums.papel_usuario import PapelUsuario
-from ..entities.usuario import Usuario
 
 
 class UsuarioController:
@@ -18,10 +17,10 @@ class UsuarioController:
         return self.autenticacao_service.autenticar(id_usuario, senha)
 
     def cadastrar_usuario(
-        self, usuario_logado, nome: str, senha: str, papel
+        self, usuario_logado: Usuario, nome: str, senha: str, papel: PapelEnum
     ) -> Usuario:
         return self.usuario_service.cadastrar_usuario(
-            usuario_logado, nome, senha, papel
+            usuario_logado, Usuario(nome=nome, senha=senha, papel=papel)
         )
 
     def promover_gerente(self, usuario_logado, id_usuario_alvo: int) -> Usuario:
@@ -45,10 +44,10 @@ class UsuarioController:
         self, usuario_logado, senha_atual: str, senha_nova: str
     ) -> Usuario:
         return self.autenticacao_service.atualizar_senha_usuario(
-            usuario_logado.id_usuario, senha_atual, senha_nova
+            usuario_logado.id, senha_atual, senha_nova
         )
 
-    def obter_papeis_cadastro(self, usuario_logado: Usuario) -> list[PapelUsuario]:
+    def obter_papeis_cadastro(self, usuario_logado: Usuario) -> list[PapelEnum]:
         return self.usuario_service.obter_papeis_cadastro(usuario_logado)
 
     def garantir_admin_padrao(self) -> Usuario | None:
