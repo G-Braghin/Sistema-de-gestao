@@ -1,9 +1,8 @@
-import os
-
-from src.entities.enums.papel_usuario import PapelUsuario
-from src.entities.usuario import Usuario
+from src.enums import PapelEnum
+from src.models import Usuario
 from src.repositories.usuario_repository import UsuarioRepository
 from src.services.autenticacao_service import AutenticacaoService
+from src.settings import Settings
 from src.utils.validacoes import verificar_id, verificar_texto_obrigatorio
 
 
@@ -16,140 +15,141 @@ class UsuarioService:
         self.usuario_repository = usuario_repository
         self.autenticacao_service = autenticacao_service
 
-    def pode_gerenciar(self, usuario_logado: Usuario, usuario_alvo: Usuario) -> bool:
-        if usuario_logado.papel == PapelUsuario.ADMINISTRADOR:
+    @staticmethod
+    def pode_gerenciar(usuario_logado: Usuario, usuario_alvo: Usuario) -> bool:
+        if usuario_logado.papel == PapelEnum.ADMIN:
             return True
 
-        if usuario_logado.papel == PapelUsuario.GERENTE:
-            return usuario_alvo.papel == PapelUsuario.FUNCIONARIO
+        if usuario_logado.papel == PapelEnum.GERENTE:
+            return usuario_alvo.papel == PapelEnum.FUNCIONARIO
         return False
 
     def cadastrar_usuario(
         self,
         usuario_logado: Usuario,
-        nome: str,
-        senha: str,
-        papel: PapelUsuario = PapelUsuario.FUNCIONARIO,
+        dados_cadastro: Usuario,
     ) -> Usuario:
-        verificar_texto_obrigatorio(nome, "O nome nao pode estar vazio.")
-
-        verificar_texto_obrigatorio(senha, "Senha nao pode estar vazio.")
-
         papeis_permitidos = self.obter_papeis_cadastro(usuario_logado)
 
-        if papel not in papeis_permitidos:
-            raise PermissionError("Você não pode cadastrar esse cargo.")
+        if dados_cadastro.papel not in papeis_permitidos:
+            raise PermissionError('Você não pode cadastrar esse cargo.')
 
-        senha_hash = self.autenticacao_service.gerar_senha_hash(senha)
-        novo_usuario = Usuario(nome=nome, senha_hash=senha_hash, papel=papel)
-        return self.usuario_repository.criar(novo_usuario)
+        novo_user = dados_cadastro
+        novo_user.senha = self.autenticacao_service.gerar_senha_hash(
+            dados_cadastro.senha
+        )
+
+        return self.usuario_repository.criar(novo_user)
 
     def promover_a_gerente(self, usuario_logado: Usuario, id_usuario: int) -> Usuario:
-        if usuario_logado.papel != PapelUsuario.ADMINISTRADOR:
+        if usuario_logado.papel != PapelEnum.ADMIN:
             raise PermissionError(
-                "Apenas administradores podem promover funcionários a gerentes."
+                'Apenas administradores podem promover funcionários a gerentes.'
             )
-        verificar_id(id_usuario, "ID de usuario invalido.")
+        verificar_id(id_usuario, 'ID de usuário invalido.')
 
         usuario = self.usuario_repository.buscar_por_id(id_usuario)
         if not usuario:
-            raise ValueError(f"Usuário com id {id_usuario} não encontrado.")
+            raise ValueError(f'Usuário com id {id_usuario} não encontrado.')
 
-        if usuario.papel != PapelUsuario.FUNCIONARIO:
-            raise ValueError("Apenas funcionários podem ser promovidos a gerentes.")
+        if usuario.papel != PapelEnum.FUNCIONARIO:
+            raise ValueError('Apenas funcionários podem ser promovidos a gerentes.')
 
-        usuario.papel = PapelUsuario.GERENTE
-        return self.usuario_repository.atualizar(usuario)
+        return self.usuario_repository.atualizar(
+            usuario.id, {'papel': PapelEnum.GERENTE}
+        )
 
     def resetar_senha(
         self, usuario_logado: Usuario, id_usuario_alvo: int, nova_senha: str
     ) -> Usuario:
-        verificar_id(id_usuario_alvo, "ID de usuario invalido.")
+        verificar_id(id_usuario_alvo, 'ID de usuário invalido.')
 
-        verificar_texto_obrigatorio(nova_senha, "Senha nao pode estar vazio.")
+        verificar_texto_obrigatorio(nova_senha, 'Senha não pode estar vazio.')
 
         usuario_alvo = self.usuario_repository.buscar_por_id(id_usuario_alvo)
         if not usuario_alvo:
-            raise ValueError(f"Usuário com id {id_usuario_alvo} não encontrado.")
+            raise ValueError(f'Usuário com id {id_usuario_alvo} não encontrado.')
 
         if not self.pode_gerenciar(usuario_logado, usuario_alvo):
             raise PermissionError(
-                "Você não tem permissão para resetar a senha deste usuário."
+                'Você não tem permissão para resetar a senha deste usuário.'
             )
 
         nova_senha_hash = self.autenticacao_service.gerar_senha_hash(nova_senha)
-        usuario_alvo.senha_hash = nova_senha_hash
-        return self.usuario_repository.atualizar(usuario_alvo)
+        return self.usuario_repository.atualizar(
+            usuario_alvo.id, {'senha': nova_senha_hash}
+        )
 
     def atualizar_status(
         self, usuario_logado: Usuario, id_usuario_alvo: int, status_ativo: bool
     ) -> Usuario:
-        verificar_id(id_usuario_alvo, "ID de usuario invalido.")
+        verificar_id(id_usuario_alvo, 'ID de usuário invalido.')
 
         if not isinstance(status_ativo, bool):
-            raise TypeError("Status deve ser True ou False.")
+            raise TypeError('Status deve ser True ou False.')
 
         usuario_alvo = self.usuario_repository.buscar_por_id(id_usuario_alvo)
         if not usuario_alvo:
-            raise ValueError(f"Usuário com id {id_usuario_alvo} não encontrado.")
+            raise ValueError(f'Usuário com id {id_usuario_alvo} não encontrado.')
 
-        if usuario_alvo.papel == PapelUsuario.ADMINISTRADOR:
+        if usuario_alvo.papel == PapelEnum.ADMIN:
             raise PermissionError(
-                "Contas de administradores nao podem ser ativadas ou desativas pelo sistema."
+                'Contas de administradores não podem ser ativadas ou '
+                'desativas pelo sistema.'
             )
 
-        if not status_ativo and usuario_logado.id_usuario == usuario_alvo.id_usuario:
-            raise ValueError("Voce nao pode desativar a propria conta.")
+        if not status_ativo and usuario_logado.id == usuario_alvo.id:
+            raise ValueError('Voce não pode desativar a própria conta.')
 
         if not self.pode_gerenciar(usuario_logado, usuario_alvo):
             raise PermissionError(
-                "Voce nao tem permissao para alterar status deste usuario."
+                'Voce não tem permissão para alterar status deste usuário.'
             )
 
         if status_ativo == usuario_alvo.ativo:
             raise ValueError(
-                f"Usuario ja esta {'ativo.' if status_ativo else 'desativado.'}"
+                f'Usuario ja esta {"ativo." if status_ativo else "desativado."}'
             )
 
-        usuario_alvo.ativo = status_ativo
-        return self.usuario_repository.atualizar(usuario_alvo)
+        return self.usuario_repository.atualizar(
+            usuario_alvo.id, {'ativo': status_ativo}
+        )
 
-    def obter_papeis_cadastro(self, usuario_logado: Usuario) -> list[PapelUsuario]:
-        if usuario_logado.papel == PapelUsuario.ADMINISTRADOR:
-            return [PapelUsuario.FUNCIONARIO, PapelUsuario.GERENTE]
-        elif usuario_logado.papel == PapelUsuario.GERENTE:
-            return [PapelUsuario.FUNCIONARIO]
+    @staticmethod
+    def obter_papeis_cadastro(usuario_logado: Usuario) -> list[PapelEnum]:
+        if usuario_logado.papel == PapelEnum.ADMIN:
+            return [PapelEnum.FUNCIONARIO, PapelEnum.GERENTE]
+        elif usuario_logado.papel == PapelEnum.GERENTE:
+            return [PapelEnum.FUNCIONARIO]
         else:
             raise PermissionError(
-                "Funcionarios nao tem permissao para casdastrar usuarios"
+                'funcionários não tem permissão para cadastrar usuários'
             )
 
     def criar_admin_padrao(self) -> Usuario | None:
         if self.usuario_repository.existe_usuario():
             return None
 
-        senha_do_ambiente = os.getenv("SENHA_PADRAO_FABRICA", "admin123")
+        senha_do_ambiente = Settings().SENHA_PADRAO_FABRICA
         senha_hash = self.autenticacao_service.gerar_senha_hash(senha_do_ambiente)
-        admin_padrao = Usuario(
-            nome="admin", senha_hash=senha_hash, papel=PapelUsuario.ADMINISTRADOR
-        )
+        admin_padrao = Usuario(nome='admin', senha=senha_hash, papel=PapelEnum.ADMIN)
         return self.usuario_repository.criar(admin_padrao)
 
     def listar_usuarios(
         self, usuario_logado: Usuario, status_ativo: bool = True
     ) -> list:
-        if usuario_logado.papel == PapelUsuario.FUNCIONARIO:
+        if usuario_logado.papel == PapelEnum.FUNCIONARIO:
             raise PermissionError(
-                "Funcionarios nao tem permissao para listar funcionarios"
+                'Funcionarios não tem permissão para listar funcionarios'
             )
 
         usuarios = self.usuario_repository.listar(status_ativo)
 
-        if usuario_logado.papel == PapelUsuario.GERENTE:
+        if usuario_logado.papel == PapelEnum.GERENTE:
             return [
                 usuario
                 for usuario in usuarios
-                if usuario.papel == PapelUsuario.FUNCIONARIO
+                if usuario.papel == PapelEnum.FUNCIONARIO
             ]
 
         return usuarios

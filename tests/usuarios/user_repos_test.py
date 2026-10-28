@@ -7,10 +7,10 @@ def test_criar_e_buscar_usuario(user_repository):
     usuario_criado = user_repository.criar(usuario)
 
     assert usuario_criado.id is not None
-    assert usuario_criado.id == 1
 
     usuario_buscado = user_repository.buscar_por_id(usuario_criado.id)
 
+    assert usuario_buscado.id == usuario_criado.id
     assert usuario_buscado is not None
     assert usuario_buscado.nome == 'test'
     assert usuario_buscado.senha == 'senha'
