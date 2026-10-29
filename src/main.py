@@ -1,4 +1,5 @@
 from psycopg2 import InterfaceError, OperationalError
+from sqlalchemy.orm import Session
 
 from src.cli.cliente_cli import processar_menu_cliente
 from src.cli.gerenciamento_cli import processar_menu_gerenciamento
@@ -9,7 +10,6 @@ from src.cli.usuario_cli import (
     realizar_login,
 )
 from src.cli.venda_cli import processar_menu_venda
-from src.controllers.cliente_controller import ClienteController
 from src.controllers.estoque_controller import EstoqueController
 from src.controllers.produto_controller import ProdutoController
 from src.controllers.venda_controller import VendaController
@@ -19,7 +19,6 @@ from src.repositories.cliente_repository import ClienteRepository
 from src.repositories.movimentacao_repository import MovimentacaoRepository
 from src.repositories.produto_repository import ProdutoRepository
 from src.repositories.venda_repository import VendaRepository
-from src.services.cliente_service import ClienteService
 from src.services.estoque_service import EstoqueService
 from src.services.produto_service import ProdutoService
 from src.services.venda_service import VendaService
@@ -43,7 +42,6 @@ def exibir_menu(usuario_logado):
 
 def processar_menu_principal(
     usuario_logado,
-    cliente_controller,
     produto_controller,
     estoque_controller,
     venda_controller,
@@ -52,7 +50,7 @@ def processar_menu_principal(
     if opcao == '1':
         processar_menu_perfil(usuario_logado)
     elif opcao == '2':
-        processar_menu_cliente(usuario_logado, cliente_controller)
+        processar_menu_cliente(usuario_logado)
     elif opcao == '3':
         processar_menu_produto(produto_controller)
     elif opcao == '4':
@@ -76,13 +74,8 @@ def main():
     # Montagem das dependências
     try:
         conexao_db = Conexao
-        # usuario
         garantir_admin_padrao()
-
-        # cliente
-        cliente_repo = ClienteRepository(conexao_db)
-        cliente_serv = ClienteService(cliente_repo)
-        cliente_controller = ClienteController(cliente_serv)
+        client_repo = ClienteRepository(Session)
 
         # produto
         produto_repo = ProdutoRepository(conexao_db)
@@ -97,7 +90,7 @@ def main():
         # venda
         venda_repo = VendaRepository(conexao_db)
         venda_serv = VendaService(
-            conexao_db, venda_repo, produto_repo, cliente_repo, estoque_serv
+            conexao_db, venda_repo, produto_repo, client_repo, estoque_serv
         )
         venda_controller = VendaController(venda_serv)
 
@@ -105,7 +98,6 @@ def main():
 
         while processar_menu_principal(
             usuario_logado,
-            cliente_controller,
             produto_controller,
             estoque_controller,
             venda_controller,
