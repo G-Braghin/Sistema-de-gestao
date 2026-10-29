@@ -11,10 +11,12 @@ def test_gerar_e_verificar_senha(user_auth):
     assert not user_auth.verificar_senha('senha-incorreta', senha_hash)
 
 
-def test_autenticar_usuario_ativo(user_auth, usuario):
-    autenticado = user_auth.autenticar(usuario.id, usuario.senha_limpa)
+def test_autenticar_usuario_ativo(user_auth, user_repository_mock, usuario):
+    user_repository_mock.buscar_por_id.return_value = usuario
 
-    assert autenticado is usuario
+    response = user_auth.autenticar(usuario.id, usuario.senha_limpa)
+
+    assert response is usuario
 
 
 @pytest.mark.parametrize(
@@ -25,16 +27,25 @@ def test_autenticar_usuario_ativo(user_auth, usuario):
     ],
 )
 def test_autenticar_rejeita_credenciais_invalidas(
-    user_auth, usuario, usuario_existe, senha
+    user_auth, user_repository_mock, usuario, usuario_existe, senha
 ):
+    user_repository_mock.buscar_por_id.return_value = (
+        usuario if usuario_existe else None
+    )
+
     id_usuario = usuario.id if usuario_existe else usuario.id + 999
 
     with pytest.raises(ValueError, match='ID ou Senha Invalidos'):
         user_auth.autenticar(id_usuario, senha)
 
+    user_repository_mock.buscar_por_id.assert_called_once()
 
-def test_nao_autenticar_usuario_inativo(user_auth, session):
-    usuario = usuario_criar(session, user_auth, ativo=False)
+
+def test_nao_autenticar_usuario_inativo(user_auth, user_repository_mock):
+    usuario = usuario_criar(ativo=False)
+    usuario.id = 19
+
+    user_repository_mock.buscar_por_id.return_value = usuario
 
     with pytest.raises(ValueError, match='Usuário inativo'):
         user_auth.autenticar(usuario.id, usuario.senha_limpa)
@@ -60,24 +71,33 @@ def test_autenticar_rejeita_senha_vazia(user_auth, senha):
         user_auth.autenticar(1, senha)
 
 
-def test_atualizar_senha_usuario(user_auth, usuario):
-    resultado = user_auth.atualizar_senha_usuario(
+def test_atualizar_senha_usuario(user_auth, user_repository_mock, usuario):
+    user_repository_mock.buscar_por_id.return_value = usuario
+
+    user_auth.atualizar_senha_usuario(
         usuario.id, usuario.senha_limpa, nova_senha='senha-nova'
     )
 
-    assert resultado.id is usuario.id
-    assert user_auth.verificar_senha('senha-nova', resultado.senha)
-    assert not user_auth.verificar_senha('senha-atual', resultado.senha)
+    args, kwargs = user_repository_mock.atualizar.call_args
+    id_usuario, dados = args
+
+    assert id_usuario == usuario.id
+    assert user_auth.verificar_senha('senha-nova', dados['senha'])
+    assert not user_auth.verificar_senha(usuario.senha_limpa, dados['senha'])
 
 
-def test_atualizar_senha_rejeita_senha_atual_incorreta(user_auth, session):
-    usuario = usuario_criar(session, user_auth)
+def test_atualizar_senha_rejeita_senha_atual_incorreta(
+    user_auth, user_repository_mock, usuario
+):
+    user_repository_mock.buscar_por_id.return_value = usuario
 
     with pytest.raises(ValueError, match='Senha atual incorreta'):
         user_auth.atualizar_senha_usuario(usuario.id, 'senha-incorreta', 'senha-nova')
 
 
-def test_atualizar_senha_rejeita_usuario_inexistente(user_auth):
+def test_atualizar_senha_rejeita_usuario_inexistente(user_auth, user_repository_mock):
+
+    user_repository_mock.buscar_por_id.return_value = None
 
     with pytest.raises(ValueError, match='Usuário não encontrado'):
         user_auth.atualizar_senha_usuario(999999, 'senha-atual', 'senha-nova')

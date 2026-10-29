@@ -31,8 +31,8 @@ def user_service(user_repository_mock, user_auth_mock):
 
 
 @pytest.fixture
-def user_auth(user_repository):
-    return AutenticacaoService(user_repository)
+def user_auth(user_repository_mock):
+    return AutenticacaoService(user_repository_mock)
 
 
 @pytest.fixture
@@ -45,17 +45,16 @@ def user_auth_mock(mocker: MockerFixture):
     return mocker.MagicMock(spec=AutenticacaoService)
 
 
-def usuario_criar(session, user_auth, **kwargs):
+def usuario_criar(**kwargs):
     senha_limpa = 'senha-limpa'
-    usuario = UserFactory(senha=user_auth.gerar_senha_hash(senha_limpa), **kwargs)
-    session.add(usuario)
-    session.commit()
-    session.refresh(usuario)
+    usuario = UserFactory(
+        senha=AutenticacaoService.gerar_senha_hash(senha_limpa), **kwargs
+    )
+    usuario.id = 10
     usuario.senha_limpa = senha_limpa
-
     return usuario
 
 
 @pytest.fixture
-def usuario(session, user_auth):
-    return usuario_criar(session, user_auth)
+def usuario():
+    return usuario_criar()
