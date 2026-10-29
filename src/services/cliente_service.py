@@ -2,16 +2,15 @@ import re
 
 from psycopg2.errors import UniqueViolation
 
-from src.entities.cliente import Cliente
-from src.entities.enums.papel_usuario import PapelUsuario
-from src.entities.usuario import Usuario
+from src.enums import PapelEnum
+from src.models import Cliente, Usuario
 from src.repositories.cliente_repository import ClienteRepository
 from src.utils.validacoes import verificar_texto_obrigatorio
 
-CLIENTE_NAO_ATIVO = "Cliente esta desativado."
-CLIENTE_NAO_ENCONTRADO = "Cliente nao encontrado."
-CPF_INVALIDO = "CPF e invalido."
-CPF_NAO_INSERIDO = "CPF nao pode estar vazio."
+CLIENTE_NAO_ATIVO = 'Cliente esta desativado.'
+CLIENTE_NAO_ENCONTRADO = 'Cliente nao encontrado.'
+CPF_INVALIDO = 'CPF e invalido.'
+CPF_NAO_INSERIDO = 'CPF nao pode estar vazio.'
 
 
 class ClienteService:
@@ -39,14 +38,19 @@ class ClienteService:
         return digito2 == int(cpf[10])
 
     def _validar_telefone(self, telefone: str) -> bool:
-        padrao = r"^[1-9]{2}9[\d]{8}$"
+
+        if len(telefone) == 13 and telefone.startswith('55'):
+            telefone = telefone[2:]
+
+        padrao = r'^[1-9]{2}9[\d]{8}$'
+
         return bool(re.match(padrao, telefone))
 
     def _buscar_cliente_ativo(self, cpf_cliente: str) -> Cliente:
         if cpf_cliente is None:
             raise ValueError(CPF_NAO_INSERIDO)
 
-        cpf_cliente = re.sub(r"\D", "", cpf_cliente)
+        cpf_cliente = re.sub(r'\D', '', cpf_cliente)
         if not self._validar_cpf(cpf_cliente):
             raise ValueError(CPF_INVALIDO)
 
@@ -64,26 +68,26 @@ class ClienteService:
         self, nome: str, cpf: str, telefone: str, endereco: str | None = None
     ) -> Cliente:
 
-        verificar_texto_obrigatorio(nome, "O nome nao pode estar vazio.")
+        verificar_texto_obrigatorio(nome, 'O nome nao pode estar vazio.')
 
         if not cpf:
             raise ValueError(CPF_NAO_INSERIDO)
 
-        cpf = re.sub(r"\D", "", cpf)
+        cpf = re.sub(r'\D', '', cpf)
 
         if not self._validar_cpf(cpf):
             raise ValueError(CPF_INVALIDO)
 
         cliente_existente = self.cliente_repository.buscar_por_cpf(cpf)
         if cliente_existente:
-            raise ValueError("O CPF já está cadastrado.")
+            raise ValueError('O CPF já está cadastrado.')
 
         if not telefone:
-            raise ValueError("O telefone nao pode estar vazio.")
+            raise ValueError('O telefone nao pode estar vazio.')
 
-        telefone = re.sub(r"\D", "", telefone)
+        telefone = re.sub(r'\D', '', telefone)
         if not self._validar_telefone(telefone):
-            raise ValueError("O telefone e invalido!")
+            raise ValueError('O telefone e invalido!')
 
         if endereco is not None:
             endereco = endereco.strip()
@@ -94,8 +98,8 @@ class ClienteService:
         try:
             return self.cliente_repository.criar(novo_cliente)
         except UniqueViolation as erro:
-            if erro.diag.constraint_name == "clientes_cpf_unico":
-                raise ValueError("O CPF já está cadastrado.") from erro
+            if erro.diag.constraint_name == 'clientes_cpf_unico':
+                raise ValueError('O CPF já está cadastrado.') from erro
             raise
 
     def atualizar_telefone(self, cpf_cliente: str, telefone: str) -> Cliente:
@@ -103,12 +107,12 @@ class ClienteService:
         cliente = self._buscar_cliente_ativo(cpf_cliente)
 
         if not telefone:
-            raise ValueError("O telefone nao pode estar vazio.")
-
-        telefone = re.sub(r"\D", "", telefone)
+            raise ValueError('O telefone nao pode estar vazio.')
+        breakpoint()
+        telefone = re.sub(r'\D', '', telefone)
 
         if not self._validar_telefone(telefone):
-            raise ValueError("O telefone e invalido!")
+            raise ValueError('O telefone e invalido!')
 
         cliente.telefone = telefone
         return self.cliente_repository.atualizar(cliente)
@@ -126,7 +130,7 @@ class ClienteService:
     def atualizar_nome(self, cpf_cliente: str, nome: str) -> Cliente:
         cliente = self._buscar_cliente_ativo(cpf_cliente)
 
-        verificar_texto_obrigatorio(nome, "O nome nao pode estar vazio.")
+        verificar_texto_obrigatorio(nome, 'O nome nao pode estar vazio.')
 
         cliente.nome = nome.strip()
         return self.cliente_repository.atualizar(cliente)
@@ -134,25 +138,25 @@ class ClienteService:
     def listar(
         self, usuario_logado: Usuario, status_ativo: bool = True
     ) -> list[Cliente]:
-        if not status_ativo and usuario_logado.papel == PapelUsuario.FUNCIONARIO:
+        if not status_ativo and usuario_logado.papel == PapelEnum.FUNCIONARIO:
             raise PermissionError(
-                "Funcionarios nao tem permissao para ver cliente desativados."
+                'Funcionarios nao tem permissao para ver cliente desativados.'
             )
         return self.cliente_repository.listar(status_ativo)
 
     def atualizar_status(
         self, usuario_logado: Usuario, id_cliente: int, status_ativo: bool
     ) -> Cliente:
-        if usuario_logado.papel == PapelUsuario.FUNCIONARIO:
+        if usuario_logado.papel == PapelEnum.FUNCIONARIO:
             raise PermissionError(
-                "Funcionarios nao tem permissao para atualizar status de clientes."
+                'Funcionarios nao tem permissao para atualizar status de clientes.'
             )
 
         if not id_cliente:
-            raise ValueError("ID nao inserido.")
+            raise ValueError('ID nao inserido.')
 
         if not isinstance(id_cliente, int) or isinstance(id_cliente, bool):
-            raise TypeError("ID tem que ser um numero.")
+            raise TypeError('ID tem que ser um numero.')
 
         cliente = self.cliente_repository.buscar_por_id(id_cliente)
 
@@ -161,9 +165,9 @@ class ClienteService:
 
         if cliente.ativo == status_ativo:
             raise ValueError(
-                "Cliente ja esta ativo."
+                'Cliente ja esta ativo.'
                 if status_ativo
-                else "Cliente ja esta desativado."
+                else 'Cliente ja esta desativado.'
             )
         cliente.ativo = status_ativo
         return self.cliente_repository.atualizar(cliente)
