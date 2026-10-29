@@ -1,7 +1,5 @@
 import re
 
-from psycopg2.errors import UniqueViolation
-
 from src.enums import PapelEnum
 from src.models import Cliente, Usuario
 from src.repositories.cliente_repository import ClienteRepository
@@ -95,12 +93,10 @@ class ClienteService:
         novo_cliente = Cliente(
             nome=nome.strip(), cpf=cpf, telefone=telefone, endereco=endereco
         )
-        try:
-            return self.cliente_repository.criar(novo_cliente)
-        except UniqueViolation as erro:
-            if erro.diag.constraint_name == 'clientes_cpf_unico':
-                raise ValueError('O CPF já está cadastrado.') from erro
-            raise
+        cliente_criado = self.cliente_repository.criar(novo_cliente)
+        self.cliente_repository.commit()
+
+        return cliente_criado
 
     def atualizar_telefone(self, cpf_cliente: str, telefone: str) -> Cliente:
 
@@ -114,7 +110,11 @@ class ClienteService:
             raise ValueError('O telefone e invalido!')
 
         cliente.telefone = telefone
-        return self.cliente_repository.atualizar(cliente)
+
+        cliente_atualizado = self.cliente_repository.atualizar(cliente)
+        self.cliente_repository.commit()
+
+        return cliente_atualizado
 
     def atualizar_endereco(self, cpf_cliente: str, endereco: str) -> Cliente:
         cliente = self._buscar_cliente_ativo(cpf_cliente)
@@ -123,8 +123,10 @@ class ClienteService:
             return cliente
 
         cliente.endereco = endereco.strip()
+        cliente_atualizado = self.cliente_repository.atualizar(cliente)
+        self.cliente_repository.commit()
 
-        return self.cliente_repository.atualizar(cliente)
+        return cliente_atualizado
 
     def atualizar_nome(self, cpf_cliente: str, nome: str) -> Cliente:
         cliente = self._buscar_cliente_ativo(cpf_cliente)
@@ -132,7 +134,10 @@ class ClienteService:
         verificar_texto_obrigatorio(nome, 'O nome nao pode estar vazio.')
 
         cliente.nome = nome.strip()
-        return self.cliente_repository.atualizar(cliente)
+        cliente_atualizado = self.cliente_repository.atualizar(cliente)
+        self.cliente_repository.commit()
+
+        return cliente_atualizado
 
     def listar(
         self, usuario_logado: Usuario, status_ativo: bool = True
@@ -169,4 +174,7 @@ class ClienteService:
                 else 'Cliente ja esta desativado.'
             )
         cliente.ativo = status_ativo
-        return self.cliente_repository.atualizar(cliente)
+        cliente_atualizado = self.cliente_repository.atualizar(cliente)
+        self.cliente_repository.commit()
+
+        return cliente_atualizado
