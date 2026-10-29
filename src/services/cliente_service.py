@@ -108,7 +108,6 @@ class ClienteService:
 
         if not telefone:
             raise ValueError('O telefone nao pode estar vazio.')
-        breakpoint()
         telefone = re.sub(r'\D', '', telefone)
 
         if not self._validar_telefone(telefone):
