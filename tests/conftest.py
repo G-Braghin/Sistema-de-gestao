@@ -3,7 +3,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from testcontainers.community.postgres import PostgresContainer
 
+from src.enums import PapelEnum
 from src.models import Base
+from tests.usuarios.conftest import UserFactory
 
 
 @pytest.fixture(scope='session')
@@ -36,3 +38,18 @@ def session(engine):
             transacao.rollback()
     finally:
         conn.close()
+
+
+# Definindo fixture de usuario logado
+@pytest.fixture
+def user_funcionario():
+    user = UserFactory(papel=PapelEnum.FUNCIONARIO)
+    user.id = 99
+    return user
+
+
+@pytest.fixture
+def user_gerente():
+    user = UserFactory(papel=PapelEnum.GERENTE)
+    user.id = 99
+    return user
