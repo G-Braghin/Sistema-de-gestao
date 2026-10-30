@@ -42,7 +42,7 @@ class ProdutoRepository:
         return produtos
 
     def listar(self) -> list[Produto]:
-        produtos = self.session.scalars(select(Produto)).all()
+        produtos = self.session.scalars(select(Produto).order_by(Produto.nome)).all()
 
         return produtos
 
