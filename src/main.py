@@ -79,7 +79,7 @@ def main():
 
         # produto
         produto_repo = ProdutoRepository(conexao_db)
-        produto_serv = ProdutoService(produto_repo, conexao_db)
+        produto_serv = ProdutoService(produto_repo)
         produto_controller = ProdutoController(produto_serv)
 
         # estoque movimentacoes

@@ -39,7 +39,7 @@ class UsuarioService:
             dados_cadastro.senha
         )
         novo_user = self.usuario_repository.criar(novo_user)
-        self.usuario_repository.commit()
+
         return novo_user
 
     def promover_a_gerente(self, usuario_logado: Usuario, id_usuario: int) -> Usuario:
@@ -60,7 +60,6 @@ class UsuarioService:
             usuario.id, {'papel': PapelEnum.GERENTE}
         )
 
-        self.usuario_repository.commit()
         return usuario
 
     def resetar_senha(
@@ -83,7 +82,7 @@ class UsuarioService:
         usuario = self.usuario_repository.atualizar(
             usuario_alvo.id, {'senha': nova_senha_hash}
         )
-        self.usuario_repository.commit()
+
         return usuario
 
     def atualizar_status(
@@ -119,7 +118,6 @@ class UsuarioService:
         usuario = self.usuario_repository.atualizar(
             usuario_alvo.id, {'ativo': status_ativo}
         )
-        self.usuario_repository.commit()
 
         return usuario
 
@@ -142,8 +140,6 @@ class UsuarioService:
         senha_hash = self.autenticacao_service.gerar_senha_hash(senha_do_ambiente)
         admin_padrao = Usuario(nome='admin', senha=senha_hash, papel=PapelEnum.ADMIN)
         admin = self.usuario_repository.criar(admin_padrao)
-
-        self.usuario_repository.commit()
 
         return admin
 

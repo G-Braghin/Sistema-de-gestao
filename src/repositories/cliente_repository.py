@@ -34,6 +34,3 @@ class ClienteRepository:
         lista_clientes = self.session.scalars(query).all()
 
         return lista_clientes
-
-    def commit(self):
-        self.session.commit()

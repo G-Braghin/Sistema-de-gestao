@@ -94,7 +94,6 @@ class ClienteService:
             nome=nome.strip(), cpf=cpf, telefone=telefone, endereco=endereco
         )
         cliente_criado = self.cliente_repository.criar(novo_cliente)
-        self.cliente_repository.commit()
 
         return cliente_criado
 
@@ -112,7 +111,6 @@ class ClienteService:
         cliente.telefone = telefone
 
         cliente_atualizado = self.cliente_repository.atualizar(cliente)
-        self.cliente_repository.commit()
 
         return cliente_atualizado
 
@@ -124,7 +122,6 @@ class ClienteService:
 
         cliente.endereco = endereco.strip()
         cliente_atualizado = self.cliente_repository.atualizar(cliente)
-        self.cliente_repository.commit()
 
         return cliente_atualizado
 
@@ -135,7 +132,6 @@ class ClienteService:
 
         cliente.nome = nome.strip()
         cliente_atualizado = self.cliente_repository.atualizar(cliente)
-        self.cliente_repository.commit()
 
         return cliente_atualizado
 
@@ -175,6 +171,5 @@ class ClienteService:
             )
         cliente.ativo = status_ativo
         cliente_atualizado = self.cliente_repository.atualizar(cliente)
-        self.cliente_repository.commit()
 
         return cliente_atualizado
