@@ -42,11 +42,19 @@ class ProdutoRepository:
         return produtos
 
     def listar(self) -> list[Produto]:
+        """Listar produtos no banco de dados"""
         produtos = self.session.scalars(select(Produto).order_by(Produto.nome)).all()
 
         return produtos
 
     def atualizar(self, produto: Produto) -> Produto:
-        self.session.merge(produto)
+        """Metodo para atualizar itens singulares"""
+        self.session.add(produto)
 
         return produto
+
+    def atualizar_multiplos(self, produtos: list[Produto]):
+        """Metodo para atualizar multiplos produtos"""
+        self.session.add_all(produtos)
+
+        return produtos

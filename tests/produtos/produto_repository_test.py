@@ -88,3 +88,21 @@ def test_atualizar_produto_retorna_produto_atualizado(product_repository, produt
     assert resultado.nome == 'Novo nome'
     assert resultado.preco == novo_preco
     assert resultado.quantidade == nova_quantidade
+
+
+def test_atualizar_multiplos_produtos_retorna_atualizado(
+    product_repository, produtos_db
+):
+    quantidade_anterior = {produto.id: produto.quantidade for produto in produtos_db}
+    quantidade_add = 10
+
+    for produto in produtos_db:
+        produto.quantidade += quantidade_add
+
+    resultado = product_repository.atualizar_multiplos(produtos_db)
+
+    assert len(resultado) == len(produtos_db)
+
+    for produto in resultado:
+        quant_antiga = quantidade_anterior[produto.id]
+        assert produto.quantidade == quant_antiga + quantidade_add
