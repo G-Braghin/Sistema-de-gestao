@@ -1,122 +1,52 @@
-from src.database.conexao import Conexao
-from src.entities.produto import Produto
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from src.models import Produto
 
 
 class ProdutoRepository:
-    def __init__(self, conexao: Conexao):
-        self.conexao = conexao
+    def __init__(self, session: Session):
+        self.session = session
 
     def criar(self, produto: Produto) -> Produto:
-        conn = self.conexao.get_connection()
-        with conn.cursor() as cursor:
-            cursor.execute(
-                """
-                INSERT INTO produtos
-                (nome,marca,preco,quantidade_estoque)
-                VALUES (%s,%s,%s,%s)
-                RETURNING id_produto
-                """,
-                (
-                    produto.nome,
-                    produto.marca,
-                    produto.preco,
-                    produto.quantidade_estoque,
-                ),
-            )
-            produto.id_produto = cursor.fetchone()[0]
+        self.session.add(produto)
+        self.session.flush()
 
         return produto
 
     def buscar_por_id(self, id_produto: int) -> Produto | None:
-        conn = self.conexao.get_connection()
+        """Busca padrao para consultas"""
 
-        with conn.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT id_produto,
-                nome, marca, preco, quantidade_estoque
-                FROM produtos
-                WHERE id_produto = %s
-                """,
-                (id_produto,),
-            )
-            row = cursor.fetchone()
-        if row:
-            return Produto(
-                id_produto=row[0],
-                nome=row[1],
-                marca=row[2],
-                preco=row[3],
-                quantidade_estoque=row[4],
-            )
-        return None
+        produto = self.session.scalar(select(Produto).where(Produto.id == id_produto))
+        return produto
 
     def buscar_por_id_para_atualizar(self, id_produto: int) -> Produto | None:
-        # Quem chama deve manter a transacao aberta ate terminar a alteracao.
-        conn = self.conexao.get_connection()
-        with conn.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT id_produto, nome, marca, preco, quantidade_estoque
-                FROM produtos
-                WHERE id_produto = %s
-                FOR UPDATE
-                """,
-                (id_produto,),
-            )
-            row = cursor.fetchone()
+        """Busca feita para processos de escrita(ex: atualizar estoque)"""
 
-        if row is None:
-            return None
-        return Produto(
-            id_produto=row[0],
-            nome=row[1],
-            marca=row[2],
-            preco=row[3],
-            quantidade_estoque=row[4],
+        produto = self.session.scalar(
+            select(Produto).where(Produto.id == id_produto).with_for_update()
         )
+        return produto
+
+    def buscar_por_multiplos_ids(self, lista_ids: list[int]) -> list[Produto]:
+        """Busca feita para processos de escrita com varios itens"""
+
+        if not lista_ids:
+            return []
+
+        ids_ordenados = sorted(lista_ids)
+
+        query = select(Produto).where(Produto.id.in_(ids_ordenados)).with_for_update()
+        produtos = list(self.session.scalars(query).all())
+
+        return produtos
 
     def listar(self) -> list[Produto]:
-        conn = self.conexao.get_connection()
-        with conn.cursor() as cursor:
-            cursor.execute(""" 
-                SELECT id_produto,
-                nome, marca, preco, quantidade_estoque
-                FROM produtos
-                ORDER BY nome
-                """)
-            rows = cursor.fetchall()
+        produtos = self.session.scalars(select(Produto)).all()
 
-        return [
-            Produto(
-                id_produto=row[0],
-                nome=row[1],
-                marca=row[2],
-                preco=row[3],
-                quantidade_estoque=row[4],
-            )
-            for row in rows
-        ]
+        return produtos
 
     def atualizar(self, produto: Produto) -> Produto:
-        conn = self.conexao.get_connection()
-        with conn.cursor() as cursor:
-            cursor.execute(
-                """
-                UPDATE produtos
-                SET nome = %s, marca = %s, preco = %s, quantidade_estoque = %s
-                WHERE id_produto = %s
-                """,
-                (
-                    produto.nome,
-                    produto.marca,
-                    produto.preco,
-                    produto.quantidade_estoque,
-                    produto.id_produto,
-                ),
-            )
-            linhas_afetadas = cursor.rowcount
+        self.session.merge(produto)
 
-        if linhas_afetadas == 0:
-            raise ValueError(f"Produto com id {produto.id_produto} nao encontrado.")
         return produto
