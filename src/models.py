@@ -39,4 +39,4 @@ class Produto(Base):
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
     nome: Mapped[str]
     preco: Mapped[Decimal]
-    quantidade: Mapped[int]
+    quantidade: Mapped[int] = mapped_column(default=0)
