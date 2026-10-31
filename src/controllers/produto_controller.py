@@ -5,8 +5,8 @@ class ProdutoController:
     def __init__(self, produto_service: ProdutoService):
         self.produto_service = produto_service
 
-    def cadastrar_produto(self, nome: str, marca: str, preco):
-        produto_novo = self.produto_service.cadastrar_produto(nome, marca, preco)
+    def cadastrar_produto(self, nome: str, preco):
+        produto_novo = self.produto_service.cadastrar_produto(nome, preco)
         return produto_novo
 
     def listar_produtos(self):

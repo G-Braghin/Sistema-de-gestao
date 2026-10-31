@@ -42,7 +42,6 @@ def exibir_menu(usuario_logado):
 
 def processar_menu_principal(
     usuario_logado,
-    produto_controller,
     estoque_controller,
     venda_controller,
 ):
@@ -52,9 +51,9 @@ def processar_menu_principal(
     elif opcao == '2':
         processar_menu_cliente(usuario_logado)
     elif opcao == '3':
-        processar_menu_produto(produto_controller)
+        processar_menu_produto()
     elif opcao == '4':
-        processar_menu_venda(venda_controller, usuario_logado, produto_controller)
+        processar_menu_venda(venda_controller, usuario_logado)
     elif opcao == '5':
         if usuario_logado.papel in {PapelEnum.ADMIN, PapelEnum.GERENTE}:
             processar_menu_gerenciamento(
@@ -76,11 +75,7 @@ def main():
         conexao_db = Conexao
         garantir_admin_padrao()
         client_repo = ClienteRepository(Session)
-
-        # produto
-        produto_repo = ProdutoRepository(conexao_db)
-        produto_serv = ProdutoService(produto_repo)
-        produto_controller = ProdutoController(produto_serv)
+        produto_repo = ProdutoRepository(Session)
 
         # estoque movimentacoes
         movimentacao_repo = MovimentacaoRepository(conexao_db)
@@ -98,7 +93,6 @@ def main():
 
         while processar_menu_principal(
             usuario_logado,
-            produto_controller,
             estoque_controller,
             venda_controller,
         ):
