@@ -59,6 +59,13 @@ def user_gerente():
     return user
 
 
+@pytest.fixture
+def produto():
+    product = ProductFactory()
+    product.id = 99
+    return product
+
+
 # Definindo Fixture para testes que dependende de algo no banco
 @pytest.fixture
 def usuario_db(session):

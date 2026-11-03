@@ -31,7 +31,7 @@ def test_cadastrar_cliente_com_dados_validos(client_service, client_repository_m
 
 
 @pytest.mark.parametrize(
-    ('nome', 'cpf', 'telefone', 'mensagem'),
+    'caso',
     [
         (None, faker.ssn(), faker.cellphone_number(), 'O nome nao pode estar vazio.'),
         (faker.name(), None, faker.cellphone_number(), 'CPF nao pode estar vazio.'),
@@ -42,8 +42,9 @@ def test_cadastrar_cliente_com_dados_validos(client_service, client_repository_m
     ],
 )
 def test_cadastrar_cliente_com_dados_invalidos(
-    client_service, client_repository_mock, nome, cpf, telefone, mensagem
+    client_service, client_repository_mock, caso
 ):
+    nome, cpf, telefone, mensagem = caso
     client_repository_mock.buscar_por_cpf.return_value = None
 
     with pytest.raises(ValueError, match=mensagem):
@@ -92,7 +93,7 @@ def test_atualizar_telefone_cliente_com_dados_validos(
 
 
 @pytest.mark.parametrize(
-    ('existe', 'ativo', 'telefone', 'mensagem'),
+    'caso',
     [
         (False, True, faker.cellphone_number(), 'Cliente nao encontrado.'),
         (True, False, faker.cellphone_number(), 'Cliente esta desativado.'),
@@ -102,8 +103,9 @@ def test_atualizar_telefone_cliente_com_dados_validos(
     ],
 )
 def test_atualizar_telefone_cliente_com_dados_invalidos(
-    client_service, client_repository_mock, existe, telefone, ativo, mensagem
+    client_service, client_repository_mock, caso
 ):
+    existe, ativo, telefone, mensagem = caso
     cliente = criar_client(ativo=ativo)
 
     client_repository_mock.buscar_por_cpf.return_value = cliente if existe else None
@@ -201,7 +203,7 @@ def test_atualizar_nome_cliente_com_dados_validos(
 
 
 @pytest.mark.parametrize(
-    ('existe', 'ativo', 'nome', 'mensagem'),
+    'caso',
     [
         (False, True, faker.name(), 'Cliente nao encontrado.'),
         (True, False, faker.name(), 'Cliente esta desativado.'),
@@ -210,8 +212,9 @@ def test_atualizar_nome_cliente_com_dados_validos(
     ],
 )
 def test_atualizar_nome_cliente_com_dados_invalidos(
-    client_service, client_repository_mock, existe, ativo, nome, mensagem
+    client_service, client_repository_mock, caso
 ):
+    existe, ativo, nome, mensagem = caso
     cliente = criar_client(ativo=ativo)
 
     client_repository_mock.buscar_por_cpf.return_value = cliente if existe else None
