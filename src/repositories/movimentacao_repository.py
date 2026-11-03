@@ -1,86 +1,31 @@
-from src.database.conexao import Conexao
-from src.entities.enums.motivo_movimentacao import MotivoMovimentacao
-from src.entities.enums.tipo_movimentacao import TipoMovimentacao
-from src.entities.movimentacao_estoque import MovimentacaoEstoque
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from src.models import Movimentacao
 
 
 class MovimentacaoRepository:
-    def __init__(self, conexao: Conexao):
-        self.conexao = conexao
+    def __init__(self, session: Session):
+        self.session = session
 
-    def criar(self, movimentacao: MovimentacaoEstoque):
-        conn = self.conexao.get_connection()
-
-        with conn.cursor() as cursor:
-            cursor.execute(
-                """
-            INSERT INTO movimentacoes_estoque
-            (id_produto,id_usuario,tipo,quantidade,data_hora,motivo,id_venda)
-            VALUES (%s,%s,%s,%s,%s,%s,%s)
-            RETURNING id_movimentacao
-            """,
-                (
-                    movimentacao.id_produto,
-                    movimentacao.id_usuario,
-                    movimentacao.tipo.value,
-                    movimentacao.quantidade,
-                    movimentacao.data_hora,
-                    movimentacao.motivo.value,
-                    movimentacao.id_venda,
-                ),
-            )
-            movimentacao.id_movimentacao = cursor.fetchone()[0]
+    def criar(self, movimentacao: Movimentacao) -> Movimentacao:
+        """Cria a os dados de uma movimentacao na tabela."""
+        self.session.add(movimentacao)
+        self.session.flush()
 
         return movimentacao
 
-    def buscar_por_id(self, id_movimentacao):
-        conn = self.conexao.get_connection()
-        with conn.cursor() as cursor:
-            cursor.execute(
-                """
-            SELECT id_movimentacao,
-            id_produto,id_usuario,tipo,quantidade,data_hora,motivo,id_venda
-            FROM movimentacoes_estoque
-            where id_movimentacao = %s
-            """,
-                (id_movimentacao,),
-            )
-            row = cursor.fetchone()
-        if row:
-            return MovimentacaoEstoque(
-                id_movimentacao=row[0],
-                id_produto=row[1],
-                id_usuario=row[2],
-                tipo=TipoMovimentacao(row[3]),
-                quantidade=row[4],
-                data_hora=row[5],
-                motivo=MotivoMovimentacao(row[6]),
-                id_venda=row[7],
-            )
-        return None
+    def buscar_por_id(self, id_movimentacao) -> Movimentacao | None:
+        """Buscar por uma movimentacao pelo id na tabela."""
+        movimentacao = self.session.scalar(
+            select(Movimentacao).where(Movimentacao.id == id_movimentacao)
+        )
 
-    def listar(self) -> list[MovimentacaoEstoque]:
-        conn = self.conexao.get_connection()
+        return movimentacao
 
-        with conn.cursor() as cursor:
-            cursor.execute("""   
-                SELECT id_movimentacao,
-                id_produto,id_usuario,tipo,quantidade,data_hora,motivo,id_venda
-                FROM movimentacoes_estoque
-                ORDER by data_hora     
-                """)
-            rows = cursor.fetchall()
+    def listar(self) -> list[Movimentacao]:
+        """Lista as movimentacoes realizadas registradas na tabela."""
+        query = select(Movimentacao).order_by(Movimentacao.created_at.desc())
+        movimentacao = list(self.session.scalars(query).all())
 
-        return [
-            MovimentacaoEstoque(
-                id_movimentacao=row[0],
-                id_produto=row[1],
-                id_usuario=row[2],
-                tipo=TipoMovimentacao(row[3]),
-                quantidade=row[4],
-                data_hora=row[5],
-                motivo=MotivoMovimentacao(row[6]),
-                id_venda=row[7],
-            )
-            for row in rows
-        ]
+        return movimentacao
