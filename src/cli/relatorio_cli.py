@@ -1,6 +1,8 @@
 from datetime import datetime
 
 from src.cli.filtros_cli import processar_invervalo_personalizado
+from src.database.database import get_session
+from src.dependencies.estoque_dependencies import estoq_controller
 from src.utils.exportacao_csv import (
     exportar_produtos_vendidos,
     exportar_relatorio_estoque,
@@ -8,24 +10,24 @@ from src.utils.exportacao_csv import (
 )
 from src.utils.fuso import FUSO_HORARIO
 
-PRESSIONE_ENTER = "\nPressione [ENTER] para voltar..."
+PRESSIONE_ENTER = '\nPressione [ENTER] para voltar...'
 
 
-def processar_menu_relatorio(venda_controller, usuario_logado, estoque_controller):
+def processar_menu_relatorio(venda_controller, usuario_logado):
     while True:
         opcao = menu_relatorio()
-        if opcao == "1":
+        if opcao == '1':
             resumo_relatorio(venda_controller, usuario_logado)
-        elif opcao == "2":
+        elif opcao == '2':
             relatorio_produto(venda_controller, usuario_logado)
-        elif opcao == "3":
-            relatorio_estoque(estoque_controller, usuario_logado)
-        elif opcao == "4":
-            relatorio_estoque_baixo(estoque_controller, usuario_logado)
-        elif opcao == "0":
+        elif opcao == '3':
+            relatorio_estoque(usuario_logado)
+        elif opcao == '4':
+            relatorio_estoque_baixo(usuario_logado)
+        elif opcao == '0':
             return
         else:
-            print("Opcao inválida.")
+            print('Opcao inválida.')
 
 
 def resumo_relatorio(venda_controller, usuario_logado):
@@ -44,7 +46,7 @@ def resumo_relatorio(venda_controller, usuario_logado):
             exportar_relatorio_resumo_vendas(relatorio)
         input(PRESSIONE_ENTER)
     except (ValueError, PermissionError) as e:
-        print(f"\n{e}")
+        print(f'\n{e}')
         input(PRESSIONE_ENTER)
 
 
@@ -64,202 +66,214 @@ def relatorio_produto(venda_controller, usuario_logado):
             exportar_relatorio_produto(produtos, data_inicial, data_final)
         input(PRESSIONE_ENTER)
     except (ValueError, PermissionError) as e:
-        print(f"\n{e}")
+        print(f'\n{e}')
         input(PRESSIONE_ENTER)
 
 
-def relatorio_estoque(estoque_controller, usuario_logado):
-    try:
-        relatorio = estoque_controller.relatorio_estoque(usuario_logado)
-        exibir_relatorio_estoque(relatorio)
-        if relatorio.produtos:
-            exportar_relatorio_estoque_disponivel(relatorio.produtos)
-        input(PRESSIONE_ENTER)
-    except PermissionError as e:
-        print(f"\n{e}")
-        input(PRESSIONE_ENTER)
+def relatorio_estoque(usuario_logado):
+    with get_session() as session:
+        estoque_controller = estoq_controller(session)
+        try:
+            relatorio = estoque_controller.relatorio_estoque(usuario_logado)
+            exibir_relatorio_estoque(relatorio)
+            if relatorio.produtos:
+                exportar_relatorio_estoque_disponivel(relatorio.produtos)
+            input(PRESSIONE_ENTER)
+        except PermissionError as e:
+            print(f'\n{e}')
+            input(PRESSIONE_ENTER)
 
 
-def relatorio_estoque_baixo(estoque_controller, usuario_logado):
-    try:
-        limite = int(input("Insira o limite para a consulta."))
-        relatorio = estoque_controller.relatorio_estoque_baixo(usuario_logado, limite)
-        exibir_relatorio_estoque_baixo(relatorio, limite)
-        if relatorio:
-            exportar_relatorio_estoque_baixo(relatorio, limite)
-        input(PRESSIONE_ENTER)
-    except (ValueError, TypeError, PermissionError) as e:
-        print(f"\n{e}")
-        input(PRESSIONE_ENTER)
+def relatorio_estoque_baixo(usuario_logado):
+    with get_session() as session:
+        estoque_controller = estoq_controller(session)
+        try:
+            limite = int(input('Insira o limite para a consulta.'))
+            relatorio = estoque_controller.relatorio_estoque_baixo(
+                usuario_logado, limite
+            )
+            exibir_relatorio_estoque_baixo(relatorio, limite)
+            if relatorio:
+                exportar_relatorio_estoque_baixo(relatorio, limite)
+            input(PRESSIONE_ENTER)
+        except (ValueError, TypeError, PermissionError) as e:
+            print(f'\n{e}')
+            input(PRESSIONE_ENTER)
 
 
 # exportacoes
 def exportar_relatorio_resumo_vendas(relatorio):
-    opcao = input("Deseja exportar para CSV? [S/N]: ").strip().upper()
+    opcao = input('Deseja exportar para CSV? [S/N]: ').strip().upper()
 
-    if opcao == "S":
+    if opcao == 'S':
         try:
-            data_hora = datetime.now(FUSO_HORARIO).strftime("%Y%m%d_%H%M%S%f")
+            data_hora = datetime.now(FUSO_HORARIO).strftime('%Y%m%d_%H%M%S%f')
             nome_arquivo = (
-                f"resumo_vendas_{relatorio.data_inicial}_a_"
-                f"{relatorio.data_final}_{data_hora}.csv"
+                f'resumo_vendas_{relatorio.data_inicial}_a_'
+                f'{relatorio.data_final}_{data_hora}.csv'
             )
             exportar_resumo_vendas(relatorio, nome_arquivo)
-            print(f"Relatorio exportado: {nome_arquivo}")
+            print(f'Relatorio exportado: {nome_arquivo}')
         except OSError as erro:
-            print(f"Nao foi possivel salvar o arquivo: {erro}")
+            print(f'Nao foi possivel salvar o arquivo: {erro}')
 
 
 def exportar_relatorio_produto(produtos, inicio, final):
-    opcao = input("Deseja exportar para CSV? [S/N]: ").strip().upper()
+    opcao = input('Deseja exportar para CSV? [S/N]: ').strip().upper()
 
-    if opcao == "S":
+    if opcao == 'S':
         try:
-            data_hora = datetime.now(FUSO_HORARIO).strftime("%Y%m%d%H%M%S%f")
-            nome_arquivo = f"produtos_vendidos_{inicio}_a_{final}_{data_hora}.csv"
+            data_hora = datetime.now(FUSO_HORARIO).strftime('%Y%m%d%H%M%S%f')
+            nome_arquivo = f'produtos_vendidos_{inicio}_a_{final}_{data_hora}.csv'
             exportar_produtos_vendidos(produtos, nome_arquivo)
-            print(f"Relatorio exportado: {nome_arquivo}")
+            print(f'Relatorio exportado: {nome_arquivo}')
         except OSError as erro:
-            print(f"Nao foi possivel salvar o arquivo: {erro}")
+            print(f'Nao foi possivel salvar o arquivo: {erro}')
 
 
 def exportar_relatorio_estoque_disponivel(relatorio):
-    opcao = input("Deseja exportar para CSV? [S/N]: ").strip().upper()
+    opcao = input('Deseja exportar para CSV? [S/N]: ').strip().upper()
 
-    if opcao == "S":
+    if opcao == 'S':
         try:
-            data_hora = datetime.now(FUSO_HORARIO).strftime("%Y%m%d_%H%M%S%f")
-            nome_arquivo = f"estoque_{data_hora}.csv"
+            data_hora = datetime.now(FUSO_HORARIO).strftime('%Y%m%d_%H%M%S%f')
+            nome_arquivo = f'estoque_{data_hora}.csv'
             exportar_relatorio_estoque(relatorio, nome_arquivo)
-            print(f"Relatorio exportado: {nome_arquivo}")
+            print(f'Relatorio exportado: {nome_arquivo}')
         except OSError as erro:
-            print(f"Nao foi possivel salvar o arquivo: {erro}")
+            print(f'Nao foi possivel salvar o arquivo: {erro}')
 
 
 def exportar_relatorio_estoque_baixo(relatorio, limite):
-    opcao = input("Deseja exportar para CSV? [S/N]: ").strip().upper()
-    if opcao == "S":
+    opcao = input('Deseja exportar para CSV? [S/N]: ').strip().upper()
+    if opcao == 'S':
         try:
-            data_hora = datetime.now(FUSO_HORARIO).strftime("%Y%m%d_%H%M%S%f")
-            nome_arquivo = f"Estoque_baixo_limite_{limite}_{data_hora}.csv"
+            data_hora = datetime.now(FUSO_HORARIO).strftime('%Y%m%d_%H%M%S%f')
+            nome_arquivo = f'Estoque_baixo_limite_{limite}_{data_hora}.csv'
             exportar_relatorio_estoque(relatorio, nome_arquivo)
-            print(f"Relatorio exportado: {nome_arquivo}")
+            print(f'Relatorio exportado: {nome_arquivo}')
         except OSError as erro:
-            print(f"Nao foi possivel salvar o arquivo: {erro}")
+            print(f'Nao foi possivel salvar o arquivo: {erro}')
 
 
 # Menu e exibixoes
 def menu_relatorio():
-    print("\n === Menu Relatorios ===")
-    print("1 - Relatorio de Vendas (Resumo)")
-    print("2 - Relatorio de Vendas Produtos")
-    print("3 - Relatorio de Estoque")
-    print("4 - Relatorio de Estoque Baixo")
-    print("0 - Voltar")
-    return input("> ")
+    print('\n === Menu Relatorios ===')
+    print('1 - Relatorio de Vendas (Resumo)')
+    print('2 - Relatorio de Vendas Produtos')
+    print('3 - Relatorio de Estoque')
+    print('4 - Relatorio de Estoque Baixo')
+    print('0 - Voltar')
+    return input('> ')
 
 
 def exibir_resumo_relatorio(relatorio):
     if not relatorio:
-        print("Nenhuma venda encontrada.")
+        print('Nenhuma venda encontrada.')
         return
 
     total_formatado = (
-        f"R$ {relatorio.total_periodo:,.2f}".replace(",", "X")
-        .replace(".", ",")
-        .replace("X", ".")
+        f'R$ {relatorio.total_periodo:,.2f}'
+        .replace(',', 'X')
+        .replace('.', ',')
+        .replace('X', '.')
     )
     ticket_formatado = (
-        f"R$ {relatorio.ticket_medio:,.2f}".replace(",", "X")
-        .replace(".", ",")
-        .replace("X", ".")
+        f'R$ {relatorio.ticket_medio:,.2f}'
+        .replace(',', 'X')
+        .replace('.', ',')
+        .replace('X', '.')
     )
-    periodo = f"{relatorio.data_inicial.strftime("%d/%m/%Y")} até {relatorio.data_final.strftime("%d/%m/%Y")}"
+    periodo = f'{relatorio.data_inicial.strftime("%d/%m/%Y")} até '
+    f'{relatorio.data_final.strftime("%d/%m/%Y")}'
 
-    print("-" * 68)
-    print(f"|  RESUMO RELATORIO  | Periodo: {periodo:<35}|")
-    print("-" * 68)
+    print('-' * 68)
+    print(f'|  RESUMO RELATORIO  | Periodo: {periodo:<35}|')
+    print('-' * 68)
     print(
-        f"| TOTAL: {total_formatado:<16}| Num. Vendas:{relatorio.vendas_concluidas:<6}| Ticket M. {ticket_formatado}  |"
+        f'| TOTAL: {total_formatado:<16}| Num. Vendas:{relatorio.vendas_concluidas:<6}'
+        f'| Ticket M. {ticket_formatado}  |'
     )
-    print("-" * 68)
+    print('-' * 68)
 
 
 def exibir_relatorio_produtos(produtos, inicio, final):
     if not produtos:
-        print("Nenhum produto encontrado.")
+        print('Nenhum produto encontrado.')
         return
 
     quantidade_total = 0
     valor_total_periodo = 0
-    print("-" * 90)
+    print('-' * 90)
     print(
-        f"| PRODUTOS MAIS VENDIDOS | Periodo: {inicio.strftime("%d/%m/%Y")} até {final.strftime("%d/%m/%Y")} | Produtos encontrados:{len(produtos)}"
+        f'| PRODUTOS MAIS VENDIDOS | Periodo: '
+        f'{inicio.strftime("%d/%m/%Y")} até {final.strftime("%d/%m/%Y")} '
+        f'| Produtos encontrados:{len(produtos)}'
     )
-    print("-" * 90)
+    print('-' * 90)
     print(
-        f"{'ID Prod.':<12}{'Nome Produto':<40}{'Unid. Vendidas':<20}{'Valor Vendido':<10}\n"
+        f'{"ID Prod.":<12}{"Nome Produto":<40}{"Unid. Vendidas":<20}{"Valor Vendido":<10}\n'
     )
 
     for produto in produtos:
         total_formatado = (
-            f"R$ {produto.valor_total:,.2f}".replace(",", "X")
-            .replace(".", ",")
-            .replace("X", ".")
+            f'R$ {produto.valor_total:,.2f}'
+            .replace(',', 'X')
+            .replace('.', ',')
+            .replace('X', '.')
         )
         quantidade_total += produto.quantidade_vendida
         valor_total_periodo += produto.valor_total
         print(
-            f"{produto.id_produto:<12}{produto.nome_produto:<40}{produto.quantidade_vendida:<20}{total_formatado:<10}"
+            f'{produto.id_produto:<12}{produto.nome_produto:<40}{produto.quantidade_vendida:<20}{total_formatado:<10}'
         )
     valor_total_formatado = (
-        f"R$ {valor_total_periodo:,.2f}".replace(",", "X")
-        .replace(".", ",")
-        .replace("X", ".")
+        f'R$ {valor_total_periodo:,.2f}'
+        .replace(',', 'X')
+        .replace('.', ',')
+        .replace('X', '.')
     )
-    print("-" * 90)
+    print('-' * 90)
     print(
-        f"\n| Total de unidades vendidas no periodo: {quantidade_total} | Valor total vendido no periodo: {valor_total_formatado}|"
+        f'\n| Total de unidades vendidas no periodo: {quantidade_total} '
+        f'| Valor total vendido no periodo: {valor_total_formatado}|'
     )
 
 
 def exibir_relatorio_estoque(relatorio):
     if not relatorio.produtos:
-        print("Nenhum produto cadastrado.")
+        print('Nenhum produto cadastrado.')
         return
 
-    print("-" * 82)
-    print("| RELATORIO DE ESTOQUE - Produtos")
-    print("-" * 82)
-    print(f"{'ID Prod.':<12}{'Nome':<35}{'Marca':<20}{'Quant. Estoque':<14}\n")
+    print('-' * 82)
+    print('| RELATORIO DE ESTOQUE - Produtos')
+    print('-' * 82)
+    print(f'{"ID Prod.":<12}{"Nome":<35}{"Quant. Estoque":<14}\n')
 
     for produto in relatorio.produtos:
-        print(
-            f"{produto.id_produto:<12}{produto.nome:<35}{produto.marca:<20}{produto.quantidade_estoque:<14}"
-        )
-    print("-" * 82)
+        print(f'{produto.id:<12}{produto.nome:<35}{produto.quantidade:<14}')
+    print('-' * 82)
     print(
-        f"\n| Quantidade Produtos Cadastrados: {relatorio.quantidade_produtos_cadastrados}"
+        f'\n| Quantidade Produtos Cadastrados: '
+        f'{relatorio.quantidade_produtos_cadastrados}'
     )
-    print(f"| Total Unidades em Estoque: {relatorio.total_unidades_estoque}")
+    print(f'| Total Unidades em Estoque: {relatorio.total_unidades_estoque}')
     print(
-        f"| Quantidade Produtos sem Estoque: {relatorio.quantidade_produtos_sem_estoque}\n"
+        f'| Quantidade Produtos sem Estoque: '
+        f'{relatorio.quantidade_produtos_sem_estoque}\n'
     )
-    print("-" * 82)
+    print('-' * 82)
 
 
 def exibir_relatorio_estoque_baixo(relatorio, limite):
     if not relatorio:
-        print("Nenhum produto com estoque do limite informado.")
+        print('Nenhum produto com estoque do limite informado.')
         return
 
-    print("-" * 82)
-    print(f"| PRODUTOS COM ESTOQUE BAIXO  |    LIMITE: {limite} ")
-    print("-" * 82)
-    print(f"{'ID Prod.':<12}{'Nome':<35}{'Marca':<20}{'Quant. Estoque':<14}\n")
+    print('-' * 82)
+    print(f'| PRODUTOS COM ESTOQUE BAIXO  |    LIMITE: {limite} ')
+    print('-' * 82)
+    print(f'{"ID Prod.":<12}{"Nome":<35}{"Quant. Estoque":<14}\n')
     for produto in relatorio:
-
-        print(
-            f"{produto.id_produto:<12}{produto.nome:<35}{produto.marca:<20}{produto.quantidade_estoque:<14}"
-        )
-    print("-" * 82)
+        print(f'{produto.id:<12}{produto.nome:<35}{produto.quantidade:<14}')
+    print('-' * 82)

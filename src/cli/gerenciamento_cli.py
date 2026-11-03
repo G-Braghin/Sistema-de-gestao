@@ -29,7 +29,7 @@ def menu_gerenciamento(usuario_logado):
     return input('> ')
 
 
-def processar_menu_gerenciamento(usuario_logado, estoque_controller, venda_controller):
+def processar_menu_gerenciamento(usuario_logado, venda_controller):
     while True:
         opcao = menu_gerenciamento(usuario_logado)
         if opcao == '1':
@@ -41,13 +41,11 @@ def processar_menu_gerenciamento(usuario_logado, estoque_controller, venda_contr
         elif opcao == '4':
             listar_menu(usuario_logado)
         elif opcao == '5':
-            processar_menu_estoque_gerenciamento(estoque_controller, usuario_logado)
+            processar_menu_estoque_gerenciamento(usuario_logado)
         elif opcao == '6':
             processar_menu_venda_gerenciamento(venda_controller, usuario_logado)
         elif opcao == '7':
-            processar_menu_relatorio(
-                venda_controller, usuario_logado, estoque_controller
-            )
+            processar_menu_relatorio(venda_controller, usuario_logado)
         elif opcao == '8':
             if usuario_logado.papel == PapelUsuario.ADMINISTRADOR:
                 promover(usuario_logado)

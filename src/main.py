@@ -10,8 +10,6 @@ from src.cli.usuario_cli import (
     realizar_login,
 )
 from src.cli.venda_cli import processar_menu_venda
-from src.controllers.estoque_controller import EstoqueController
-from src.controllers.produto_controller import ProdutoController
 from src.controllers.venda_controller import VendaController
 from src.database.conexao import Conexao
 from src.enums import PapelEnum
@@ -20,7 +18,6 @@ from src.repositories.movimentacao_repository import MovimentacaoRepository
 from src.repositories.produto_repository import ProdutoRepository
 from src.repositories.venda_repository import VendaRepository
 from src.services.estoque_service import EstoqueService
-from src.services.produto_service import ProdutoService
 from src.services.venda_service import VendaService
 
 INVALIDO = 'Opção inválida.'
@@ -42,7 +39,6 @@ def exibir_menu(usuario_logado):
 
 def processar_menu_principal(
     usuario_logado,
-    estoque_controller,
     venda_controller,
 ):
     opcao = exibir_menu(usuario_logado)
@@ -56,9 +52,7 @@ def processar_menu_principal(
         processar_menu_venda(venda_controller, usuario_logado)
     elif opcao == '5':
         if usuario_logado.papel in {PapelEnum.ADMIN, PapelEnum.GERENTE}:
-            processar_menu_gerenciamento(
-                usuario_logado, estoque_controller, venda_controller
-            )
+            processar_menu_gerenciamento(usuario_logado, venda_controller)
         else:
             print(INVALIDO)
     elif opcao == '0':
@@ -79,8 +73,7 @@ def main():
 
         # estoque movimentacoes
         movimentacao_repo = MovimentacaoRepository(conexao_db)
-        estoque_serv = EstoqueService(produto_repo, movimentacao_repo, conexao_db)
-        estoque_controller = EstoqueController(estoque_serv)
+        estoque_serv = EstoqueService(produto_repo, movimentacao_repo)
 
         # venda
         venda_repo = VendaRepository(conexao_db)
@@ -93,7 +86,6 @@ def main():
 
         while processar_menu_principal(
             usuario_logado,
-            estoque_controller,
             venda_controller,
         ):
             continue
