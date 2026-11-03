@@ -1,10 +1,14 @@
+from contextlib import contextmanager
+from datetime import datetime
+
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session
 from testcontainers.community.postgres import PostgresContainer
 
 from src.enums import PapelEnum
 from src.models import Base
+from tests.produtos.conftest import ProductFactory
 from tests.usuarios.conftest import UserFactory
 
 
@@ -53,3 +57,41 @@ def user_gerente():
     user = UserFactory(papel=PapelEnum.GERENTE)
     user.id = 99
     return user
+
+
+# Definindo Fixture para testes que dependende de algo no banco
+@pytest.fixture
+def usuario_db(session):
+    user_db = UserFactory(papel=PapelEnum.FUNCIONARIO)
+    session.add(user_db)
+    session.flush()
+
+    return user_db
+
+
+@pytest.fixture
+def produto_db(session):
+    product_db = ProductFactory()
+    session.add(product_db)
+    session.flush()
+
+    return product_db
+
+
+# Definindo uma meneira de simular um horario para os testes
+@contextmanager
+def _mock_db_time(*, model, time=datetime(2026, 10, 10)):
+    def fake_time_hook(mapper, connection, target):
+        if hasattr(target, 'created_at'):
+            target.created_at = time
+
+    event.listen(model, 'before_insert', fake_time_hook)
+
+    yield time
+
+    event.remove(model, 'before_insert', fake_time_hook)
+
+
+@pytest.fixture
+def mock_db_time():
+    return _mock_db_time
