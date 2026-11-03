@@ -91,7 +91,7 @@ def test_gerente_nao_pode_promover_funcionario(user_service):
 
 
 @pytest.mark.parametrize('papel_alvo', [PapelEnum.GERENTE, PapelEnum.ADMIN])
-def test_apenas_funcionario_pode_ser_promovido(user_service, session, papel_alvo):
+def test_apenas_funcionario_pode_ser_promovido(user_service, papel_alvo):
     admin = UserFactory.create(papel=PapelEnum.ADMIN)
     usuario = criar_usuario_com_id(999, papel=papel_alvo)
 

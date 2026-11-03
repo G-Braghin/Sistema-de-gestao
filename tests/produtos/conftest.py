@@ -32,25 +32,9 @@ def product_service(product_repository_mock):
 
 
 @pytest.fixture
-def produto_db(session):
-    produto = ProductFactory()
-    session.add(produto)
-    session.commit()
-
-    return produto
-
-
-@pytest.fixture
 def produtos_db(session):
     produtos = ProductFactory.build_batch(3)
     session.add_all(produtos)
     session.commit()
 
     return produtos
-
-
-@pytest.fixture
-def produto():
-    produto = ProductFactory()
-    produto.id = 99
-    return produto
