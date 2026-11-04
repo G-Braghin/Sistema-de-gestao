@@ -1,3 +1,4 @@
+from src.enums import MotivoMovimentacao
 from src.models import Movimentacao
 from tests.estoque.conftest import MovFactory
 
@@ -5,7 +6,11 @@ from tests.estoque.conftest import MovFactory
 def test_criar_movimentacao_e_buscar_por_id(
     mov_repository, usuario_db, produto_db, mock_db_time
 ):
-    movimentacao = MovFactory(id_usuario=usuario_db.id, id_produto=produto_db.id)
+    movimentacao = MovFactory(
+        id_usuario=usuario_db.id,
+        id_produto=produto_db.id,
+        motivo=MotivoMovimentacao.REPOSICAO,
+    )
 
     with mock_db_time(model=Movimentacao) as hora:
         movimentacao_criada = mov_repository.criar(movimentacao)
@@ -22,6 +27,7 @@ def test_criar_movimentacao_e_buscar_por_id(
         assert resultado.quantidade == movimentacao_criada.quantidade
         assert resultado.created_at == hora
         assert resultado.motivo == movimentacao_criada.motivo
+        assert resultado.id_venda is None
 
 
 def test_buscar_movimentacao_inexistente(mov_repository):

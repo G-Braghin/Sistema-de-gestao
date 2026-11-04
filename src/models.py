@@ -59,6 +59,7 @@ class Movimentacao(Base):
     motivo: Mapped[MotivoMovimentacao]
     quantidade: Mapped[int]
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(), init=False)
+    id_venda: Mapped[int | None] = mapped_column(ForeignKey('vendas.id'), default=None)
 
 
 class Venda(Base):
