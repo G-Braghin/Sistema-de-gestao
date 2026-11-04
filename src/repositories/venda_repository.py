@@ -1,111 +1,28 @@
-from datetime import date, datetime
+from datetime import date
 
-from src.database.conexao import Conexao
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
 from src.entities.dtos.produtos_vendidos_resumo import ProdutosVendidosResumo
 from src.entities.dtos.venda_resumo import VendaResumo
-from src.entities.enums.status_venda import StatusVenda
-from src.entities.venda import Venda
-from src.entities.venda_item import VendaItem
+from src.enums import StatusVenda
+from src.models import Cliente, Produto, Usuario, Venda, VendaItens
 
 
 class VendaRepository:
-    def __init__(self, conexao: Conexao):
-        self.conexao = conexao
+    def __init__(self, session: Session):
+        self.session = session
 
-    def criar(self, venda: Venda):
-        conn = self.conexao.get_connection()
-        with conn.cursor() as cursor:
-            cursor.execute(
-                """
-                INSERT INTO vendas
-                (id_cliente,id_usuario,preco_total,data_hora,status)
-                VALUES (%s, %s, %s, %s , %s)
-                RETURNING id_venda
-                """,
-                (
-                    venda.id_cliente,
-                    venda.id_usuario,
-                    venda.preco_total,
-                    venda.data_hora,
-                    venda.status.value,
-                ),
-            )
-            venda.id_venda = cursor.fetchone()[0]
-
-            for item in venda.itens:
-                cursor.execute(
-                    """
-                INSERT INTO venda_itens
-                (id_venda,id_produto,nome_produto,quantidade,preco_unitario)
-                VALUES (%s,%s,%s,%s,%s)
-                RETURNING id_venda_item
-                """,
-                    (
-                        venda.id_venda,
-                        item.id_produto,
-                        item.nome_produto,
-                        item.quantidade,
-                        item.preco_unitario,
-                    ),
-                )
-                item.id_venda_item = cursor.fetchone()[0]
-                item.id_venda = venda.id_venda
+    def criar(self, venda: Venda) -> Venda:
+        self.session.add(venda)
+        self.session.flush()
 
         return venda
 
-    def buscar_por_id(self, id_venda: int):
-        conn = self.conexao.get_connection()
-        with conn.cursor() as cursor:
-            cursor.execute(
-                """
-            SELECT id_venda, id_cliente, id_usuario,preco_total,
-            data_hora,status,data_cancelamento,id_usuario_cancelamento
-            FROM vendas
-            WHERE id_venda = %s    
-            """,
-                (id_venda,),
-            )
-            venda_data = cursor.fetchone()
+    def buscar_por_id(self, id_venda: int) -> Venda | None:
+        venda = self.session.scalar(select(Venda).where(Venda.id == id_venda))
 
-            if venda_data is None:
-                return None
-
-            venda = Venda(
-                id_venda=venda_data[0],
-                id_cliente=venda_data[1],
-                id_usuario=venda_data[2],
-                preco_total=venda_data[3],
-                data_hora=venda_data[4],
-                status=StatusVenda(venda_data[5]),
-                data_cancelamento=venda_data[6],
-                id_usuario_cancelamento=venda_data[7],
-                itens=[],
-            )
-
-            cursor.execute(
-                """
-                SELECT id_venda_item,id_venda,id_produto,
-                nome_produto,quantidade,preco_unitario
-                FROM venda_itens
-                WHERE id_venda = %s
-                """,
-                (id_venda,),
-            )
-            itens = cursor.fetchall()
-
-            venda.itens = [
-                VendaItem(
-                    id_venda_item=item[0],
-                    id_venda=id_venda,
-                    id_produto=item[2],
-                    nome_produto=item[3],
-                    quantidade=item[4],
-                    preco_unitario=item[5],
-                )
-                for item in itens
-            ]
-
-            return venda
+        return venda
 
     def listar_resumo(
         self,
@@ -113,105 +30,74 @@ class VendaRepository:
         data_fim: date,
         venda_status: StatusVenda | None = None,
     ) -> list[VendaResumo]:
-        conn = self.conexao.get_connection()
-        with conn.cursor() as cursor:
-            sql = """
-                SELECT vendas.id_venda,
-                clientes.nome AS nome_cliente,
-                usuarios.nome AS nome_usuario,
-                vendas.data_hora,
-                vendas.preco_total,
-                vendas.status
-                FROM vendas
-                INNER JOIN clientes ON vendas.id_cliente = clientes.id_cliente
-                INNER JOIN usuarios ON vendas.id_usuario = usuarios.id_usuario
-            """
-            params: list[object] = [data_inicio, data_fim]
-            filtros = ["vendas.data_hora >= %s AND vendas.data_hora < %s"]
-
-            if venda_status is not None:
-                filtros.append("vendas.status = %s")
-                params.append(venda_status.value)
-
-            sql += " WHERE " + " AND ".join(filtros)
-            sql += " ORDER BY vendas.data_hora DESC"
-
-            cursor.execute(sql, tuple(params))
-            rows = cursor.fetchall()
-
-            return [
-                VendaResumo(
-                    id_venda=row[0],
-                    nome_cliente=row[1],
-                    nome_vendedor=row[2],
-                    data_venda=row[3],
-                    valor_total=row[4],
-                    status=StatusVenda(row[5]),
-                )
-                for row in rows
-            ]
-
-    def cancelar_venda(
-        self, id_venda: int, data_cancelamento: datetime, id_usuario_cancelamento: int
-    ):
-        conn = self.conexao.get_connection()
-        with conn.cursor() as cursor:
-            cursor.execute(
-                """
-            UPDATE vendas
-            SET status = %s, data_cancelamento = %s, id_usuario_cancelamento = %s
-            WHERE id_venda = %s AND status = %s
-            """,
-                (
-                    StatusVenda.CANCELADO.value,
-                    data_cancelamento,
-                    id_usuario_cancelamento,
-                    id_venda,
-                    StatusVenda.CONCLUIDO.value,  # vai verificar se a compra esta concluida.
-                ),
+        query = (
+            select(
+                Venda.id.label('id_venda'),
+                Cliente.nome.label('nome_cliente'),
+                Usuario.nome.label('nome_vendedor'),
+                Venda.status,
+                Venda.valor_total,
+                Venda.created_at.label('data_venda'),
             )
-            linhas_afetadas = cursor.rowcount
+            .join(Cliente, Venda.id_cliente == Cliente.id)
+            .join(Usuario, Venda.id_usuario == Usuario.id)
+            .where(Venda.created_at >= data_inicio, Venda.created_at < data_fim)
+        )
 
-        if linhas_afetadas == 0:
-            raise ValueError(
-                f"Venda com id {id_venda} nao encontrada ou ja esta Cancelada."
-            )
+        if venda_status is not None:
+            query = query.where(Venda.status == venda_status)
+
+        query = query.order_by(Venda.created_at.desc())
+        resultados = self.session.execute(query).mappings().all()
+
+        return [VendaResumo(**resultado) for resultado in resultados]
+
+    def cancelar_venda(self, id_venda: int) -> None | Venda:
+        venda = self.session.get(Venda, id_venda)
+
+        if venda is None:
+            return None
+
+        if venda.status != StatusVenda.CONCLUIDA:
+            return None
+
+        venda.status = StatusVenda.CANCELADA
+
+        return venda
 
     def listar_produtos_mais_vendidos(
         self, data_inicio: date, data_fim: date
     ) -> list[ProdutosVendidosResumo]:
-        conn = self.conexao.get_connection()
-        with conn.cursor() as cursor:
-            sql = """
-                    SELECT produtos.id_produto, produtos.nome,
-                    SUM(venda_itens.quantidade) AS total_vendido,
-                    SUM(venda_itens.quantidade * venda_itens.preco_unitario) AS faturamento_total
-                    FROM venda_itens
-                    INNER JOIN produtos ON venda_itens.id_produto = produtos.id_produto
-                    INNER JOIN vendas on venda_itens.id_venda = vendas.id_venda
-                    WHERE vendas.status = %s 
-                        AND vendas.data_hora >= %s
-                        AND vendas.data_hora < %s
-                    GROUP BY 
-                        produtos.id_produto, 
-                        produtos.nome
-                    ORDER BY
-                        total_vendido DESC,
-                        faturamento_total DESC,
-                        produtos.nome ASC,
-                        produtos.id_produto ASC   
-                """
+        total_vendido = func.sum(VendaItens.quantidade).label('total_vendido')
+        faturamento_total = func.sum(
+            VendaItens.quantidade * VendaItens.preco_unitario
+        ).label('faturamento_total')
 
-            params: list[object] = [StatusVenda.CONCLUIDO.value, data_inicio, data_fim]
-            cursor.execute(sql, tuple(params))
-            rows = cursor.fetchall()
+        query = (
+            select(
+                Produto.id.label('id_produto'),
+                Produto.nome.label('nome_produto'),
+                total_vendido.label('quantidade_vendida'),
+                faturamento_total.label('valor_total'),
+            )
+            .join(Produto, VendaItens.id_produto == Produto.id)
+            .join(Venda, VendaItens.id_venda == Venda.id)
+        )
 
-            return [
-                ProdutosVendidosResumo(
-                    id_produto=row[0],
-                    nome_produto=row[1],
-                    quantidade_vendida=row[2],
-                    valor_total=row[3],
-                )
-                for row in rows
-            ]
+        query = query.where(
+            Venda.status == StatusVenda.CONCLUIDA,
+            Venda.created_at >= data_inicio,
+            Venda.created_at < data_fim,
+        )
+        query = query.group_by(Produto.id, Produto.nome)
+
+        query = query.order_by(
+            total_vendido.desc(),
+            faturamento_total.desc(),
+            Produto.nome.asc(),
+            Produto.id.asc(),
+        )
+
+        resultados = self.session.execute(query).mappings().all()
+
+        return [ProdutosVendidosResumo(**resultado) for resultado in resultados]
