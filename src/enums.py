@@ -17,3 +17,8 @@ class MotivoMovimentacao(str, Enum):
     CANCELAMENTO_VENDA = 'CANC. VDA'
     REPOSICAO = 'Reposicao'
     AJUSTE = 'Ajuste'
+
+
+class StatusVenda(str, Enum):
+    CONCLUIDA = 'Concluida'
+    CANCELADA = 'Cancelada'
