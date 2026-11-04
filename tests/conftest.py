@@ -2,12 +2,16 @@ from contextlib import contextmanager
 from datetime import datetime
 
 import pytest
+from pytest_mock import MockerFixture
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session
 from testcontainers.community.postgres import PostgresContainer
 
 from src.enums import PapelEnum
 from src.models import Base
+from src.repositories.cliente_repository import ClienteRepository
+from src.repositories.produto_repository import ProdutoRepository
+from src.services.estoque_service import EstoqueService
 from tests.clientes.conftest import ClienteFatory
 from tests.produtos.conftest import ProductFactory
 from tests.usuarios.conftest import UserFactory
@@ -111,3 +115,19 @@ def _mock_db_time(*, model, time=datetime(2026, 10, 10)):
 @pytest.fixture
 def mock_db_time():
     return _mock_db_time
+
+
+# Alguns mocks que sao usados em outros testes
+@pytest.fixture
+def product_repository_mock(mocker: MockerFixture):
+    return mocker.MagicMock(spec=ProdutoRepository)
+
+
+@pytest.fixture
+def client_repository_mock(mocker: MockerFixture):
+    return mocker.MagicMock(spec=ClienteRepository)
+
+
+@pytest.fixture
+def mock_estoque_service(mocker: MockerFixture):
+    return mocker.MagicMock(spec=EstoqueService)

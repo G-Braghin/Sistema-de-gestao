@@ -1,7 +1,6 @@
 import factory
 import pytest
 from faker import Faker
-from pytest_mock import MockerFixture
 
 from src.models import Cliente
 from src.repositories.cliente_repository import ClienteRepository
@@ -29,11 +28,6 @@ def client_repository(session):
 @pytest.fixture
 def client_service(client_repository_mock):
     return ClienteService(client_repository_mock)
-
-
-@pytest.fixture
-def client_repository_mock(mocker: MockerFixture):
-    return mocker.MagicMock(spec=ClienteRepository)
 
 
 @pytest.fixture

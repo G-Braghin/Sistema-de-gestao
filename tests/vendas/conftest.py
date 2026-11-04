@@ -3,6 +3,7 @@ from decimal import Decimal
 import factory
 import pytest
 from factory.declarations import SubFactory
+from pytest_mock import MockerFixture
 
 from src.enums import StatusVenda
 from src.models import Venda, VendaItens
@@ -33,6 +34,13 @@ class VendaFactory(factory.Factory):
 def venda_repository(session):
     return VendaRepository(session)
 
+
+def mock_venda_repo(mocker: MockerFixture):
+    return mocker.MagicMock(spec=VendaRepository)
+
+
+def venda_service():
+    
 
 @pytest.fixture
 def venda(session, cliente_db, usuario_db, produto_db):

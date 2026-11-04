@@ -1,6 +1,5 @@
 import factory
 import pytest
-from pytest_mock import MockerFixture
 
 from src.models import Produto
 from src.repositories.produto_repository import ProdutoRepository
@@ -19,11 +18,6 @@ class ProductFactory(factory.Factory):
 @pytest.fixture
 def product_repository(session):
     return ProdutoRepository(session)
-
-
-@pytest.fixture
-def product_repository_mock(mocker: MockerFixture):
-    return mocker.MagicMock(spec=ProdutoRepository)
 
 
 @pytest.fixture
