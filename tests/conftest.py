@@ -8,6 +8,7 @@ from testcontainers.community.postgres import PostgresContainer
 
 from src.enums import PapelEnum
 from src.models import Base
+from tests.clientes.conftest import ClienteFatory
 from tests.produtos.conftest import ProductFactory
 from tests.usuarios.conftest import UserFactory
 
@@ -83,6 +84,14 @@ def produto_db(session):
     session.flush()
 
     return product_db
+
+
+@pytest.fixture
+def cliente_db(session):
+    cliente_db = ClienteFatory()
+    session.add(cliente_db)
+
+    return cliente_db
 
 
 # Definindo uma meneira de simular um horario para os testes
