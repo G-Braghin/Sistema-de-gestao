@@ -81,7 +81,7 @@ class VendaItens(Base):
     __tablename__ = 'venda_itens'
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
-    id_venda: Mapped[int] = mapped_column(ForeignKey('vendas.id'))
+    id_venda: Mapped[int] = mapped_column(ForeignKey('vendas.id'), init=False)
     id_produto: Mapped[int] = mapped_column(ForeignKey('produtos.id'))
     preco_unitario: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     quantidade: Mapped[int]
