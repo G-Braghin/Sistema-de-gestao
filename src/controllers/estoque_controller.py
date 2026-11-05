@@ -1,4 +1,4 @@
-from src.entities.usuario import Usuario
+from src.models import Usuario
 from src.services.estoque_service import EstoqueService
 
 

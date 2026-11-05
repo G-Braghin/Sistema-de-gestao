@@ -8,7 +8,7 @@ from src.cli.usuario_cli import (
     resetar_senha_alvo,
 )
 from src.cli.venda_cli import processar_menu_venda_gerenciamento
-from src.entities.enums.papel_usuario import PapelUsuario
+from src.enums import PapelEnum
 
 INVALIDO = 'Opção inválida.'
 VOLTAR = '0 - Voltar'
@@ -23,13 +23,13 @@ def menu_gerenciamento(usuario_logado):
     print('5 - Estoque')
     print('6 - Gerenciamento de Vendas')
     print('7 - Relatorios')
-    if usuario_logado.papel == PapelUsuario.ADMINISTRADOR:
+    if usuario_logado.papel == PapelEnum.ADMIN:
         print('8 - Promover a gerente')
     print(VOLTAR)
     return input('> ')
 
 
-def processar_menu_gerenciamento(usuario_logado, venda_controller):
+def processar_menu_gerenciamento(usuario_logado):
     while True:
         opcao = menu_gerenciamento(usuario_logado)
         if opcao == '1':
@@ -43,11 +43,11 @@ def processar_menu_gerenciamento(usuario_logado, venda_controller):
         elif opcao == '5':
             processar_menu_estoque_gerenciamento(usuario_logado)
         elif opcao == '6':
-            processar_menu_venda_gerenciamento(venda_controller, usuario_logado)
+            processar_menu_venda_gerenciamento(usuario_logado)
         elif opcao == '7':
-            processar_menu_relatorio(venda_controller, usuario_logado)
+            processar_menu_relatorio(usuario_logado)
         elif opcao == '8':
-            if usuario_logado.papel == PapelUsuario.ADMINISTRADOR:
+            if usuario_logado.papel == PapelEnum.ADMIN:
                 promover(usuario_logado)
             else:
                 print(INVALIDO)

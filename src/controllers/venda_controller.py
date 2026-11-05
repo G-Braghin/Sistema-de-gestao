@@ -1,4 +1,4 @@
-from src.entities.enums.status_venda import StatusVenda
+from src.enums import StatusVenda
 from src.services.venda_service import VendaService
 
 

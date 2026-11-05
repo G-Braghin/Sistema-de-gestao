@@ -2,7 +2,8 @@ from datetime import datetime
 
 from src.cli.filtros_cli import processar_invervalo_personalizado
 from src.database.database import get_session
-from src.dependencies.estoque_dependencies import estoq_controller
+from src.dependencies.estoque_dependencies import get_estoque_controller
+from src.dependencies.venda_dependencies import get_venda_controller
 from src.utils.exportacao_csv import (
     exportar_produtos_vendidos,
     exportar_relatorio_estoque,
@@ -13,13 +14,13 @@ from src.utils.fuso import FUSO_HORARIO
 PRESSIONE_ENTER = '\nPressione [ENTER] para voltar...'
 
 
-def processar_menu_relatorio(venda_controller, usuario_logado):
+def processar_menu_relatorio(usuario_logado):
     while True:
         opcao = menu_relatorio()
         if opcao == '1':
-            resumo_relatorio(venda_controller, usuario_logado)
+            resumo_relatorio(usuario_logado)
         elif opcao == '2':
-            relatorio_produto(venda_controller, usuario_logado)
+            relatorio_produto(usuario_logado)
         elif opcao == '3':
             relatorio_estoque(usuario_logado)
         elif opcao == '4':
@@ -30,49 +31,54 @@ def processar_menu_relatorio(venda_controller, usuario_logado):
             print('Opcao inválida.')
 
 
-def resumo_relatorio(venda_controller, usuario_logado):
-    try:
-        intervalo = processar_invervalo_personalizado()
+def resumo_relatorio(usuario_logado):
+    with get_session() as session:
+        venda_controller = get_venda_controller(session)
+        try:
+            intervalo = processar_invervalo_personalizado()
 
-        if intervalo is None:
-            return
+            if intervalo is None:
+                return
 
-        data_inicial, data_final = intervalo
-        relatorio = venda_controller.resumo_relatorio(
-            usuario_logado, data_inicial, data_final
-        )
-        exibir_resumo_relatorio(relatorio)
-        if relatorio:
-            exportar_relatorio_resumo_vendas(relatorio)
-        input(PRESSIONE_ENTER)
-    except (ValueError, PermissionError) as e:
-        print(f'\n{e}')
-        input(PRESSIONE_ENTER)
+            data_inicial, data_final = intervalo
+            relatorio = venda_controller.resumo_relatorio(
+                usuario_logado, data_inicial, data_final
+            )
+            exibir_resumo_relatorio(relatorio)
+            if relatorio:
+                exportar_relatorio_resumo_vendas(relatorio)
+            input(PRESSIONE_ENTER)
+        except (ValueError, PermissionError) as e:
+            print(f'\n{e}')
+            input(PRESSIONE_ENTER)
 
 
-def relatorio_produto(venda_controller, usuario_logado):
-    try:
-        intervalo = processar_invervalo_personalizado()
+def relatorio_produto(usuario_logado):
+    with get_session() as session:
+        venda_controller = get_venda_controller(session)
 
-        if intervalo is None:
-            return
+        try:
+            intervalo = processar_invervalo_personalizado()
 
-        data_inicial, data_final = intervalo
-        produtos = venda_controller.relatorio_produtos(
-            usuario_logado, data_inicial, data_final
-        )
-        exibir_relatorio_produtos(produtos, data_inicial, data_final)
-        if produtos:
-            exportar_relatorio_produto(produtos, data_inicial, data_final)
-        input(PRESSIONE_ENTER)
-    except (ValueError, PermissionError) as e:
-        print(f'\n{e}')
-        input(PRESSIONE_ENTER)
+            if intervalo is None:
+                return
+
+            data_inicial, data_final = intervalo
+            produtos = venda_controller.relatorio_produtos(
+                usuario_logado, data_inicial, data_final
+            )
+            exibir_relatorio_produtos(produtos, data_inicial, data_final)
+            if produtos:
+                exportar_relatorio_produto(produtos, data_inicial, data_final)
+            input(PRESSIONE_ENTER)
+        except (ValueError, PermissionError) as e:
+            print(f'\n{e}')
+            input(PRESSIONE_ENTER)
 
 
 def relatorio_estoque(usuario_logado):
     with get_session() as session:
-        estoque_controller = estoq_controller(session)
+        estoque_controller = get_estoque_controller(session)
         try:
             relatorio = estoque_controller.relatorio_estoque(usuario_logado)
             exibir_relatorio_estoque(relatorio)
@@ -86,7 +92,7 @@ def relatorio_estoque(usuario_logado):
 
 def relatorio_estoque_baixo(usuario_logado):
     with get_session() as session:
-        estoque_controller = estoq_controller(session)
+        estoque_controller = get_estoque_controller(session)
         try:
             limite = int(input('Insira o limite para a consulta.'))
             relatorio = estoque_controller.relatorio_estoque_baixo(
@@ -212,7 +218,8 @@ def exibir_relatorio_produtos(produtos, inicio, final):
     )
     print('-' * 90)
     print(
-        f'{"ID Prod.":<12}{"Nome Produto":<40}{"Unid. Vendidas":<20}{"Valor Vendido":<10}\n'
+        f'{"ID Prod.":<12}{"Nome Produto":<40}'
+        f'{"Unid. Vendidas":<20}{"Valor Vendido":<10}\n'
     )
 
     for produto in produtos:
@@ -225,7 +232,8 @@ def exibir_relatorio_produtos(produtos, inicio, final):
         quantidade_total += produto.quantidade_vendida
         valor_total_periodo += produto.valor_total
         print(
-            f'{produto.id_produto:<12}{produto.nome_produto:<40}{produto.quantidade_vendida:<20}{total_formatado:<10}'
+            f'{produto.id_produto:<12}{produto.nome_produto:<40}'
+            f'{produto.quantidade_vendida:<20}{total_formatado:<10}'
         )
     valor_total_formatado = (
         f'R$ {valor_total_periodo:,.2f}'

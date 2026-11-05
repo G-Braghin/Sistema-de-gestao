@@ -1,5 +1,4 @@
 from psycopg2 import InterfaceError, OperationalError
-from sqlalchemy.orm import Session
 
 from src.cli.cliente_cli import processar_menu_cliente
 from src.cli.gerenciamento_cli import processar_menu_gerenciamento
@@ -10,15 +9,7 @@ from src.cli.usuario_cli import (
     realizar_login,
 )
 from src.cli.venda_cli import processar_menu_venda
-from src.controllers.venda_controller import VendaController
-from src.database.conexao import Conexao
 from src.enums import PapelEnum
-from src.repositories.cliente_repository import ClienteRepository
-from src.repositories.movimentacao_repository import MovimentacaoRepository
-from src.repositories.produto_repository import ProdutoRepository
-from src.repositories.venda_repository import VendaRepository
-from src.services.estoque_service import EstoqueService
-from src.services.venda_service import VendaService
 
 INVALIDO = 'Opção inválida.'
 PEDIR_ID = 'ID usuario: '
@@ -39,7 +30,6 @@ def exibir_menu(usuario_logado):
 
 def processar_menu_principal(
     usuario_logado,
-    venda_controller,
 ):
     opcao = exibir_menu(usuario_logado)
     if opcao == '1':
@@ -49,10 +39,10 @@ def processar_menu_principal(
     elif opcao == '3':
         processar_menu_produto()
     elif opcao == '4':
-        processar_menu_venda(venda_controller, usuario_logado)
+        processar_menu_venda(usuario_logado)
     elif opcao == '5':
         if usuario_logado.papel in {PapelEnum.ADMIN, PapelEnum.GERENTE}:
-            processar_menu_gerenciamento(usuario_logado, venda_controller)
+            processar_menu_gerenciamento(usuario_logado)
         else:
             print(INVALIDO)
     elif opcao == '0':
@@ -64,29 +54,13 @@ def processar_menu_principal(
 
 
 def main():
-    # Montagem das dependências
     try:
-        conexao_db = Conexao
         garantir_admin_padrao()
-        client_repo = ClienteRepository(Session)
-        produto_repo = ProdutoRepository(Session)
-
-        # estoque movimentacoes
-        movimentacao_repo = MovimentacaoRepository(conexao_db)
-        estoque_serv = EstoqueService(produto_repo, movimentacao_repo)
-
-        # venda
-        venda_repo = VendaRepository(conexao_db)
-        venda_serv = VendaService(
-            conexao_db, venda_repo, produto_repo, client_repo, estoque_serv
-        )
-        venda_controller = VendaController(venda_serv)
 
         usuario_logado = realizar_login()
 
         while processar_menu_principal(
             usuario_logado,
-            venda_controller,
         ):
             continue
 
