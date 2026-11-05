@@ -1,5 +1,5 @@
 from src.database.database import get_session
-from src.dependencies.produtos_dependencies import product_controller
+from src.dependencies.produtos_dependencies import get_produto_controller
 
 VOLTAR = '0 - Voltar'
 INVALIDO = '\nOpção inválida.'
@@ -39,7 +39,7 @@ def processar_menu_atualizar():
 # Operaçoes de produto
 def listar_produto():
     with get_session() as session:
-        produto_controller = product_controller(session)
+        produto_controller = get_produto_controller(session)
         produtos = produto_controller.listar_produtos()
         if not produtos:
             print('Nenhum produto registrado.')
@@ -53,7 +53,7 @@ def cadastrar_produto():
     nome = input('Digite o nome do produto: ')
     preco = input('Digite o preco do produto (Ex: 59,99): ')
     with get_session() as session:
-        produto_controller = product_controller(session)
+        produto_controller = get_produto_controller(session)
         try:
             preco_formatado = float(preco.replace(',', '.'))
             produto_novo = produto_controller.cadastrar_produto(nome, preco_formatado)
@@ -67,7 +67,7 @@ def cadastrar_produto():
 def atualizar_nome():
     print('\nAtualizar Nome...')
     with get_session() as session:
-        produto_controller = product_controller(session)
+        produto_controller = get_produto_controller(session)
         try:
             id_produto = int(input(INFORMAR_ID))
             novo_nome = input('Informe o nome do produto: ')
@@ -110,7 +110,7 @@ def exibir_tabela(produtos: list) -> None:
 def atualizar_preco():
     print('\nAtualizar Preco...')
     with get_session() as session:
-        produto_controller = product_controller(session)
+        produto_controller = get_produto_controller(session)
         try:
             id_produto = int(input(INFORMAR_ID))
             novo_preco = input('Informe o novo preco do produto(Ex: 59,99): ')
