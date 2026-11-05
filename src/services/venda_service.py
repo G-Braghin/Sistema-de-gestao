@@ -4,7 +4,7 @@ from decimal import Decimal
 from src.entities.dtos.produtos_vendidos_resumo import ProdutosVendidosResumo
 from src.entities.dtos.relatorio_venda_resumo import RelatorioVendaResumo
 from src.entities.dtos.venda_resumo import VendaResumo
-from src.enums import PapelEnum, StatusVenda
+from src.enums import MotivoMovimentacao, PapelEnum, StatusVenda
 from src.models import Usuario, Venda, VendaItens
 from src.repositories.cliente_repository import ClienteRepository
 from src.repositories.produto_repository import ProdutoRepository
@@ -65,6 +65,7 @@ class VendaService:
                 usuario_logado=usuario_logado,
                 id_produto=item.id_produto,
                 saida_estoque=item.quantidade,
+                motivo=MotivoMovimentacao.VENDA,
                 id_venda=venda.id,
             )
 
@@ -102,7 +103,7 @@ class VendaService:
         if not self.estoque_service.validar_disponibilidade(id_produto, quantidade):
             raise ValueError(
                 f'Estoque insuficiente para o produto: {produto.nome} '
-                f'Disponivel: {produto.quantidade_estoque}'
+                f'Disponivel: {produto.quantidade}'
             )
 
         return VendaItens(
@@ -128,9 +129,10 @@ class VendaService:
         venda = self.venda_repository.buscar_por_id(id_venda)
         for item in sorted(venda.itens, key=lambda item: item.id_produto):
             self.estoque_service.dar_entrada(
-                usuario_logado=usuario_logado.id,
+                usuario_logado=usuario_logado,
                 id_produto=item.id_produto,
                 entrada_estoque=item.quantidade,
+                motivo=MotivoMovimentacao.CANCELAMENTO_VENDA,
                 id_venda=item.id_venda,
             )
 

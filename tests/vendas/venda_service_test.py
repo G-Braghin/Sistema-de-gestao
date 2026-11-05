@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 
 from src.entities.dtos.produtos_vendidos_resumo import ProdutosVendidosResumo
-from src.enums import StatusVenda
+from src.enums import MotivoMovimentacao, StatusVenda
 from src.utils.filtro_datas import FiltroDatas
 from src.utils.fuso import FUSO_HORARIO
 from tests.produtos.conftest import ProductFactory
@@ -164,9 +164,10 @@ def test_cancelar_venda_com_dados_validos(
 
     for item in venda_fake.itens:
         mock_estoque_service.dar_entrada.assert_any_call(
-            usuario_logado=user_gerente.id,
+            usuario_logado=user_gerente,
             id_produto=item.id_produto,
             entrada_estoque=item.quantidade,
+            motivo=MotivoMovimentacao.CANCELAMENTO_VENDA,
             id_venda=item.id_venda,
         )
 

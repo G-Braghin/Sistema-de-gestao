@@ -24,6 +24,7 @@ class EstoqueService:
         id_produto: int,
         entrada_estoque: int,
         motivo: MotivoMovimentacao,
+        id_venda: int | None = None,
     ) -> Produto:
         if usuario_logado.papel == PapelEnum.FUNCIONARIO:
             raise PermissionError('Sem permissao para mecher no estoque')
@@ -44,6 +45,7 @@ class EstoqueService:
             tipo_movimentacao=TipoMovimentacao.ENTRADA,
             quantidade=entrada_estoque,
             motivo=motivo,
+            id_venda=id_venda,
         )
         self.movimentacao_repository.criar(movimentacao)
 
@@ -55,6 +57,7 @@ class EstoqueService:
         id_produto: int,
         saida_estoque: int,
         motivo: MotivoMovimentacao,
+        id_venda: int | None = None,
     ) -> Produto:
         if usuario_logado.papel == PapelEnum.FUNCIONARIO:
             raise PermissionError('Sem permissao para mecher no estoque')
@@ -78,6 +81,7 @@ class EstoqueService:
             tipo_movimentacao=TipoMovimentacao.SAIDA,
             quantidade=saida_estoque,
             motivo=motivo,
+            id_venda=id_venda,
         )
         self.movimentacao_repository.criar(movimentacao)
 
