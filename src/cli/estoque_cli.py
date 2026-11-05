@@ -1,5 +1,5 @@
 from src.database.database import get_session
-from src.dependencies.estoque_dependencies import estoq_controller
+from src.dependencies.estoque_dependencies import get_estoque_controller
 from src.enums import MotivoMovimentacao
 from src.utils.fuso import FUSO_HORARIO
 
@@ -28,7 +28,7 @@ def processar_menu_estoque_gerenciamento(usuario_logado):
 def registrar_reabastecimento(usuario_logado):
     print('\nRegistrar Reabastecimento')
     with get_session() as session:
-        estoque_controller = estoq_controller(session)
+        estoque_controller = get_estoque_controller(session)
         try:
             id_produto = int(input(INSIRA_ID))
             entrada_estoque = int(input('Insira a quantidade e ser reabastecida: '))
@@ -64,7 +64,7 @@ def processar_ajustar_estoque(usuario_logado):
 def ajustar_mais(usuario_logado):
     print('\nAJUSTE -- Adicionar...')
     with get_session() as session:
-        estoque_controller = estoq_controller(session)
+        estoque_controller = get_estoque_controller(session)
         try:
             id_produto = int(input(INSIRA_ID))
             entrada_estoque = int(
@@ -83,7 +83,7 @@ def ajustar_mais(usuario_logado):
 def ajustar_menos(usuario_logado):
     print('\nAJUSTE -- Remover...')
     with get_session() as session:
-        estoque_controller = estoq_controller(session)
+        estoque_controller = get_estoque_controller(session)
         try:
             id_produto = int(input(INSIRA_ID))
             saida_estoque = int(input('Insira a quantidade a ser removida no ajuste: '))
@@ -99,7 +99,7 @@ def ajustar_menos(usuario_logado):
 
 def listar_movimentacoes(usuario_logado):
     with get_session() as session:
-        estoque_controller = estoq_controller(session)
+        estoque_controller = get_estoque_controller(session)
         try:
             movimentacoes = estoque_controller.listar_movimentacoes(usuario_logado)
         except PermissionError as e:

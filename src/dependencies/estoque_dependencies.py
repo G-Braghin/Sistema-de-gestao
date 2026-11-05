@@ -6,7 +6,7 @@ from src.repositories.produto_repository import ProdutoRepository
 from src.services.estoque_service import EstoqueService
 
 
-def estoq_controller(session: Session):
+def get_estoque_controller(session: Session):
     movimentacao_repo = MovimentacaoRepository(session)
     produto_repo = ProdutoRepository(session)
     estoque_serv = EstoqueService(produto_repo, movimentacao_repo)
