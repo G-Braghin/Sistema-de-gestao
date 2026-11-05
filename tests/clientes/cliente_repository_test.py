@@ -7,28 +7,28 @@ def test_criar_cliente_e_buscar_id(client_repository):
 
     assert cliente_criado.id is not None
 
-    response = client_repository.buscar_por_id(cliente_criado.id)
+    resultado = client_repository.buscar_por_id(cliente_criado.id)
 
-    assert response is not None
-    assert response.ativo is True
-    assert response.nome == cliente.nome
-    assert response.cpf == cliente.cpf
-    assert response.telefone == cliente.telefone
-    assert response.endereco == cliente.endereco
+    assert resultado is not None
+    assert resultado.ativo is True
+    assert resultado.nome == cliente.nome
+    assert resultado.cpf == cliente.cpf
+    assert resultado.telefone == cliente.telefone
+    assert resultado.endereco == cliente.endereco
 
 
 def test_buscar_cliente_cpf(client_repository):
     cliente = ClienteFatory()
     cliente_criado = client_repository.criar(cliente)
 
-    response = client_repository.buscar_por_cpf(cliente_criado.cpf)
+    resultado = client_repository.buscar_por_cpf(cliente_criado.cpf)
 
-    assert response is not None
-    assert response.ativo is True
-    assert response.nome == cliente.nome
-    assert response.cpf == cliente.cpf
-    assert response.telefone == cliente.telefone
-    assert response.endereco == cliente.endereco
+    assert resultado is not None
+    assert resultado.ativo is True
+    assert resultado.nome == cliente.nome
+    assert resultado.cpf == cliente.cpf
+    assert resultado.telefone == cliente.telefone
+    assert resultado.endereco == cliente.endereco
 
 
 def test_atualizar_cliente(client_repository):
@@ -41,12 +41,12 @@ def test_atualizar_cliente(client_repository):
 
     client_repository.atualizar(cliente_salvo)
 
-    response = client_repository.buscar_por_cpf(cliente_salvo.cpf)
+    resultado = client_repository.buscar_por_cpf(cliente_salvo.cpf)
 
-    assert response.id == cliente_salvo.id
-    assert response.nome == 'Novo Bob'
-    assert response.telefone == '12123459532'
-    assert response.endereco == 'Rua B'
+    assert resultado.id == cliente_salvo.id
+    assert resultado.nome == 'Novo Bob'
+    assert resultado.telefone == '12123459532'
+    assert resultado.endereco == 'Rua B'
 
 
 def test_buscar_cliente_inexistente(client_repository):
