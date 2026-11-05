@@ -5,7 +5,7 @@ from src.repositories.cliente_repository import ClienteRepository
 from src.services.cliente_service import ClienteService
 
 
-def client_controller(session: Session):
+def get_cliente_controller(session: Session):
     cliente_repo = ClienteRepository(session)
     cliente_serv = ClienteService(cliente_repo)
 

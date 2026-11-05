@@ -1,5 +1,5 @@
 from src.database.database import get_session
-from src.dependencies.clientes_dependencies import client_controller
+from src.dependencies.clientes_dependencies import get_cliente_controller
 from src.enums import PapelEnum
 
 INVALIDO = '\nOpção inválida.'
@@ -40,7 +40,7 @@ def cadastrar_cliente():
     endereco = input('Endereco: ')
 
     with get_session() as session:
-        cliente_controller = client_controller(session)
+        cliente_controller = get_cliente_controller(session)
 
         try:
             cliente_novo = cliente_controller.cadastrar_cliente(
@@ -68,7 +68,7 @@ def atualizar_nome():
         return
 
     with get_session() as session:
-        cliente_controller = client_controller(session)
+        cliente_controller = get_cliente_controller(session)
 
         try:
             cliente = cliente_controller.atualizar_nome(cpf_cliente, novo_nome)
@@ -95,7 +95,7 @@ def atualizar_endereco():
         return
 
     with get_session() as session:
-        cliente_controller = client_controller(session)
+        cliente_controller = get_cliente_controller(session)
 
         try:
             cliente = cliente_controller.atualizar_endereco(cpf_cliente, endereco_novo)
@@ -120,7 +120,7 @@ def atualizar_telefone():
         return
 
     with get_session() as session:
-        cliente_controller = client_controller(session)
+        cliente_controller = get_cliente_controller(session)
 
         try:
             cliente = cliente_controller.atualizar_telefone(cpf_cliente, telefone_novo)
@@ -137,7 +137,7 @@ def atualizar_status(usuario_logado):
     opcao = processar_status_opcao()
     if opcao is not None:
         with get_session() as session:
-            cliente_controller = client_controller(session)
+            cliente_controller = get_cliente_controller(session)
             try:
                 id_cliente = int(input('ID do cliente: '))
                 cliente = cliente_controller.atualizar_status(
@@ -154,7 +154,7 @@ def atualizar_status(usuario_logado):
 
 def listar(usuario_logado, status_ativo: bool = True):
     with get_session() as session:
-        cliente_controller = client_controller(session)
+        cliente_controller = get_cliente_controller(session)
 
         try:
             clientes = cliente_controller.listar_clientes(usuario_logado, status_ativo)
