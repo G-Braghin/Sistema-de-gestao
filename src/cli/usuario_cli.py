@@ -1,5 +1,5 @@
 from src.database.database import get_session
-from src.dependencies.usuarios_dependencies import user_controler
+from src.dependencies.usuarios_dependencies import get_usuario_controller
 
 INVALIDO = 'Opção inválida.'
 PEDIR_ID = 'ID usuario: '
@@ -9,7 +9,7 @@ VOLTAR = '0 - Voltar'
 
 def garantir_admin_padrao():
     with get_session() as session:
-        usuario_controller = user_controler(session)
+        usuario_controller = get_usuario_controller(session)
         usuario = usuario_controller.garantir_admin_padrao()
         if usuario is None:
             return
@@ -20,7 +20,7 @@ def garantir_admin_padrao():
 
 def realizar_login():
     with get_session() as session:
-        usuario_controller = user_controler(session)
+        usuario_controller = get_usuario_controller(session)
         usuario_logado = None
         while usuario_logado is None:
             try:
@@ -58,7 +58,7 @@ def processar_menu_perfil(usuario_logado):
 
 def trocar_senha(usuario_logado):
     with get_session() as session:
-        usuario_controller = user_controler(session)
+        usuario_controller = get_usuario_controller(session)
         senha_atual = input('Senha atual: ')
         nova_senha = input('Nova senha: ')
         try:
@@ -74,7 +74,7 @@ def trocar_senha(usuario_logado):
 
 def cadastrar_usuario(usuario_logado):
     with get_session() as session:
-        usuario_controller = user_controler(session)
+        usuario_controller = get_usuario_controller(session)
         try:
             opcoes = opcoes_cadastro(usuario_controller, usuario_logado)
             print('\nEscolha o cargo:')
@@ -118,7 +118,7 @@ def papel_da_opcao_cadastro(usuario_controller, usuario_logado, opcao):
 
 def resetar_senha_alvo(usuario_logado):
     with get_session() as session:
-        usuario_controller = user_controler(session)
+        usuario_controller = get_usuario_controller(session)
         try:
             id_user = int(input(PEDIR_ID))
             nova_senha = input('Nova senha: ')
@@ -152,7 +152,7 @@ def alterar_status_menu(usuario_logado):
 
 def alterar_status_ativo(usuario_logado, status_ativo):
     with get_session() as session:
-        usuario_controller = user_controler(session)
+        usuario_controller = get_usuario_controller(session)
         try:
             id_user = int(input(PEDIR_ID))
 
@@ -190,7 +190,7 @@ def listar_menu(usuario_logado):
 
 def listar(usuario_logado, status_ativo):
     with get_session() as session:
-        usuario_controller = user_controler(session)
+        usuario_controller = get_usuario_controller(session)
         try:
             usuarios = usuario_controller.listar_usuarios(usuario_logado, status_ativo)
         except PermissionError as e:
@@ -219,7 +219,7 @@ def exibir_tabela(usuarios):
 
 def promover(usuario_logado):
     with get_session() as session:
-        usuario_controller = user_controler(session)
+        usuario_controller = get_usuario_controller(session)
         try:
             id_user = int(input(PEDIR_ID))
             usuario_promovido = usuario_controller.promover_gerente(

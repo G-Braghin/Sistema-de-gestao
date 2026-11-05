@@ -6,7 +6,7 @@ from src.services.autenticacao_service import AutenticacaoService
 from src.services.usuario_service import UsuarioService
 
 
-def user_controler(session: Session) -> UsuarioController:
+def get_usuario_controller(session: Session) -> UsuarioController:
 
     usuario_repo = UsuarioRepository(session)
     autenticacao_serv = AutenticacaoService(usuario_repo)
