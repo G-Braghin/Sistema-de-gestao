@@ -71,6 +71,13 @@ def produto():
     return product
 
 
+@pytest.fixture
+def cliente():
+    client = ClienteFatory()
+    client.id = 99
+    return client
+
+
 # Definindo Fixture para testes que dependende de algo no banco
 @pytest.fixture
 def usuario_db(session):

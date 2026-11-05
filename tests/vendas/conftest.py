@@ -8,6 +8,7 @@ from pytest_mock import MockerFixture
 from src.enums import StatusVenda
 from src.models import Venda, VendaItens
 from src.repositories.venda_repository import VendaRepository
+from src.services.venda_service import VendaService
 
 
 class VendaItensFactory(factory.Factory):
@@ -35,12 +36,25 @@ def venda_repository(session):
     return VendaRepository(session)
 
 
+@pytest.fixture
 def mock_venda_repo(mocker: MockerFixture):
     return mocker.MagicMock(spec=VendaRepository)
 
 
-def venda_service():
-    
+@pytest.fixture
+def venda_service(
+    mock_venda_repo,
+    product_repository_mock,
+    client_repository_mock,
+    mock_estoque_service,
+):
+    return VendaService(
+        mock_venda_repo,
+        product_repository_mock,
+        client_repository_mock,
+        mock_estoque_service,
+    )
+
 
 @pytest.fixture
 def venda(session, cliente_db, usuario_db, produto_db):
@@ -52,5 +66,19 @@ def venda(session, cliente_db, usuario_db, produto_db):
     )
     session.add(venda)
     session.flush()
+
+    return venda
+
+
+@pytest.fixture
+def venda_fake(user_gerente, cliente, produto):
+    venda = VendaFactory(
+        id_usuario=user_gerente.id,
+        id_cliente=cliente.id,
+        itens=[VendaItensFactory(id_produto=produto.id)],
+    )
+    venda.id = 99
+    for item in venda.itens:
+        item.id = 100
 
     return venda
