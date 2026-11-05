@@ -1,5 +1,3 @@
-from psycopg2 import InterfaceError, OperationalError
-
 from src.cli.cliente_cli import processar_menu_cliente
 from src.cli.gerenciamento_cli import processar_menu_gerenciamento
 from src.cli.produto_cli import processar_menu_produto
@@ -64,12 +62,6 @@ def main():
         ):
             continue
 
-    except OperationalError, InterfaceError:
-        print(
-            '\nA comunicacaoo com o banco foi interrompida. '
-            'O sistema sera encerrado. '
-            'Confira a ultima operacao antes de tentar novamente.'
-        )
     except KeyboardInterrupt:
         print('\nSistema encerrado pelo usuario.')
 
