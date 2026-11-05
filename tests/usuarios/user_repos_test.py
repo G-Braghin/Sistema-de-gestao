@@ -40,8 +40,8 @@ def test_atualizar_usuario_nao_existe(user_repository):
         'ativo': False,
     }
 
-    response = user_repository.atualizar(user_id=999999, novos_dados=novos_dados)
-    assert response is None
+    resultado = user_repository.atualizar(user_id=999999, novos_dados=novos_dados)
+    assert resultado is None
 
 
 def test_buscar_usuario_inexistente(user_repository):
@@ -55,11 +55,11 @@ def test_listar_usuarios_ativos(user_repository, session):
     session.add_all([user_ativo, user_inativo])
     session.flush()
 
-    result = user_repository.listar()
+    resultado = user_repository.listar()
 
-    assert len(result) == 1
-    assert result[0].nome == user_ativo.nome
-    assert result[0].ativo
+    assert len(resultado) == 1
+    assert resultado[0].nome == user_ativo.nome
+    assert resultado[0].ativo
 
 
 def test_listar_usuarios_desativados(user_repository, session):
@@ -69,16 +69,16 @@ def test_listar_usuarios_desativados(user_repository, session):
     session.add_all([user_ativo, user_inativo])
     session.flush()
 
-    result = user_repository.listar(False)
+    resultado = user_repository.listar(False)
 
-    assert len(result) == 1
-    assert result[0].nome == user_inativo.nome
-    assert not result[0].ativo
+    assert len(resultado) == 1
+    assert resultado[0].nome == user_inativo.nome
+    assert not resultado[0].ativo
 
 
 def test_usuario_nao_existe(user_repository):
-    response = user_repository.existe_usuario()
-    assert not response
+    resultado = user_repository.existe_usuario()
+    assert not resultado
 
 
 def test_usuario_existe(user_repository, session):
@@ -86,5 +86,5 @@ def test_usuario_existe(user_repository, session):
     session.add(user)
     session.flush()
 
-    response = user_repository.existe_usuario()
-    assert response
+    resultado = user_repository.existe_usuario()
+    assert resultado

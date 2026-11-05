@@ -14,9 +14,9 @@ def test_gerar_e_verificar_senha(user_auth):
 def test_autenticar_usuario_ativo(user_auth, user_repository_mock, usuario):
     user_repository_mock.buscar_por_id.return_value = usuario
 
-    response = user_auth.autenticar(usuario.id, usuario.senha_limpa)
+    resultado = user_auth.autenticar(usuario.id, usuario.senha_limpa)
 
-    assert response is usuario
+    assert resultado is usuario
 
 
 @pytest.mark.parametrize(

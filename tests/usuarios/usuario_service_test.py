@@ -47,11 +47,11 @@ def test_cadastrar_usuario_com_permissao(
     user_repository_mock.criar.return_value = cadastrado
     user_auth_mock.verificar_senha.return_value = True
 
-    response = user_service.cadastrar_usuario(responsavel, cadastrado)
+    resultado = user_service.cadastrar_usuario(responsavel, cadastrado)
 
-    assert response.id is not None
-    assert response.nome == 'Joao'
-    assert response.papel == papel_cadastrado
+    assert resultado.id is not None
+    assert resultado.nome == 'Joao'
+    assert resultado.papel == papel_cadastrado
 
 
 def test_cadastrar_usuario_sem_cargo_permitido(user_service):
