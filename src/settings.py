@@ -7,3 +7,6 @@ class Settings(BaseSettings):
     )
     DATABASE_URL: str
     SENHA_PADRAO_FABRICA: str = 'admin123'
+    SECRET_KEY: str
+    ALGORITHM: str
+    TEMPO_DE_EXPIRACAO_TOKEN: int
