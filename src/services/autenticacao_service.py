@@ -1,20 +1,22 @@
-import bcrypt
+from pwdlib import PasswordHash
 
 from src.repositories.usuario_repository import UsuarioRepository
 from src.utils.validacoes import verificar_id, verificar_texto_obrigatorio
 
 
 class AutenticacaoService:
+    password_hash = PasswordHash.recommended()
+
     def __init__(self, usuario_repository: UsuarioRepository):
         self.usuario_repository = usuario_repository
 
     @staticmethod
     def gerar_senha_hash(senha: str):
-        return bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        return AutenticacaoService.password_hash.hash(senha)
 
     @staticmethod
     def verificar_senha(senha: str, senha_hash: str):
-        return bcrypt.checkpw(senha.encode('utf-8'), senha_hash.encode('utf-8'))
+        return AutenticacaoService.password_hash.verify(senha, senha_hash)
 
     def autenticar(self, id_usuario: int, senha: str):
         verificar_id(id_usuario, 'ID de usuario invalido.')
