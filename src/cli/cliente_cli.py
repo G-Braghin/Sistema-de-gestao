@@ -188,21 +188,19 @@ def exibir_tabela(clientes: list):
 def atualizar(usuario_logado):
     while True:
         opcao = menu_atualizar(usuario_logado)
-        if opcao == '1':
-            atualizar_nome()
-        elif opcao == '2':
-            atualizar_telefone()
-        elif opcao == '3':
-            atualizar_endereco()
-        elif opcao == '4':
-            if usuario_logado.papel != PapelEnum.FUNCIONARIO:
+        match opcao:
+            case '1':
+                atualizar_nome()
+            case '2':
+                atualizar_telefone()
+            case '3':
+                atualizar_endereco()
+            case '4' if usuario_logado.papel != PapelEnum.FUNCIONARIO:
                 atualizar_status(usuario_logado)
-            else:
+            case '0':
+                return
+            case _:
                 print(INVALIDO)
-        elif opcao == '0':
-            return
-        else:
-            print(INVALIDO)
 
 
 def processar_status_opcao():
@@ -212,31 +210,30 @@ def processar_status_opcao():
         print('2 - Ativar cliente')
         print(VOLTAR)
         opcao = input('> ')
-        if opcao == '1':
-            return False
-        elif opcao == '2':
-            return True
-        elif opcao == '0':
-            return None
-        else:
-            print(INVALIDO)
+        match opcao:
+            case '1':
+                return False
+            case '2':
+                return True
+            case '0':
+                return None
+            case _:
+                print(INVALIDO)
 
 
 def processar_menu_cliente(usuario_logado):
     while True:
         opcao = menu_cliente(usuario_logado)
-        if opcao == '1':
-            cadastrar_cliente()
-        elif opcao == '2':
-            atualizar(usuario_logado)
-        elif opcao == '3':
-            listar(usuario_logado)
-        elif opcao == '4':
-            if usuario_logado.papel != PapelEnum.FUNCIONARIO:
+        match opcao:
+            case '1':
+                cadastrar_cliente()
+            case '2':
+                atualizar(usuario_logado)
+            case '3':
+                listar(usuario_logado)
+            case '4' if usuario_logado.papel != PapelEnum.FUNCIONARIO:
                 listar(usuario_logado, False)
-            else:
+            case '0':
+                return
+            case _:
                 print(INVALIDO)
-        elif opcao == '0':
-            return
-        else:
-            print(INVALIDO)

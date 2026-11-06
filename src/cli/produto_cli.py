@@ -11,29 +11,31 @@ INFORMAR_ID = 'Informe o ID do produto: '
 def processar_menu_produto():
     while True:
         opcao = menu_produto()
-        if opcao == '1':
-            listar_produto()
-        elif opcao == '2':
-            cadastrar_produto()
-        elif opcao == '3':
-            processar_menu_atualizar()
-        elif opcao == '0':
-            return
-        else:
-            print(INVALIDO)
+        match opcao:
+            case '1':
+                listar_produto()
+            case '2':
+                cadastrar_produto()
+            case '3':
+                processar_menu_atualizar()
+            case '0':
+                return
+            case _:
+                print(INVALIDO)
 
 
 def processar_menu_atualizar():
     while True:
         opcao = menu_atualizar()
-        if opcao == '1':
-            atualizar_nome()
-        elif opcao == '2':
-            atualizar_preco()
-        elif opcao == '0':
-            return
-        else:
-            print(INVALIDO)
+        match opcao:
+            case '1':
+                atualizar_nome()
+            case '2':
+                atualizar_preco()
+            case '0':
+                return
+            case _:
+                print(INVALIDO)
 
 
 # Operaçoes de produto

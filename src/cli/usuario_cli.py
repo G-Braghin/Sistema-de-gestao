@@ -48,12 +48,13 @@ def menu_perfil(usuario_logado):
 def processar_menu_perfil(usuario_logado):
     while True:
         opcao = menu_perfil(usuario_logado)
-        if opcao == '1':
-            trocar_senha(usuario_logado)
-        elif opcao == '0':
-            return
-        else:
-            print(INVALIDO)
+        match opcao:
+            case '1':
+                trocar_senha(usuario_logado)
+            case '0':
+                return
+            case _:
+                print(INVALIDO)
 
 
 def trocar_senha(usuario_logado):
@@ -139,15 +140,15 @@ def alterar_status_menu(usuario_logado):
         print('2 - Ativar usuario')
         print(VOLTAR)
         opcao = input('> ')
-
-        if opcao == '1':
-            alterar_status_ativo(usuario_logado, False)
-        elif opcao == '2':
-            alterar_status_ativo(usuario_logado, True)
-        elif opcao == '0':
-            return
-        else:
-            print(INVALIDO)
+        match opcao:
+            case '1':
+                alterar_status_ativo(usuario_logado, False)
+            case '2':
+                alterar_status_ativo(usuario_logado, True)
+            case '0':
+                return
+            case _:
+                print(INVALIDO)
 
 
 def alterar_status_ativo(usuario_logado, status_ativo):
@@ -177,15 +178,15 @@ def listar_menu(usuario_logado):
         print('2 - Usuarios desativados')
         print(VOLTAR)
         opcao = input('> ')
-
-        if opcao == '1':
-            listar(usuario_logado, True)
-        elif opcao == '2':
-            listar(usuario_logado, False)
-        elif opcao == '0':
-            return
-        else:
-            print(INVALIDO)
+        match opcao:
+            case '1':
+                listar(usuario_logado, True)
+            case '2':
+                listar(usuario_logado, False)
+            case '0':
+                return
+            case _:
+                print(INVALIDO)
 
 
 def listar(usuario_logado, status_ativo):

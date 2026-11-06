@@ -30,23 +30,21 @@ def processar_menu_principal(
     usuario_logado,
 ):
     opcao = exibir_menu(usuario_logado)
-    if opcao == '1':
-        processar_menu_perfil(usuario_logado)
-    elif opcao == '2':
-        processar_menu_cliente(usuario_logado)
-    elif opcao == '3':
-        processar_menu_produto()
-    elif opcao == '4':
-        processar_menu_venda(usuario_logado)
-    elif opcao == '5':
-        if usuario_logado.papel in {PapelEnum.ADMIN, PapelEnum.GERENTE}:
+    match opcao:
+        case '1':
+            processar_menu_perfil(usuario_logado)
+        case '2':
+            processar_menu_cliente(usuario_logado)
+        case '3':
+            processar_menu_produto()
+        case '4':
+            processar_menu_venda(usuario_logado)
+        case '5' if usuario_logado.papel in {PapelEnum.ADMIN, PapelEnum.GERENTE}:
             processar_menu_gerenciamento(usuario_logado)
-        else:
+        case '0':
+            return False
+        case _:
             print(INVALIDO)
-    elif opcao == '0':
-        return False
-    else:
-        print(INVALIDO)
 
     return True
 

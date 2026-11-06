@@ -12,16 +12,17 @@ INSIRA_ID = 'Insira o ID do produto: '
 def processar_menu_estoque_gerenciamento(usuario_logado):
     while True:
         opcao = menu_estoque_gerenciamento()
-        if opcao == '1':
-            registrar_reabastecimento(usuario_logado)
-        elif opcao == '2':
-            processar_ajustar_estoque(usuario_logado)
-        elif opcao == '3':
-            listar_movimentacoes(usuario_logado)
-        elif opcao == '0':
-            return
-        else:
-            print(INVALIDO)
+        match opcao:
+            case '1':
+                registrar_reabastecimento(usuario_logado)
+            case '2':
+                processar_ajustar_estoque(usuario_logado)
+            case '3':
+                listar_movimentacoes(usuario_logado)
+            case '0':
+                return
+            case _:
+                print(INVALIDO)
 
 
 # Operacoes do estoque
@@ -51,14 +52,15 @@ def registrar_reabastecimento(usuario_logado):
 def processar_ajustar_estoque(usuario_logado):
     while True:
         opcao = menu_ajustar_estoque()
-        if opcao == '1':
-            ajustar_mais(usuario_logado)
-        elif opcao == '2':
-            ajustar_menos(usuario_logado)
-        elif opcao == '0':
-            return
-        else:
-            print(INVALIDO)
+        match opcao:
+            case '1':
+                ajustar_mais(usuario_logado)
+            case '2':
+                ajustar_menos(usuario_logado)
+            case '0':
+                return
+            case _:
+                print(INVALIDO)
 
 
 def ajustar_mais(usuario_logado):

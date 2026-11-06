@@ -18,38 +18,41 @@ FORMATO_DATA_HORA = '%d/%m/%Y %H:%M'
 def processar_menu_venda(usuario_logado):
     while True:
         opcao = menu_venda()
-        if opcao == '1':
-            realizar_venda(usuario_logado)
-        elif opcao == '0':
-            return
-        else:
-            print(INVALIDO)
+        match opcao:
+            case '1':
+                realizar_venda(usuario_logado)
+            case '0':
+                return
+            case _:
+                print(INVALIDO)
 
 
 def processar_menu_venda_gerenciamento(usuario_logado):
     while True:
         opcao = menu_venda_gerenciamento()
-        if opcao == '1':
-            processar_menu_listar_vendas(usuario_logado)
-        elif opcao == '2':
-            cancelar_venda(usuario_logado)
-        elif opcao == '0':
-            return
-        else:
-            print(INVALIDO)
+        match opcao:
+            case '1':
+                processar_menu_listar_vendas(usuario_logado)
+            case '2':
+                cancelar_venda(usuario_logado)
+            case '0':
+                return
+            case _:
+                print(INVALIDO)
 
 
 def processar_menu_listar_vendas(usuario_logado):
     while True:
         opcao = menu_listar_vendas()
-        if opcao == '1':
-            listar_resumo_venda(usuario_logado)
-        elif opcao == '2':
-            listar_venda(usuario_logado)
-        elif opcao == '0':
-            return
-        else:
-            print(INVALIDO)
+        match opcao:
+            case '1':
+                listar_resumo_venda(usuario_logado)
+            case '2':
+                listar_venda(usuario_logado)
+            case '0':
+                return
+            case _:
+                print(INVALIDO)
 
 
 # Operacoes de venda
@@ -142,16 +145,17 @@ def listar_venda(usuario_logado):
 
 # Processamento das escolhas
 def processar_escolha_status_venda():
-    opcao = escolher_status_venda()
-    if opcao == '1':
-        return StatusVenda.CONCLUIDA
-    elif opcao == '2':
-        return StatusVenda.CANCELADA
-    elif opcao == '3':
-        return None
-    else:
-        print(INVALIDO)
-        return processar_escolha_status_venda()
+    while True:
+        opcao = escolher_status_venda()
+        match opcao:
+            case '1':
+                return StatusVenda.CONCLUIDA
+            case '2':
+                return StatusVenda.CANCELADA
+            case '3':
+                return None
+            case _:
+                print(INVALIDO)
 
 
 # Menus e exibicao

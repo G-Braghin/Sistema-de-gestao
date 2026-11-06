@@ -6,32 +6,24 @@ INVALIDO = 'Opção inválida.'
 
 
 def processar_filtro():
+    opcoes = {
+        '': FiltroDatas.MES_ATUAL,
+        '1': FiltroDatas.HOJE,
+        '2': FiltroDatas.ONTEM,
+        '3': FiltroDatas.ULTIMOS_7_DIAS,
+        '4': FiltroDatas.ULTIMOS_30_DIAS,
+        '5': FiltroDatas.MES_ATUAL,
+        '6': FiltroDatas.MES_ANTERIOR,
+        '7': FiltroDatas.ANO_ATUAL,
+        '8': FiltroDatas.ANO_ANTERIOR,
+        '9': FiltroDatas.PERSONALIZADO,
+        '0': '0',
+    }
     while True:
         opcao = filtro_data_menu().strip()
-        if not opcao:
-            return FiltroDatas.MES_ATUAL
-        elif opcao == '1':
-            return FiltroDatas.HOJE
-        elif opcao == '2':
-            return FiltroDatas.ONTEM
-        elif opcao == '3':
-            return FiltroDatas.ULTIMOS_7_DIAS
-        elif opcao == '4':
-            return FiltroDatas.ULTIMOS_30_DIAS
-        elif opcao == '5':
-            return FiltroDatas.MES_ATUAL
-        elif opcao == '6':
-            return FiltroDatas.MES_ANTERIOR
-        elif opcao == '7':
-            return FiltroDatas.ANO_ATUAL
-        elif opcao == '8':
-            return FiltroDatas.ANO_ANTERIOR
-        elif opcao == '9':
-            return FiltroDatas.PERSONALIZADO
-        elif opcao == '0':
-            return '0'
-        else:
-            print(INVALIDO)
+        if opcao in opcoes:
+            return opcoes[opcao]
+        print(INVALIDO)
 
 
 def processar_invervalo_personalizado():

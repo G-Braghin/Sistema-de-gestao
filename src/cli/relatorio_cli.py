@@ -17,18 +17,19 @@ PRESSIONE_ENTER = '\nPressione [ENTER] para voltar...'
 def processar_menu_relatorio(usuario_logado):
     while True:
         opcao = menu_relatorio()
-        if opcao == '1':
-            resumo_relatorio(usuario_logado)
-        elif opcao == '2':
-            relatorio_produto(usuario_logado)
-        elif opcao == '3':
-            relatorio_estoque(usuario_logado)
-        elif opcao == '4':
-            relatorio_estoque_baixo(usuario_logado)
-        elif opcao == '0':
-            return
-        else:
-            print('Opcao inválida.')
+        match opcao:
+            case '1':
+                resumo_relatorio(usuario_logado)
+            case '2':
+                relatorio_produto(usuario_logado)
+            case '3':
+                relatorio_estoque(usuario_logado)
+            case '4':
+                relatorio_estoque_baixo(usuario_logado)
+            case '0':
+                return
+            case _:
+                print('Opcao inválida.')
 
 
 def resumo_relatorio(usuario_logado):
