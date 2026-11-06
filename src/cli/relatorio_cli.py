@@ -35,13 +35,14 @@ def processar_menu_relatorio(usuario_logado):
 def resumo_relatorio(usuario_logado):
     with get_session() as session:
         venda_controller = get_venda_controller(session)
+        intervalo = processar_invervalo_personalizado()
+
+        if intervalo is None:
+            return
+
+        data_inicial, data_final = intervalo
+
         try:
-            intervalo = processar_invervalo_personalizado()
-
-            if intervalo is None:
-                return
-
-            data_inicial, data_final = intervalo
             relatorio = venda_controller.resumo_relatorio(
                 usuario_logado, data_inicial, data_final
             )
@@ -57,14 +58,13 @@ def resumo_relatorio(usuario_logado):
 def relatorio_produto(usuario_logado):
     with get_session() as session:
         venda_controller = get_venda_controller(session)
+        intervalo = processar_invervalo_personalizado()
 
+        if intervalo is None:
+            return
+
+        data_inicial, data_final = intervalo
         try:
-            intervalo = processar_invervalo_personalizado()
-
-            if intervalo is None:
-                return
-
-            data_inicial, data_final = intervalo
             produtos = venda_controller.relatorio_produtos(
                 usuario_logado, data_inicial, data_final
             )
@@ -99,13 +99,14 @@ def relatorio_estoque_baixo(usuario_logado):
             relatorio = estoque_controller.relatorio_estoque_baixo(
                 usuario_logado, limite
             )
-            exibir_relatorio_estoque_baixo(relatorio, limite)
-            if relatorio:
-                exportar_relatorio_estoque_baixo(relatorio, limite)
-            input(PRESSIONE_ENTER)
         except (ValueError, TypeError, PermissionError) as e:
             print(f'\n{e}')
             input(PRESSIONE_ENTER)
+
+        exibir_relatorio_estoque_baixo(relatorio, limite)
+        if relatorio:
+            exportar_relatorio_estoque_baixo(relatorio, limite)
+        input(PRESSIONE_ENTER)
 
 
 # exportacoes

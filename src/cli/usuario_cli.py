@@ -76,20 +76,23 @@ def trocar_senha(usuario_logado):
 def cadastrar_usuario(usuario_logado):
     with get_session() as session:
         usuario_controller = get_usuario_controller(session)
+        opcoes = opcoes_cadastro(usuario_controller, usuario_logado)
+        print('\nEscolha o cargo:')
+
+        for numero, descricao in opcoes:
+            print(f'{numero} - {descricao}')
+
+        opcao = input('> ')
+        papel = papel_da_opcao_cadastro(usuario_controller, usuario_logado, opcao)
+
+        if papel is None:
+            print(INVALIDO)
+            return
+
+        nome = input('Nome: ')
+        senha = input('Senha: ')
+
         try:
-            opcoes = opcoes_cadastro(usuario_controller, usuario_logado)
-            print('\nEscolha o cargo:')
-            for numero, descricao in opcoes:
-                print(f'{numero} - {descricao}')
-
-            opcao = input('> ')
-            papel = papel_da_opcao_cadastro(usuario_controller, usuario_logado, opcao)
-            if papel is None:
-                print(INVALIDO)
-                return
-
-            nome = input('Nome: ')
-            senha = input('Senha: ')
             usuario_novo = usuario_controller.cadastrar_usuario(
                 usuario_logado, nome, senha, papel
             )

@@ -56,6 +56,18 @@ def processar_menu_listar_vendas(usuario_logado):
 
 
 # Operacoes de venda
+def coletar_dados_venda():
+    id_cliente = int(input('Inserir ID do cliente: '))
+    num_produtos = int(input('Quantidade de itens diferentes a adicionar: '))
+    itens = []
+    for num in range(1, num_produtos + 1):
+        id_produto = int(input(f'ID do {num}º produto: '))
+        quantidade = int(input(f'Quantidade do {num}º produto: '))
+        itens.append({'id_produto': id_produto, 'quantidade': quantidade})
+
+    return id_cliente, itens
+
+
 def realizar_venda(usuario_logado):
     print('\n=== Venda ===')
     ver_produto = (
@@ -70,16 +82,7 @@ def realizar_venda(usuario_logado):
     with get_session() as session:
         venda_controller = get_venda_controller(session)
         try:
-            id_cliente = int(input('Inserir ID do cliente: '))
-
-            num_produtos = int(input('Quantidade de itens diferentes a adicionar: '))
-            itens = []
-
-            for num in range(1, num_produtos + 1):
-                id_produto = int(input(f'ID do {num}º produto: '))
-                quantidade = int(input(f'Quantidade do {num}º produto: '))
-                itens.append({'id_produto': id_produto, 'quantidade': quantidade})
-
+            id_cliente, itens = coletar_dados_venda()
             venda_controller.realizar_venda(usuario_logado, id_cliente, itens)
             print('Venda realizada com sucesso.')
             input(PRESSIONE_ENTER)
@@ -111,15 +114,16 @@ def listar_resumo_venda(usuario_logado):
 
     inicio_filtro = None
     final_filtro = None
+
+    if filtro_data == FiltroDatas.PERSONALIZADO:
+        intervalo = processar_invervalo_personalizado()
+        if intervalo is None:
+            return
+        inicio_filtro, final_filtro = intervalo
+
     with get_session() as session:
         venda_controller = get_venda_controller(session)
         try:
-            if filtro_data == FiltroDatas.PERSONALIZADO:
-                intervalo = processar_invervalo_personalizado()
-                if intervalo is None:
-                    return
-                inicio_filtro, final_filtro = intervalo
-
             vendas = venda_controller.listar_resumo(
                 usuario_logado, status_venda, filtro_data, inicio_filtro, final_filtro
             )
