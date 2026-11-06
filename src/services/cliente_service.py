@@ -9,14 +9,18 @@ CLIENTE_NAO_ATIVO = 'Cliente esta desativado.'
 CLIENTE_NAO_ENCONTRADO = 'Cliente nao encontrado.'
 CPF_INVALIDO = 'CPF e invalido.'
 CPF_NAO_INSERIDO = 'CPF nao pode estar vazio.'
+COMPRIMENTO_CPF = 11
+COMPRIMENTO_CELULAR = 13
+LIMITE_RESTO_VALIDADOR = 10
 
 
 class ClienteService:
     def __init__(self, cliente_repository: ClienteRepository):
         self.cliente_repository = cliente_repository
 
-    def _validar_cpf(self, cpf: str) -> bool:
-        if len(cpf) != 11:
+    @staticmethod
+    def _validar_cpf(cpf: str) -> bool:
+        if len(cpf) != COMPRIMENTO_CPF:
             return False
 
         if cpf == cpf[0] * 11:
@@ -24,20 +28,20 @@ class ClienteService:
 
         soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
         resto = (soma * 10) % 11
-        digito1 = 0 if resto == 10 else resto
+        digito1 = 0 if resto == LIMITE_RESTO_VALIDADOR else resto
 
         if digito1 != int(cpf[9]):
             return False
 
         soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
         resto = (soma * 10) % 11
-        digito2 = 0 if resto == 10 else resto
+        digito2 = 0 if resto == LIMITE_RESTO_VALIDADOR else resto
 
         return digito2 == int(cpf[10])
 
-    def _validar_telefone(self, telefone: str) -> bool:
-
-        if len(telefone) == 13 and telefone.startswith('55'):
+    @staticmethod
+    def _validar_telefone(telefone: str) -> bool:
+        if len(telefone) == COMPRIMENTO_CELULAR and telefone.startswith('55'):
             telefone = telefone[2:]
 
         padrao = r'^[1-9]{2}9[\d]{8}$'
