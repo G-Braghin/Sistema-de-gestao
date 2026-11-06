@@ -1,6 +1,6 @@
-def verificar_id(id_registro: int, mensagem: str = "ID invalido.") -> None:
+def verificar_id(id_registro: int, mensagem: str = 'ID invalido.') -> None:
     if not isinstance(id_registro, int) or isinstance(id_registro, bool):
-        raise TypeError("ID tem que ser um numero inteiro.")
+        raise TypeError('ID tem que ser um numero inteiro.')
 
     if id_registro <= 0:
         raise ValueError(mensagem)

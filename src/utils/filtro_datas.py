@@ -10,4 +10,4 @@ class FiltroDatas(Enum):
     MES_ANTERIOR = 'Mês anterior'
     ANO_ATUAL = 'Ano atual'
     ANO_ANTERIOR = 'Ano anterior'
-    PERSONALIZADO = 'Personalizado' 
+    PERSONALIZADO = 'Personalizado'

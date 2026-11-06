@@ -44,6 +44,14 @@ preview = true
 select = ['I', 'F', 'E', 'W', 'PL', 'PT', 'B', 'C4']
 ignore = []
 
+# ---> ADICIONE ESTE BLOCO AQUI ABAIXO <---
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "PLR0913", # too-many-arguments
+    "PLR0917", # too-many-positional-arguments
+    "PLR2004", # magic-value-comparison
+]
+
 [tool.ruff.format]
 preview = true
 quote-style = 'single'
