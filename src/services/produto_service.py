@@ -7,6 +7,9 @@ from src.utils.validacoes import verificar_id
 
 PRODUTO_NAO_ENCONTRADO = 'Produto nao encontrado!'
 ID_INVALIDO = 'ID de produto invalido.'
+MAX_CASAS_DECIMAIS_PRECO = -2
+MAX_COMPRIMENTO_NOME = 60
+MIN_COMPRIMENTO_NOME = 3
 
 
 class ProdutoService:
@@ -15,14 +18,12 @@ class ProdutoService:
 
     @staticmethod
     def validar_nome(nome: str) -> bool:
-        min_length = 3
-        max_length = 60
 
         if not isinstance(nome, str):
             return False
 
         nome = nome.strip()
-        if not min_length <= len(nome) <= max_length:
+        if not MIN_COMPRIMENTO_NOME <= len(nome) <= MAX_COMPRIMENTO_NOME:
             return False
 
         regex_caracteres_validos = r'[a-zA-Z0-9áàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ .\-/]+'
@@ -41,7 +42,7 @@ class ProdutoService:
         if preco <= 0:
             return False
 
-        return preco.as_tuple().exponent >= -2
+        return preco.as_tuple().exponent >= MAX_CASAS_DECIMAIS_PRECO
 
     def cadastrar_produto(self, nome: str, preco) -> Produto:
         if not self.validar_nome(nome):
