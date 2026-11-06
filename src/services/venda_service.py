@@ -14,6 +14,8 @@ from src.utils.filtro_datas import FiltroDatas
 from src.utils.fuso import FUSO_HORARIO
 from src.utils.validacoes import verificar_id
 
+MES_DEZEMBRO = 12
+
 
 class VendaService:
     def __init__(
@@ -237,69 +239,63 @@ class VendaService:
 
         return inicio_utc, final_utc
 
+    @staticmethod
     def _obter_datas_filtro(
-        self, filtro_datas: FiltroDatas, inicio_filtro=None, final_filtro=None
+        filtro_datas: FiltroDatas, inicio_filtro=None, final_filtro=None
     ) -> tuple[date, date]:
         hoje = datetime.now(FUSO_HORARIO).date()
+        inicio_mes = hoje.replace(day=1)
+        inicio_ano = date(hoje.year, 1, 1)
 
-        if filtro_datas == FiltroDatas.HOJE:
-            amanha = hoje + timedelta(days=1)
+        match filtro_datas:
+            case FiltroDatas.HOJE:
+                inicio = hoje
+                final = hoje
 
-            return hoje, amanha
+            case FiltroDatas.ONTEM:
+                inicio = hoje - timedelta(days=1)
+                final = inicio
 
-        elif filtro_datas == FiltroDatas.ONTEM:
-            ontem = hoje - timedelta(days=1)
+            case FiltroDatas.ULTIMOS_7_DIAS:
+                inicio = hoje - timedelta(days=6)
+                final = hoje
 
-            return ontem, hoje
+            case FiltroDatas.ULTIMOS_30_DIAS:
+                inicio = hoje - timedelta(days=29)
+                final = hoje
 
-        elif filtro_datas == FiltroDatas.ULTIMOS_7_DIAS:
-            amanha = hoje + timedelta(days=1)
-            sete_dias_atras = hoje - timedelta(days=6)
+            case FiltroDatas.MES_ATUAL:
+                inicio = inicio_mes
+                final = inicio_mes.replace(
+                    year=inicio_mes.year + (inicio_mes.month == MES_DEZEMBRO),
+                    month=inicio_mes.month % 12 + 1,
+                )
 
-            return sete_dias_atras, amanha
+            case FiltroDatas.MES_ANTERIOR:
+                final = inicio_mes
+                inicio = (inicio_mes - timedelta(days=1)).replace(day=1)
 
-        elif filtro_datas == FiltroDatas.ULTIMOS_30_DIAS:
-            amanha = hoje + timedelta(days=1)
-            trinta_dias_atras = hoje - timedelta(days=29)
+            case FiltroDatas.ANO_ATUAL:
+                inicio = inicio_ano
+                final = date(hoje.year + 1, 1, 1)
 
-            return trinta_dias_atras, amanha
+            case FiltroDatas.ANO_ANTERIOR:
+                final = inicio_ano
+                inicio = date(hoje.year - 1, 1, 1)
 
-        elif filtro_datas == FiltroDatas.MES_ATUAL:
-            inicio_mes_atual = hoje.replace(day=1)
-            dezembro = 12
-            if hoje.month == dezembro:
-                inicio_proximo_mes = date(hoje.year + 1, 1, 1)
-            else:
-                inicio_proximo_mes = date(hoje.year, hoje.month + 1, 1)
+            case FiltroDatas.PERSONALIZADO:
+                if inicio_filtro is None or final_filtro is None:
+                    raise ValueError('As duas datas devem estar preenchidas.')
 
-            return inicio_mes_atual, inicio_proximo_mes
+                if final_filtro < inicio_filtro:
+                    raise ValueError(
+                        'A data final nao pode ser anterior a data inicial.'
+                    )
 
-        elif filtro_datas == FiltroDatas.MES_ANTERIOR:
-            inicio_mes_atual = hoje.replace(day=1)
-            final_mes_anterior = inicio_mes_atual - timedelta(days=1)
-            inicio_mes_anterior = final_mes_anterior.replace(day=1)
+                inicio = inicio_filtro
+                final = final_filtro
 
-            return inicio_mes_anterior, inicio_mes_atual
+            case _:
+                raise ValueError(f'Filtro de data não suportado: {filtro_datas}')
 
-        elif filtro_datas == FiltroDatas.ANO_ATUAL:
-            inicio_proximo_ano = date(hoje.year + 1, 1, 1)
-            inicio_ano_atual = date(hoje.year, 1, 1)
-
-            return inicio_ano_atual, inicio_proximo_ano
-
-        elif filtro_datas == FiltroDatas.ANO_ANTERIOR:
-            inicio_ano_atual = date(hoje.year, 1, 1)
-            inicio_ano_anterior = date(hoje.year - 1, 1, 1)
-
-            return inicio_ano_anterior, inicio_ano_atual
-
-        elif filtro_datas == FiltroDatas.PERSONALIZADO:
-            if inicio_filtro is None or final_filtro is None:
-                raise ValueError('As duas datas devem estar preenchidas.')
-
-            if final_filtro < inicio_filtro:
-                raise ValueError('A data final nao pode ser anterior a data inicial.')
-
-            return inicio_filtro, final_filtro + timedelta(days=1)
-
-        raise ValueError(f'Filtro de data não suportado: {filtro_datas}')
+        return inicio, final + timedelta(days=1)
