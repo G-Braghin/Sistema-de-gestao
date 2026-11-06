@@ -1,118 +1,162 @@
-# Sistema de Gestão
+# Sistema de Gestão Empresarial
 
-Sistema de gestão empresarial desenvolvido em Python.
+Sistema de gestão empresarial desenvolvido em Python, com banco de dados PostgreSQL e arquitetura em camadas.
 
 ## Objetivo
 
-Projeto desenvolvido para praticar:
+Projeto desenvolvido para aplicar e aprimorar conhecimentos em desenvolvimento de software, utilizando práticas e ferramentas presentes no desenvolvimento de aplicações.
 
-- Python
-- Programação orientada a objetos
-- Banco de dados
-- SQL
-- Arquitetura em camadas
-- Testes automatizados
-- Git e GitHub
+Principais objetivos de aprendizado:
+
+- Python e programação orientada a objetos.
+- Modelagem e gerenciamento de bancos de dados.
+- SQL e ORM.
+- Arquitetura em camadas.
+- Testes automatizados.
+- Controle de versão com Git e GitHub.
+- Desenvolvimento de APIs e aplicações web.
 
 ## Tecnologias
 
-- Python
-- PostgreSQL
-- Pytest
-- Git
-- GitHub
+- **Linguagem:** Python 3.14.
+- **Banco de dados:** PostgreSQL.
+- **ORM:** SQLAlchemy.
+- **Migrações:** Alembic.
+- **Testes:** Pytest.
+- **Gerenciamento de dependências:** Poetry.
+- **Containerização:** Docker e Docker Compose.
+- **Versionamento:** Git e GitHub.
+
+## Funcionalidades
+
+- Gerenciamento de usuários e controle de permissões.
+- Cadastro e gerenciamento de clientes.
+- Cadastro e gerenciamento de produtos.
+- Controle de estoque e movimentações.
+- Registro e cancelamento de vendas.
+- Relatórios de vendas e produtos mais vendidos.
+- Exportação de relatórios em CSV.
 
 ## Como executar
 
-Os comandos abaixo usam PowerShell e devem ser executados na raiz do projeto.
+Os comandos abaixo devem ser executados na raiz do projeto.
 
-### 1. Preparar o ambiente
+### 1. Pré-requisitos
 
-Instale Python e PostgreSQL e mantenha o serviço do PostgreSQL em execução.
-O ambiente de desenvolvimento utiliza Python 3.14.
+Antes de executar o projeto, instale as seguintes ferramentas:
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+| Ferramenta | Finalidade | Instalação |
+| --- | --- | --- |
+| Python 3.14 | Interpretador da aplicação. | [Download](https://www.python.org/downloads/) |
+| Poetry | Gerenciamento de dependências e ambiente virtual. | [Instalação](https://python-poetry.org/docs/#installation) |
+| Docker | Execução do PostgreSQL em container. | [Instalação](https://docs.docker.com/get-docker/) |
+| Docker Compose | Gerenciamento dos containers. | [Documentação](https://docs.docker.com/compose/install/) |
+
+**Observações:**
+
+- O Docker Compose já está incluído no Docker Desktop. No Linux, ele pode ser instalado como plugin do Docker Engine.
+- No Linux, o Docker precisa estar instalado e em execução, com permissões adequadas para executar os comandos sem `sudo`, caso essa seja sua configuração.
+
+### 2. Configurar o ambiente
+
+Clone o repositório e acesse a pasta do projeto.
+
+Instale as dependências:
+
+```bash
+poetry install
 ```
 
-Os comandos usam diretamente o Python do ambiente virtual, sem precisar ativá-lo.
+### 3. Configurar as variáveis de ambiente
 
-### 2. Criar o banco de dados
+Copie o arquivo de exemplo:
 
-No pgAdmin, crie um banco vazio chamado `sistema_gestao`. Abra o Query Tool
-desse banco, carregue o arquivo `sql/schema.sql` e execute seu conteúdo.
-
-O script cria as seis tabelas do sistema. Ele deve ser executado uma vez em um
-banco vazio e não atualiza tabelas existentes.
-
-### 3. Configurar o ambiente
-
-Copie o arquivo de exemplo, caso ainda não tenha um `.env`:
-
-```powershell
-Copy-Item .env.example .env
+```bash
+cp .env.example .env
 ```
 
-Edite o `.env` com os dados da sua instalação:
+Configure as variáveis no arquivo `.env`:
 
 | Variável | Finalidade |
 | --- | --- |
-| `DB_HOST` | Endereço do PostgreSQL; use `localhost` para instalação local. |
-| `DB_PORT` | Porta do PostgreSQL, normalmente `5432`. |
-| `DB_NAME` | Nome do banco criado na etapa anterior. |
+| `DB_HOST` | Endereço do PostgreSQL. |
+| `DB_PORT` | Porta de conexão do PostgreSQL. |
+| `DB_NAME` | Nome do banco de dados. |
 | `DB_USER` | Usuário do PostgreSQL. |
-| `DB_PASSWORD` | Senha desse usuário do PostgreSQL. |
+| `DB_PASSWORD` | Senha do usuário do PostgreSQL. |
+| `DATABASE_URL` | URL de conexão utilizada pelo SQLAlchemy. |
 | `SENHA_PADRAO_FABRICA` | Senha do administrador inicial do sistema. |
 
-Substitua os valores de exemplo antes de iniciar. A senha do banco e a senha
-do administrador do sistema são configurações diferentes.
+Exemplo de configuração:
 
-O `.env` contém suas configurações locais e já está ignorado pelo Git.
-Compartilhe somente o `.env.example`, sem credenciais reais.
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=sistema_gestao
+DB_USER=postgres
+DB_PASSWORD=defina_a_senha_do_banco
 
-### 4. Iniciar o sistema
+DATABASE_URL=postgresql+psycopg://postgres:defina_a_senha_do_banco@localhost:5432/sistema_gestao
 
-```powershell
-.\.venv\Scripts\python.exe -m src.main
+SENHA_PADRAO_FABRICA=defina_a_senha_do_administrador
 ```
 
-Quando não existe nenhum usuário cadastrado, o sistema cria o usuário `admin`
-com o papel de administrador e mostra seu ID de acesso. Entre com esse ID e
-com a senha definida em `SENHA_PADRAO_FABRICA`.
+Ajuste os valores conforme sua configuração.
 
-Essa variável é usada somente na criação inicial. Alterá-la depois não muda
-a senha de um usuário já cadastrado. Para mudar sua senha, use a opção
-**Perfil > Trocar senha**.
+A senha do banco de dados e a senha inicial do administrador são configurações independentes.
 
-Na implementação atual, se a variável estiver ausente, a senha inicial será
-`admin123`. Configure uma senha própria no `.env` antes da primeira execução.
+**Importante:** o arquivo `.env` contém configurações locais e não deve ser compartilhado ou enviado ao GitHub. Utilize apenas o `.env.example` para documentar as variáveis necessárias.
 
-### Conferência da instalação
+### 4. Iniciar o banco de dados
 
-Em um banco separado para testes, confira o fluxo inicial:
+Com o Docker em execução, utilize o Docker Compose para iniciar o container do PostgreSQL:
 
-1. Iniciar o sistema e entrar com o administrador criado.
-2. Cadastrar um cliente e um produto.
-3. Registrar uma entrada de estoque.
-4. Realizar uma venda e conferir o saldo do produto.
-5. Cancelar a venda e conferir a devolução das unidades ao estoque.
-6. Consultar os relatórios e exportar um CSV.
+```bash
+docker compose up -d
+```
 
-Faça essa conferência sem usar dados reais. Os CSVs são salvos na pasta em que
-o programa foi iniciado e não precisam ser incluídos nos commits.
+Para verificar se o container está em execução:
 
+```bash
+docker compose ps
+```
+
+### 5. Executar as migrações
+
+Com o banco de dados disponível, execute as migrações do Alembic para criar e atualizar a estrutura do banco:
+
+```bash
+poetry run alembic upgrade head
+```
+
+As migrações são responsáveis por manter a estrutura do banco de dados sincronizada com os modelos da aplicação.
+
+Não é necessário criar as tabelas manualmente.
+
+### 6. Iniciar o sistema
+
+Execute a aplicação:
+
+```bash
+poetry run python -m src.main
+```
+
+Na primeira execução, caso ainda não exista nenhum usuário cadastrado, o sistema cria automaticamente um administrador inicial.
+
+O acesso é realizado utilizando o ID apresentado pelo sistema e a senha definida em `SENHA_PADRAO_FABRICA`.
+
+Caso essa variável não esteja configurada, a implementação atual utiliza `admin123` como senha padrão.
+
+Essa configuração é utilizada somente na criação inicial do administrador. Alterá-la posteriormente não modifica a senha de um usuário já existente.
 
 ## Próximos passos
 
-O projeto está em desenvolvimento contínuo, com foco na evolução da arquitetura, implementação de uma interface web e aprimoramento das funcionalidades existentes.
+O projeto continua em desenvolvimento, com foco na evolução da arquitetura e na disponibilização das funcionalidades por meio de uma aplicação web.
 
-- [ ] **API REST:** desenvolver uma API utilizando FastAPI para disponibilizar as funcionalidades do sistema.
+- [ ] **API REST:** desenvolver uma API utilizando FastAPI.
 - [ ] **Interface web:** implementar uma interface para interação com as funcionalidades por meio do navegador.
 - [ ] **Autenticação e autorização:** adaptar o sistema de autenticação e controle de permissões para o ambiente web.
-- [ ] **Banco de dados:** implementar migrações para gerenciar alterações na estrutura do PostgreSQL.
 - [ ] **Testes automatizados:** ampliar a cobertura de testes unitários e de integração, incluindo os endpoints da API.
 - [ ] **Segurança:** aprimorar a proteção de dados, o gerenciamento de sessões e a validação de entradas.
 - [ ] **Documentação:** documentar a arquitetura do sistema e os endpoints da API.
 - [ ] **Deploy:** preparar a aplicação para execução em um ambiente de produção.
-
