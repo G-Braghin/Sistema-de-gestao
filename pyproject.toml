@@ -15,6 +15,7 @@ dependencies = [
     "alembic (>=1.20.1,<2.0.0)",
     "psycopg[binary] (>=3.3.6,<4.0.0)",
     "pydantic-settings (>=2.16.1,<3.0.0)",
+    "fastapi[standard] (>=0.162.0,<0.163.0)",
 ]
 
 
@@ -44,7 +45,6 @@ preview = true
 select = ['I', 'F', 'E', 'W', 'PL', 'PT', 'B', 'C4']
 ignore = []
 
-# ---> ADICIONE ESTE BLOCO AQUI ABAIXO <---
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = [
     "PLR0913", # too-many-arguments
@@ -79,6 +79,8 @@ test.sequence = [
   { cmd = "pytest -s -x -vv $POE_EXTRA_ARGS" },
   { cmd = "coverage html --show-contexts" },
 ]
+
+server = "fastapi dev src/api/app.py"
 
 [[tool.poe.tasks.lint.args]]
 name = "caminho"
