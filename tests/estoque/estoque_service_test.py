@@ -436,6 +436,7 @@ def test_relatorio_estoque_baixo_sem_produtos(
 def test_relatorio_estoque_baixo_sem_produtos_dentro_do_limite(
     estoque_service, mock_product_repository, user_gerente, produto
 ):
+    produto.quantidade = 10
     mock_product_repository.listar.return_value = [produto]
 
     resultado = estoque_service.relatorio_estoque_baixo(user_gerente, 5)

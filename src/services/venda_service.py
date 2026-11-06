@@ -250,19 +250,19 @@ class VendaService:
         match filtro_datas:
             case FiltroDatas.HOJE:
                 inicio = hoje
-                final = hoje
+                final = hoje + timedelta(days=1)
 
             case FiltroDatas.ONTEM:
                 inicio = hoje - timedelta(days=1)
-                final = inicio
+                final = hoje
 
             case FiltroDatas.ULTIMOS_7_DIAS:
                 inicio = hoje - timedelta(days=6)
-                final = hoje
+                final = hoje + timedelta(days=1)
 
             case FiltroDatas.ULTIMOS_30_DIAS:
                 inicio = hoje - timedelta(days=29)
-                final = hoje
+                final = hoje + timedelta(days=1)
 
             case FiltroDatas.MES_ATUAL:
                 inicio = inicio_mes
@@ -293,9 +293,9 @@ class VendaService:
                     )
 
                 inicio = inicio_filtro
-                final = final_filtro
+                final = final_filtro + timedelta(days=1)
 
             case _:
                 raise ValueError(f'Filtro de data não suportado: {filtro_datas}')
 
-        return inicio, final + timedelta(days=1)
+        return inicio, final
