@@ -47,7 +47,7 @@ def test_nao_autenticar_usuario_inativo(user_auth, user_repository_mock):
 
     user_repository_mock.buscar_por_id.return_value = usuario
 
-    with pytest.raises(ValueError, match='Usuário inativo'):
+    with pytest.raises(PermissionError, match='Usuário inativo'):
         user_auth.autenticar(usuario.id, usuario.senha_limpa)
 
 

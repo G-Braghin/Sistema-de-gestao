@@ -27,7 +27,7 @@ class AutenticacaoService:
             raise ValueError('ID ou Senha Invalidos.')
 
         if not usuario.ativo:
-            raise ValueError('Usuário inativo.')
+            raise PermissionError('Usuário inativo.')
 
         return usuario
 
