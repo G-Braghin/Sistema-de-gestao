@@ -1,4 +1,3 @@
-from src.api.schemas import UsuarioCadastro
 from src.enums import PapelEnum
 from src.models import Usuario
 from src.repositories.usuario_repository import UsuarioRepository
@@ -52,7 +51,7 @@ class UsuarioService:
 
         usuario = self.usuario_repository.buscar_por_id(id_usuario)
         if not usuario:
-            raise ValueError(f'Usuário com id {id_usuario} não encontrado.')
+            raise LookupError(f'Usuário com id {id_usuario} não encontrado.')
 
         if usuario.papel != PapelEnum.FUNCIONARIO:
             raise ValueError('Apenas funcionários podem ser promovidos a gerentes.')
@@ -72,7 +71,7 @@ class UsuarioService:
 
         usuario_alvo = self.usuario_repository.buscar_por_id(id_usuario_alvo)
         if not usuario_alvo:
-            raise ValueError(f'Usuário com id {id_usuario_alvo} não encontrado.')
+            raise LookupError(f'Usuário com id {id_usuario_alvo} não encontrado.')
 
         if not self.pode_gerenciar(usuario_logado, usuario_alvo):
             raise PermissionError(
@@ -122,7 +121,7 @@ class UsuarioService:
 
         usuario_alvo = self.usuario_repository.buscar_por_id(id_usuario_alvo)
         if not usuario_alvo:
-            raise ValueError(f'Usuário com id {id_usuario_alvo} não encontrado.')
+            raise LookupError(f'Usuário com id {id_usuario_alvo} não encontrado.')
 
         if usuario_alvo.papel == PapelEnum.ADMIN:
             raise PermissionError(
