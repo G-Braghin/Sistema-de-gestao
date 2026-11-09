@@ -1,6 +1,7 @@
 import pytest
 
 from src.enums import PapelEnum
+from src.models import Usuario
 from tests.usuarios.conftest import UserFactory
 
 
@@ -331,3 +332,62 @@ def test_nao_criar_admin_padrao_se_ja_existe_usuario(
 ):
     user_repository_mock.existe_usuario.return_value = True
     assert user_service.criar_admin_padrao() is None
+
+
+def test_atualizar_senha_usuario(
+    user_service, user_repository_mock, user_auth_mock, usuario
+):
+    user_repository_mock.buscar_por_id.return_value = usuario
+    user_auth_mock.verificar_senha.return_value = True
+
+    user_service.atualizar_senha_usuario(
+        usuario, usuario.senha_limpa, nova_senha='senha-nova'
+    )
+
+    assert user_repository_mock.atualizar.call_args.args[0] == usuario.id
+
+
+def test_atualizar_senha_rejeita_senha_atual_incorreta(
+    user_service, user_repository_mock, user_auth_mock, usuario
+):
+    user_repository_mock.buscar_por_id.return_value = usuario
+    user_auth_mock.verificar_senha.return_value = False
+
+    with pytest.raises(ValueError, match='Senha atual incorreta'):
+        user_service.atualizar_senha_usuario(usuario, 'senha-incorreta', 'senha-nova')
+
+
+def test_atualizar_senha_rejeita_usuario_inexistente(
+    user_service, user_repository_mock
+):
+    usuario = Usuario(nome='bob', senha='senha')
+    user_repository_mock.buscar_por_id.return_value = None
+
+    with pytest.raises(LookupError, match='Usuario nao encontrado'):
+        user_service.atualizar_senha_usuario(usuario, 'senha-atual', 'senha-nova')
+
+
+@pytest.mark.parametrize(
+    ('senha_atual', 'nova_senha', 'mensagem'),
+    [
+        ('', 'senha-nova', 'A senha atual nao pode estar vazio'),
+        ('   ', 'senha-nova', 'A senha atual nao pode estar vazio'),
+        (None, 'senha-nova', 'A senha atual nao pode estar vazio'),
+        ('senha-atual', '', 'A nova senha nao pode estar vazio'),
+        ('senha-atual', '   ', 'A nova senha nao pode estar vazio'),
+        ('senha-atual', None, 'A nova senha nao pode estar vazio'),
+    ],
+)
+def test_atualizar_senha_rejeita_senhas_vazias(
+    user_service, senha_atual, nova_senha, mensagem, usuario
+):
+    with pytest.raises(ValueError, match=mensagem):
+        user_service.atualizar_senha_usuario(usuario, senha_atual, nova_senha)
+
+
+def test_atualizar_senha_rejeita_nova_senha_igual_a_atual(user_service, usuario):
+    senha_hash_original = usuario.senha
+
+    with pytest.raises(ValueError, match='A nova senha nao pode ser igual a atual'):
+        user_service.atualizar_senha_usuario(usuario.id, 'senha-atual', 'senha-atual')
+    assert usuario.senha == senha_hash_original

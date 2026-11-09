@@ -1,3 +1,4 @@
+from src.api.schemas import UsuarioCadastro
 from src.enums import PapelEnum
 from src.models import Usuario
 from src.repositories.usuario_repository import UsuarioRepository
@@ -84,6 +85,32 @@ class UsuarioService:
         )
 
         return usuario
+
+    def atualizar_senha_usuario(
+        self, usuario_logado: Usuario, senha_atual: str, nova_senha: str
+    ) -> None:
+
+        verificar_texto_obrigatorio(senha_atual, 'A senha atual nao pode estar vazio.')
+
+        verificar_texto_obrigatorio(nova_senha, 'A nova senha nao pode estar vazio.')
+
+        if senha_atual == nova_senha:
+            raise ValueError('A nova senha nao pode ser igual a atual.')
+
+        usuario = self.usuario_repository.buscar_por_id(usuario_logado.id)
+
+        if not usuario:
+            raise LookupError('Usuario nao encontrado ou removido do sistema')
+
+        if not usuario.ativo:
+            raise PermissionError('Usuario Desativado.')
+
+        if not self.autenticacao_service.verificar_senha(senha_atual, usuario.senha):
+            raise ValueError('Senha atual incorreta.')
+
+        nova_senha_hash = self.autenticacao_service.gerar_senha_hash(nova_senha)
+
+        self.usuario_repository.atualizar(usuario.id, {'senha': nova_senha_hash})
 
     def atualizar_status(
         self, usuario_logado: Usuario, id_usuario_alvo: int, status_ativo: bool

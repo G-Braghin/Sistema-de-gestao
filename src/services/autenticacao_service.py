@@ -30,25 +30,3 @@ class AutenticacaoService:
             raise PermissionError('Usuário inativo.')
 
         return usuario
-
-    def atualizar_senha_usuario(
-        self, id_usuario: int, senha_atual: str, nova_senha: str
-    ):
-        verificar_id(id_usuario, 'ID de usuario invalido.')
-
-        verificar_texto_obrigatorio(senha_atual, 'A senha atual nao pode estar vazio.')
-
-        verificar_texto_obrigatorio(nova_senha, 'A nova senha nao pode estar vazio.')
-
-        if senha_atual == nova_senha:
-            raise ValueError('A nova senha nao pode ser igual a atual.')
-
-        usuario = self.usuario_repository.buscar_por_id(id_usuario)
-        if not usuario:
-            raise ValueError('Usuário não encontrado.')
-
-        if not self.verificar_senha(senha_atual, usuario.senha):
-            raise ValueError('Senha atual incorreta.')
-
-        nova_senha_hash = self.gerar_senha_hash(nova_senha)
-        return self.usuario_repository.atualizar(usuario.id, {'senha': nova_senha_hash})
