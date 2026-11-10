@@ -1,12 +1,11 @@
 from http import HTTPStatus
 
 
-def test_fazer_login_com_sucesso(api_client, mock_auth_service, user_funcionario):
-    mock_auth_service.autenticar.return_value = user_funcionario
-    user_funcionario.senha = 'test'
-    response = api_client.post(
+def test_fazer_login_com_sucesso(client_api, funcionario):
+
+    response = client_api.post(
         '/autenticacao/login',
-        data={'username': user_funcionario.id, 'password': 'test'},
+        data={'username': funcionario.id, 'password': funcionario.senha_limpa},
     )
 
     assert response.status_code == HTTPStatus.OK
@@ -15,10 +14,8 @@ def test_fazer_login_com_sucesso(api_client, mock_auth_service, user_funcionario
     assert token['token_type'] == 'Bearer'
 
 
-def test_login_retorna_401_caso_id_nao_senha_inteiro(api_client, mock_auth_service):
-    mock_auth_service.autenticar.side_effect = ValueError('Credenciais inválidas.')
-
-    response = api_client.post(
+def test_login_retorna_401_com_id_invalido(client_api):
+    response = client_api.post(
         '/autenticacao/login',
         data={'username': 'abc', 'password': 'senha'},
     )
@@ -27,24 +24,27 @@ def test_login_retorna_401_caso_id_nao_senha_inteiro(api_client, mock_auth_servi
     assert response.json()['detail'] == 'Credenciais inválidas.'
 
 
-def test_login_rotorna_401_com_credenciais_invalidas(api_client, mock_auth_service):
+def test_login_retorna_401_se_service_retorna_value_error(
+    client_api, mock_auth_service
+):
     mock_auth_service.autenticar.side_effect = ValueError('ID ou Senha Invalidos.')
-
-    response = api_client.post(
+    response = client_api.post(
         '/autenticacao/login',
-        data={'username': '1', 'password': 'senha-errada'},
+        data={'username': '-1', 'password': 'senha'},
     )
 
     assert response.status_code == HTTPStatus.UNAUTHORIZED
     assert response.json()['detail'] == 'ID ou Senha Invalidos.'
 
 
-def test_login_retorna_403_com_usuario_inativo(api_client, mock_auth_service):
+def test_login_retorna_403_se_service_retornar_permission_error(
+    client_api, mock_auth_service
+):
     mock_auth_service.autenticar.side_effect = PermissionError('Usuário inativo.')
 
-    response = api_client.post(
+    response = client_api.post(
         '/autenticacao/login',
-        data={'username': '10', 'password': 'test'},
+        data={'username': '1', 'password': 'senha'},
     )
 
     assert response.status_code == HTTPStatus.FORBIDDEN
