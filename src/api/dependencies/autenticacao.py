@@ -1,10 +1,12 @@
 from http import HTTPStatus
+from typing import Annotated
 
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jwt import InvalidTokenError, decode
 
 from src.api.dependencies.repositories import UsuarioRepositoryDep
+from src.models import Usuario
 from src.settings import Settings
 
 oauth2_schema = OAuth2PasswordBearer(tokenUrl='autenticacao/login')
@@ -35,3 +37,6 @@ def get_current_user(
         raise credentials_exception
 
     return usuario
+
+
+UsuarioLogado = Annotated[Usuario, Depends(get_current_user)]
