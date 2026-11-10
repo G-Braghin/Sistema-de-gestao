@@ -36,3 +36,11 @@ class AtualizarSenha(BaseModel):
 
 class Mensagem(BaseModel):
     mensagem: str
+
+
+class AtualizarStatus(BaseModel):
+    ativo: bool
+
+
+class ResetarSenha(BaseModel):
+    nova_senha: str = Field(min_length=3)
