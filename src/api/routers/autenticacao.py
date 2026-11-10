@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 
 from src.api.dependencies.services import AutenticacaoServiceDep
-from src.api.schemas import Token
+from src.api.schemas.usuario import Token
 from src.api.security import criar_token
 
 router = APIRouter(prefix='/autenticacao', tags=['autenticacao'])

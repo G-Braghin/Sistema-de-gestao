@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException
 
 from src.api.dependencies.autenticacao import UsuarioLogado
 from src.api.dependencies.services import UsuarioServiceDep
-from src.api.schemas import AtualizarStatus, Mensagem, ResetarSenha
+from src.api.schemas.usuario import AtualizarStatus, Mensagem, ResetarSenha
 
 router = APIRouter(prefix='/usuarios', tags=['Gerenciamento-Usuario'])
 
