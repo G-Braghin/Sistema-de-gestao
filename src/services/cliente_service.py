@@ -3,7 +3,11 @@ import re
 from src.enums import PapelEnum
 from src.models import Cliente, Usuario
 from src.repositories.cliente_repository import ClienteRepository
-from src.utils.validacoes import verificar_texto_obrigatorio
+from src.utils.validacoes import (
+    validar_cpf,
+    validar_telefone,
+    verificar_texto_obrigatorio,
+)
 
 CLIENTE_NAO_ATIVO = 'Cliente esta desativado.'
 CLIENTE_NAO_ENCONTRADO = 'Cliente nao encontrado.'
@@ -18,42 +22,12 @@ class ClienteService:
     def __init__(self, cliente_repository: ClienteRepository):
         self.cliente_repository = cliente_repository
 
-    @staticmethod
-    def _validar_cpf(cpf: str) -> bool:
-        if len(cpf) != COMPRIMENTO_CPF:
-            return False
-
-        if cpf == cpf[0] * 11:
-            return False
-
-        soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
-        resto = (soma * 10) % 11
-        digito1 = 0 if resto == LIMITE_RESTO_VALIDADOR else resto
-
-        if digito1 != int(cpf[9]):
-            return False
-
-        soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
-        resto = (soma * 10) % 11
-        digito2 = 0 if resto == LIMITE_RESTO_VALIDADOR else resto
-
-        return digito2 == int(cpf[10])
-
-    @staticmethod
-    def _validar_telefone(telefone: str) -> bool:
-        if len(telefone) == COMPRIMENTO_CELULAR and telefone.startswith('55'):
-            telefone = telefone[2:]
-
-        padrao = r'^[1-9]{2}9[\d]{8}$'
-
-        return bool(re.match(padrao, telefone))
-
     def _buscar_cliente_ativo(self, cpf_cliente: str) -> Cliente:
         if cpf_cliente is None:
             raise ValueError(CPF_NAO_INSERIDO)
 
         cpf_cliente = re.sub(r'\D', '', cpf_cliente)
-        if not self._validar_cpf(cpf_cliente):
+        if not validar_cpf(cpf_cliente):
             raise ValueError(CPF_INVALIDO)
 
         cliente = self.cliente_repository.buscar_por_cpf(cpf_cliente)
@@ -77,7 +51,7 @@ class ClienteService:
 
         cpf = re.sub(r'\D', '', cpf)
 
-        if not self._validar_cpf(cpf):
+        if not validar_cpf(cpf):
             raise ValueError(CPF_INVALIDO)
 
         cliente_existente = self.cliente_repository.buscar_por_cpf(cpf)
@@ -88,7 +62,7 @@ class ClienteService:
             raise ValueError('O telefone nao pode estar vazio.')
 
         telefone = re.sub(r'\D', '', telefone)
-        if not self._validar_telefone(telefone):
+        if not validar_telefone(telefone):
             raise ValueError('O telefone e invalido!')
 
         if endereco is not None:
@@ -109,7 +83,7 @@ class ClienteService:
             raise ValueError('O telefone nao pode estar vazio.')
         telefone = re.sub(r'\D', '', telefone)
 
-        if not self._validar_telefone(telefone):
+        if not validar_telefone(telefone):
             raise ValueError('O telefone e invalido!')
 
         cliente.telefone = telefone
