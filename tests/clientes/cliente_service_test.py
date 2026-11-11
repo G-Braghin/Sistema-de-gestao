@@ -73,154 +73,49 @@ def test_cadastrar_cliente_com_cpf_ja_cadastrado(
     client_repository_mock.criar.assert_not_called()
 
 
-def test_atualizar_telefone_cliente_com_dados_validos(
-    client_service, client_repository_mock
+@pytest.mark.parametrize(
+    ('campo', 'valor'),
+    [
+        ('nome', 'Bob'),
+        ('telefone', '55999932211'),
+        ('endereco', faker.address()),
+    ],
+)
+def test_atualizar_cliente_com_dados_validos(
+    client_service, client_repository_mock, campo, valor
 ):
     cliente = criar_client()
 
     client_repository_mock.buscar_por_cpf.return_value = cliente
     client_repository_mock.atualizar.return_value = cliente
 
-    resultado = client_service.atualizar_telefone(
-        cpf_cliente=cliente.cpf, telefone=faker.cellphone_number()
-    )
+    resultado = client_service.atualizar(cpf_cliente=cliente.cpf, **{campo: valor})
 
     assert resultado == cliente
-    assert cliente.telefone == resultado.telefone
+    assert getattr(resultado, campo) == valor
 
     client_repository_mock.buscar_por_cpf.assert_called_once_with(cliente.cpf)
     client_repository_mock.atualizar.assert_called_once_with(cliente)
 
 
 @pytest.mark.parametrize(
-    'caso',
+    ('existe', 'ativo', 'dados', 'mensagem'),
     [
-        (False, True, faker.cellphone_number(), 'Cliente nao encontrado.'),
-        (True, False, faker.cellphone_number(), 'Cliente esta desativado.'),
-        (True, True, None, 'O telefone nao pode estar vazio.'),
-        (True, True, '', 'O telefone nao pode estar vazio.'),
-        (True, True, '(66) 69993-2211', 'O telefone e invalido!'),
+        (False, True, {'nome': 'Bob'}, 'Cliente nao encontrado.'),
+        (True, False, {'nome': 'Bob'}, 'Cliente esta desativado.'),
+        (True, True, {'telefone': ''}, 'Telefone invalido.'),
+        (True, True, {'telefone': '66699932211'}, 'Telefone invalido.'),
     ],
 )
-def test_atualizar_telefone_cliente_com_dados_invalidos(
-    client_service, client_repository_mock, caso
-):
-    existe, ativo, telefone, mensagem = caso
-    cliente = criar_client(ativo=ativo)
-
-    client_repository_mock.buscar_por_cpf.return_value = cliente if existe else None
-
-    with pytest.raises(ValueError, match=mensagem):
-        client_service.atualizar_telefone(cpf_cliente=cliente.cpf, telefone=telefone)
-
-    client_repository_mock.atualizar.assert_not_called()
-
-
-def test_atualizar_endereco_cliente_com_dados_validos(
-    client_service, client_repository_mock
-):
-    cliente = criar_client(endereco='Rua A')
-
-    client_repository_mock.buscar_por_cpf.return_value = cliente
-    client_repository_mock.atualizar.return_value = cliente
-
-    resultado = client_service.atualizar_endereco(
-        cpf_cliente=cliente.cpf, endereco=faker.address()
-    )
-    assert resultado == cliente
-    assert resultado.endereco != 'Rua A'
-    assert resultado.endereco == cliente.endereco
-
-    client_repository_mock.buscar_por_cpf.assert_called_once_with(cliente.cpf)
-    client_repository_mock.atualizar.assert_called_once_with(cliente)
-
-
-def test_atualizar_endereco_cliente_vazio(client_service, client_repository_mock):
-    cliente = criar_client(endereco='Rua A')
-
-    client_repository_mock.buscar_por_cpf.return_value = cliente
-    client_repository_mock.atualizar.return_value = cliente
-
-    resultado = client_service.atualizar_endereco(cpf_cliente=cliente.cpf, endereco='')
-
-    assert resultado == cliente
-    assert resultado.endereco == cliente.endereco
-    assert resultado.endereco != 'Rua A'
-
-    client_repository_mock.atualizar.assert_called_once_with(cliente)
-
-
-def test_atualizar_endereco_cliente_com_none_nao_altera_atual(
-    client_service, client_repository_mock
-):
-    cliente = criar_client(endereco='Rua A')
-    client_repository_mock.buscar_por_cpf.return_value = cliente
-
-    resultado = client_service.atualizar_endereco(
-        cpf_cliente=cliente.cpf, endereco=None
-    )
-
-    assert resultado == cliente
-    assert cliente.endereco == 'Rua A'
-
-    client_repository_mock.atualizar.assert_not_called()
-
-
-@pytest.mark.parametrize(
-    ('existe', 'ativo', 'mensagem'),
-    [
-        (False, True, 'Cliente nao encontrado.'),
-        (True, False, 'Cliente esta desativado.'),
-    ],
-)
-def test_atualizar_endereco_cliente_com_dados_invalidos(
-    client_service, client_repository_mock, existe, ativo, mensagem
+def test_atualizar_cliente_com_dados_invalidos(
+    client_service, client_repository_mock, existe, ativo, dados, mensagem
 ):
     cliente = criar_client(ativo=ativo)
 
     client_repository_mock.buscar_por_cpf.return_value = cliente if existe else None
 
     with pytest.raises(ValueError, match=mensagem):
-        client_service.atualizar_endereco(cpf_cliente=cliente.cpf, endereco='Rua B')
-
-    client_repository_mock.atualizar.assert_not_called()
-
-
-def test_atualizar_nome_cliente_com_dados_validos(
-    client_service, client_repository_mock, cliente
-):
-    client_repository_mock.buscar_por_cpf.return_value = cliente
-    client_repository_mock.atualizar.return_value = cliente
-
-    resultado = client_service.atualizar_nome(cpf_cliente=cliente.cpf, nome='Bob')
-
-    assert resultado == cliente
-    assert resultado.nome == cliente.nome
-    assert cliente.nome == 'Bob'
-
-    client_repository_mock.buscar_por_cpf.assert_called_once_with(cliente.cpf)
-    client_repository_mock.atualizar.assert_called_once_with(cliente)
-
-
-@pytest.mark.parametrize(
-    'caso',
-    [
-        (False, True, faker.name(), 'Cliente nao encontrado.'),
-        (True, False, faker.name(), 'Cliente esta desativado.'),
-        (True, True, '', 'O nome nao pode estar vazio.'),
-        (True, True, None, 'O nome nao pode estar vazio.'),
-    ],
-)
-def test_atualizar_nome_cliente_com_dados_invalidos(
-    client_service, client_repository_mock, caso
-):
-    existe, ativo, nome, mensagem = caso
-    cliente = criar_client(ativo=ativo)
-
-    client_repository_mock.buscar_por_cpf.return_value = cliente if existe else None
-
-    with pytest.raises(ValueError, match=mensagem):
-        client_service.atualizar_nome(cpf_cliente=cliente.cpf, nome=nome)
+        client_service.atualizar(cpf_cliente=cliente.cpf, **dados)
 
     client_repository_mock.atualizar.assert_not_called()
 

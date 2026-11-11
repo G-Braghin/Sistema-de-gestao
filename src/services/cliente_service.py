@@ -75,43 +75,33 @@ class ClienteService:
 
         return cliente_criado
 
-    def atualizar_telefone(self, cpf_cliente: str, telefone: str) -> Cliente:
+    def atualizar(
+        self,
+        cpf_cliente: str,
+        *,
+        nome: str | None = None,
+        telefone: str | None = None,
+        endereco: str | None = None,
+    ) -> Cliente:
 
         cliente = self._buscar_cliente_ativo(cpf_cliente)
 
-        if not telefone:
-            raise ValueError('O telefone nao pode estar vazio.')
-        telefone = re.sub(r'\D', '', telefone)
+        if nome is not None:
+            verificar_texto_obrigatorio(nome, 'O nome nao pode estar vazio.')
+            cliente.nome = nome.strip()
 
-        if not validar_telefone(telefone):
-            raise ValueError('O telefone e invalido!')
+        if telefone is not None:
+            telefone = re.sub(r'\D', '', telefone)
 
-        cliente.telefone = telefone
+            if not validar_telefone(telefone):
+                raise ValueError('Telefone invalido.')
 
-        cliente_atualizado = self.cliente_repository.atualizar(cliente)
+            cliente.telefone = telefone
 
-        return cliente_atualizado
+        if endereco is not None:
+            cliente.endereco = endereco.strip()
 
-    def atualizar_endereco(self, cpf_cliente: str, endereco: str) -> Cliente:
-        cliente = self._buscar_cliente_ativo(cpf_cliente)
-
-        if endereco is None:
-            return cliente
-
-        cliente.endereco = endereco.strip()
-        cliente_atualizado = self.cliente_repository.atualizar(cliente)
-
-        return cliente_atualizado
-
-    def atualizar_nome(self, cpf_cliente: str, nome: str) -> Cliente:
-        cliente = self._buscar_cliente_ativo(cpf_cliente)
-
-        verificar_texto_obrigatorio(nome, 'O nome nao pode estar vazio.')
-
-        cliente.nome = nome.strip()
-        cliente_atualizado = self.cliente_repository.atualizar(cliente)
-
-        return cliente_atualizado
+        return self.cliente_repository.atualizar(cliente)
 
     def listar(
         self, usuario_logado: Usuario, status_ativo: bool = True
