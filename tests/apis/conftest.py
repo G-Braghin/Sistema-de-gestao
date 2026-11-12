@@ -3,13 +3,19 @@ from fastapi.testclient import TestClient
 from pytest_mock import MockerFixture
 
 from src.api.app import app
-from src.api.dependencies.services import get_autenticacao_service, get_usuario_service
+from src.api.dependencies.services import (
+    get_autenticacao_service,
+    get_cliente_service,
+    get_usuario_service,
+)
 from src.api.security import criar_token
 from src.database.database import get_session
 from src.main import PapelEnum
 from src.services.autenticacao_service import AutenticacaoService
+from src.services.cliente_service import ClienteService
 from src.services.usuario_service import UsuarioService
 from src.settings import Settings
+from tests.conftest import ClienteFatory
 from tests.usuarios.conftest import UserFactory
 
 
@@ -129,6 +135,17 @@ def mock_usuario_service_api(mocker: MockerFixture):
     mock_service = mocker.MagicMock(spec=UsuarioService)
 
     app.dependency_overrides[get_usuario_service] = lambda: mock_service
+
+    yield mock_service
+
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def mock_cliente_service_api(mocker: MockerFixture):
+    mock_service = mocker.MagicMock(spec=ClienteService)
+
+    app.dependency_overrides[get_cliente_service] = lambda: mock_service
 
     yield mock_service
 

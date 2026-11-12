@@ -101,6 +101,8 @@ def produto_db(session):
 def cliente_db(session):
     cliente_db = ClienteFatory()
     session.add(cliente_db)
+    session.commit()
+    session.refresh(cliente_db)
 
     return cliente_db
 
