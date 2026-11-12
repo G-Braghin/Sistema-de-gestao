@@ -22,18 +22,21 @@ class ClienteService:
     def __init__(self, cliente_repository: ClienteRepository):
         self.cliente_repository = cliente_repository
 
-    def _buscar_cliente_ativo(self, cpf_cliente: str) -> Cliente:
-        if cpf_cliente is None:
-            raise ValueError(CPF_NAO_INSERIDO)
-
-        cpf_cliente = re.sub(r'\D', '', cpf_cliente)
-        if not validar_cpf(cpf_cliente):
-            raise ValueError(CPF_INVALIDO)
-
-        cliente = self.cliente_repository.buscar_por_cpf(cpf_cliente)
+    def _buscar_cliente_ativo(self, id_cliente: int) -> Cliente:
+        cliente = self.cliente_repository.buscar_por_id(id_cliente)
 
         if cliente is None:
-            raise ValueError(CLIENTE_NAO_ENCONTRADO)
+            raise LookupError(CLIENTE_NAO_ENCONTRADO)
+
+        if not cliente.ativo:
+            raise ValueError(CLIENTE_NAO_ATIVO)
+
+        return cliente
+
+    def buscar_cliente_cpf(self, cpf_cliente):
+        cliente = self.cliente_repository.buscar_por_cpf(cpf_cliente)
+        if not cliente:
+            raise LookupError(CLIENTE_NAO_ENCONTRADO)
 
         if not cliente.ativo:
             raise ValueError(CLIENTE_NAO_ATIVO)
@@ -77,14 +80,14 @@ class ClienteService:
 
     def atualizar(
         self,
-        cpf_cliente: str,
+        id_cliente: int,
         *,
         nome: str | None = None,
         telefone: str | None = None,
         endereco: str | None = None,
     ) -> Cliente:
 
-        cliente = self._buscar_cliente_ativo(cpf_cliente)
+        cliente = self._buscar_cliente_ativo(id_cliente)
 
         if nome is not None:
             verificar_texto_obrigatorio(nome, 'O nome nao pode estar vazio.')
@@ -129,7 +132,7 @@ class ClienteService:
         cliente = self.cliente_repository.buscar_por_id(id_cliente)
 
         if cliente is None:
-            raise ValueError(CLIENTE_NAO_ENCONTRADO)
+            raise LookupError(CLIENTE_NAO_ENCONTRADO)
 
         if cliente.ativo == status_ativo:
             raise ValueError(

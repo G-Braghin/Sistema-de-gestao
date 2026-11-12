@@ -86,15 +86,15 @@ def test_atualizar_cliente_com_dados_validos(
 ):
     cliente = criar_client()
 
-    client_repository_mock.buscar_por_cpf.return_value = cliente
+    client_repository_mock.buscar_por_id.return_value = cliente
     client_repository_mock.atualizar.return_value = cliente
 
-    resultado = client_service.atualizar(cpf_cliente=cliente.cpf, **{campo: valor})
+    resultado = client_service.atualizar(id_cliente=cliente.id, **{campo: valor})
 
     assert resultado == cliente
     assert getattr(resultado, campo) == valor
 
-    client_repository_mock.buscar_por_cpf.assert_called_once_with(cliente.cpf)
+    client_repository_mock.buscar_por_id.assert_called_once_with(cliente.id)
     client_repository_mock.atualizar.assert_called_once_with(cliente)
 
 
@@ -110,12 +110,13 @@ def test_atualizar_cliente_com_dados_validos(
 def test_atualizar_cliente_com_dados_invalidos(
     client_service, client_repository_mock, existe, ativo, dados, mensagem
 ):
+    erro = ValueError if existe else LookupError
     cliente = criar_client(ativo=ativo)
 
-    client_repository_mock.buscar_por_cpf.return_value = cliente if existe else None
+    client_repository_mock.buscar_por_id.return_value = cliente if existe else None
 
-    with pytest.raises(ValueError, match=mensagem):
-        client_service.atualizar(cpf_cliente=cliente.cpf, **dados)
+    with pytest.raises(erro, match=mensagem):
+        client_service.atualizar(id_cliente=cliente.id, **dados)
 
     client_repository_mock.atualizar.assert_not_called()
 
@@ -225,7 +226,7 @@ def test_atualizar_status_cliente_inexistente(
 ):
     client_repository_mock.buscar_por_id.return_value = None
 
-    with pytest.raises(ValueError, match='Cliente nao encontrado'):
+    with pytest.raises(LookupError, match='Cliente nao encontrado'):
         client_service.atualizar_status(user_gerente, 999999, True)
 
     client_repository_mock.buscar_por_id.assert_called_once_with(999999)
@@ -260,3 +261,43 @@ def test_atualizar_status_cliente_nao_inserido(
 
     client_repository_mock.buscar_por_id.assert_not_called()
     client_repository_mock.atualizar.assert_not_called()
+
+
+def test_buscar_cliente_por_cpf_retorna_cliente(
+    client_service, client_repository_mock, cliente
+):
+    client_repository_mock.buscar_por_cpf.return_value = cliente
+
+    resultado = client_service.buscar_cliente_cpf(cliente.cpf)
+
+    assert resultado == cliente
+    assert resultado.id == cliente.id
+    assert resultado.cpf == cliente.cpf
+
+    client_repository_mock.buscar_por_cpf.assert_called_once_with(cliente.cpf)
+
+
+def test_buscar_cliente_por_cpf_nao_encontrado(client_service, client_repository_mock):
+    client_repository_mock.buscar_por_cpf.return_value = None
+
+    with pytest.raises(
+        LookupError,
+        match='Cliente nao encontrado.',
+    ):
+        client_service.buscar_cliente_cpf(99999999)
+
+    client_repository_mock.buscar_por_cpf.assert_called_once_with(99999999)
+
+
+def test_buscar_cliente_por_cpf_cliente_inativo(
+    client_service, client_repository_mock, cliente_inativo
+):
+    client_repository_mock.buscar_por_cpf.return_value = cliente_inativo
+
+    with pytest.raises(
+        ValueError,
+        match='Cliente esta desativado.',
+    ):
+        client_service.buscar_cliente_cpf(10)
+
+    client_repository_mock.buscar_por_cpf.assert_called_once_with(10)
