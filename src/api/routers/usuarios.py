@@ -5,10 +5,10 @@ from fastapi import APIRouter, HTTPException, Query
 
 from src.api.dependencies.autenticacao import UsuarioLogado
 from src.api.dependencies.services import UsuarioServiceDep
+from src.api.schemas.common import Mensagem
 from src.api.schemas.usuario import (
     AtualizarSenha,
     FiltroListarUsuario,
-    Mensagem,
     UsuarioCadastro,
     UsuarioLista,
     UsuarioPublico,
