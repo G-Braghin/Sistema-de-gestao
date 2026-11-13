@@ -2,9 +2,14 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from src.api.dependencies.repositories import ClienteRepositoryDep, UsuarioRepositoryDep
+from src.api.dependencies.repositories import (
+    ClienteRepositoryDep,
+    ProdutoRepositoryDep,
+    UsuarioRepositoryDep,
+)
 from src.services.autenticacao_service import AutenticacaoService
 from src.services.cliente_service import ClienteService
+from src.services.produto_service import ProdutoService
 from src.services.usuario_service import UsuarioService
 
 
@@ -38,3 +43,10 @@ def get_cliente_service(repository: ClienteRepositoryDep):
 
 
 ClienteServiceDep = Annotated[ClienteService, Depends(get_cliente_service)]
+
+
+def get_produto_service(repository: ProdutoRepositoryDep):
+    return ProdutoService(repository)
+
+
+ProdutoServiceDep = Annotated[ProdutoService, Depends(get_produto_service)]

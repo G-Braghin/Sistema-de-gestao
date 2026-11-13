@@ -92,19 +92,20 @@ def usuario_db(session):
 def produto_db(session):
     product_db = ProductFactory()
     session.add(product_db)
-    session.flush()
+    session.commit()
+    session.refresh(product_db)
 
     return product_db
 
 
 @pytest.fixture
 def cliente_db(session):
-    cliente_db = ClienteFatory()
-    session.add(cliente_db)
+    client_db = ClienteFatory()
+    session.add(client_db)
     session.commit()
-    session.refresh(cliente_db)
+    session.refresh(client_db)
 
-    return cliente_db
+    return client_db
 
 
 # Definindo uma meneira de simular um horario para os testes
