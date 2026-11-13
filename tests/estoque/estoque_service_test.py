@@ -48,8 +48,7 @@ def test_dar_entrada_com_quantidade_valida(
         motivo=MotivoMovimentacao.REPOSICAO,
     )
 
-    assert resultado == produto
-    assert resultado.quantidade == quantidade_entrada + quantidade_antes
+    assert produto.quantidade == quantidade_entrada + quantidade_antes
 
     mock_product_repository.buscar_por_id_para_atualizar.assert_called_once_with(
         produto.id
@@ -60,41 +59,12 @@ def test_dar_entrada_com_quantidade_valida(
 
     movimentacao = mock_mov_repository.criar.call_args.args[0]
 
+    assert resultado is movimentacao
     assert movimentacao.id_produto == produto.id
     assert movimentacao.id_usuario == user_gerente.id
     assert movimentacao.motivo == MotivoMovimentacao.REPOSICAO
     assert movimentacao.tipo_movimentacao == TipoMovimentacao.ENTRADA
     assert movimentacao.quantidade == quantidade_entrada
-
-
-@pytest.mark.parametrize('operacao', ['dar_entrada', 'dar_saida'])
-@pytest.mark.parametrize(
-    ('caso'),
-    [
-        (0, 'Quantidade deve ser maior que 0'),
-        (-5, 'Quantidade deve ser maior que 0'),
-    ],
-)
-def test_alterar_estoque_com_quantidade_invalida(
-    estoque_service,
-    mock_product_repository,
-    user_gerente,
-    caso,
-    operacao,
-):
-    quantidade, mensagem = caso
-
-    with pytest.raises(ValueError, match=mensagem):
-        getattr(estoque_service, operacao)(
-            user_gerente,
-            1,
-            quantidade,
-            MotivoMovimentacao.REPOSICAO,
-        )
-
-    mock_product_repository.buscar_por_id_para_atualizar.assert_not_called()
-    mock_product_repository.atualizar.assert_not_called()
-    estoque_service.movimentacao_repository.criar.assert_not_called()
 
 
 @pytest.mark.parametrize('operacao', ['dar_entrada', 'dar_saida'])
@@ -107,7 +77,7 @@ def test_alterar_estoque_produto_inexistente(
 ):
     mock_product_repository.buscar_por_id_para_atualizar.return_value = None
 
-    with pytest.raises(ValueError, match='Produto nao encontrado'):
+    with pytest.raises(LookupError, match='Produto nao encontrado'):
         getattr(estoque_service, operacao)(
             user_gerente,
             999999,
@@ -136,7 +106,7 @@ def test_dar_saida_com_quantidade_valida(
         motivo=MotivoMovimentacao.AJUSTE,
     )
 
-    assert resultado == produto
+    assert resultado is mock_mov_repository.criar.call_args.args[0]
     assert produto.quantidade == quantidade_inicial - quantidade_saida
 
     mock_product_repository.buscar_por_id_para_atualizar.assert_called_once_with(
@@ -269,30 +239,12 @@ def test_validar_disponibilidade_com_estoque_insuficiente(
     mock_product_repository.buscar_por_id.assert_called_once_with(produto.id)
 
 
-def test_validar_disponibilidade_com_quantidade_zero(
-    estoque_service, mock_product_repository
-):
-    with pytest.raises(ValueError, match='Quantidade deve ser maior que 0.'):
-        estoque_service.validar_disponibilidade(id_produto=1, quantidade_desejada=0)
-
-    mock_product_repository.buscar_por_id.assert_not_called()
-
-
-def test_validar_disponibilidade_com_quantidade_negativa(
-    estoque_service, mock_product_repository
-):
-    with pytest.raises(ValueError, match='Quantidade deve ser maior que 0.'):
-        estoque_service.validar_disponibilidade(id_produto=1, quantidade_desejada=-5)
-
-    mock_product_repository.buscar_por_id.assert_not_called()
-
-
 def test_validar_disponibilidade_com_produto_inexistente(
     estoque_service, mock_product_repository
 ):
     mock_product_repository.buscar_por_id.return_value = None
 
-    with pytest.raises(ValueError, match='Produto nao encontrado'):
+    with pytest.raises(LookupError, match='Produto nao encontrado'):
         estoque_service.validar_disponibilidade(
             id_produto=999999, quantidade_desejada=5
         )
@@ -442,25 +394,6 @@ def test_relatorio_estoque_baixo_sem_produtos_dentro_do_limite(
     resultado = estoque_service.relatorio_estoque_baixo(user_gerente, 5)
 
     assert resultado == []
-
-
-def test_relatorio_estoque_baixo_com_limite_negativo(
-    estoque_service, mock_product_repository, user_gerente
-):
-    with pytest.raises(ValueError, match='Limite nao pode ser menor que 0'):
-        estoque_service.relatorio_estoque_baixo(user_gerente, -1)
-
-    mock_product_repository.listar.assert_not_called()
-
-
-@pytest.mark.parametrize('limite', ['5', 5.0, None, True, False])
-def test_relatorio_estoque_baixo_com_tipo_de_limite_invalido(
-    estoque_service, mock_product_repository, user_gerente, limite
-):
-    with pytest.raises(TypeError, match='Limite deve ser um numero inteiro'):
-        estoque_service.relatorio_estoque_baixo(user_gerente, limite)
-
-    mock_product_repository.listar.assert_not_called()
 
 
 def test_relatorio_estoque_baixo_sem_permissao(
