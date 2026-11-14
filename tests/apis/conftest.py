@@ -10,12 +10,15 @@ from src.api.dependencies.services import (
 )
 from src.api.security import criar_token
 from src.database.database import get_session
+from src.enums import MotivoMovimentacao
 from src.main import PapelEnum
+from src.models import Movimentacao
 from src.services.autenticacao_service import AutenticacaoService
 from src.services.cliente_service import ClienteService
 from src.services.usuario_service import UsuarioService
 from src.settings import Settings
 from tests.conftest import ClienteFatory
+from tests.estoque.conftest import MovFactory
 from tests.usuarios.conftest import UserFactory
 
 
@@ -88,6 +91,17 @@ def funcionario_inativo(session):
     usuario.senha_limpa = senha_limpa
 
     return usuario
+
+
+@pytest.fixture
+def movimentacao(session, admin, produto_db):
+    movimentacao = MovFactory(id_usuario=admin.id, id_produto=produto_db.id)
+
+    session.add(movimentacao)
+    session.commit()
+    session.refresh(movimentacao)
+
+    return movimentacao
 
 
 @pytest.fixture

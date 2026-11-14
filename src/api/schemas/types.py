@@ -1,9 +1,12 @@
+from datetime import datetime
 import re
 from decimal import Decimal
 from typing import Annotated
+from zoneinfo import ZoneInfo
 
 from pydantic import AfterValidator, PlainSerializer, StringConstraints
 
+from src.utils.fuso import FUSO_HORARIO
 from src.utils.validacoes import validar_cpf, validar_telefone
 
 REGEX_NOME = r'^[a-zA-ZÀ-ÿ0-9 ./-]+$'
@@ -54,6 +57,15 @@ def formatar_preco(valor: Decimal) -> str:
     return f'R$ {valor_formatado}'
 
 
+def formatar_hora(hora: datetime):
+    if hora.tzinfo is None:
+        hora = hora.replace(tzinfo=ZoneInfo('UTC'))
+
+    data_formatada = hora.astimezone(FUSO_HORARIO).strftime('%d/%m/%Y %H:%M')
+
+    return data_formatada
+
+
 CPF = Annotated[str, AfterValidator(validar_cpf_schema)]
 CPFMascara = Annotated[str, AfterValidator(mascarar_cpf)]
 Telefone = Annotated[str, AfterValidator(validar_telefone_schema)]
@@ -84,3 +96,5 @@ Nome = Annotated[
 FormatarPreco = Annotated[
     Decimal, PlainSerializer(formatar_preco, return_type=str, when_used='json')
 ]
+
+FormatarHora = Annotated[datetime, AfterValidator(formatar_hora)]

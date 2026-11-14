@@ -4,6 +4,7 @@ from fastapi import Depends
 
 from src.api.dependencies.database import SessionDep
 from src.repositories.cliente_repository import ClienteRepository
+from src.repositories.movimentacao_repository import MovimentacaoRepository
 from src.repositories.produto_repository import ProdutoRepository
 from src.repositories.usuario_repository import UsuarioRepository
 
@@ -27,3 +28,12 @@ def get_produto_repository(session: SessionDep) -> ProdutoRepository:
 
 
 ProdutoRepositoryDep = Annotated[ProdutoRepository, Depends(get_produto_repository)]
+
+
+def get_movimentacao_repository(session: SessionDep):
+    return MovimentacaoRepository(session)
+
+
+MovimentacaoRepositoryDep = Annotated[
+    MovimentacaoRepository, Depends(get_movimentacao_repository)
+]
