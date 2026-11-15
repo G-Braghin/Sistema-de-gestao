@@ -108,16 +108,19 @@ class VendaService:
         self,
         usuario_logado: Usuario,
         id_venda: int,
-    ) -> None | Venda:
+    ) -> Venda:
 
         if usuario_logado.papel == PapelEnum.FUNCIONARIO:
             raise PermissionError('Sem permissao para cancelar vendas.')
+
+        venda = self.venda_repository.buscar_por_id(id_venda)
+        if venda is None:
+            raise LookupError('ID nao encontrado!')
 
         self.venda_repository.cancelar_venda(
             id_venda=id_venda,
         )
 
-        venda = self.venda_repository.buscar_por_id(id_venda)
         for item in sorted(venda.itens, key=lambda item: item.id_produto):
             self.estoque_service.dar_entrada(
                 usuario_logado=usuario_logado,
