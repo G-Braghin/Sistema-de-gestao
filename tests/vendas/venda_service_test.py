@@ -66,14 +66,14 @@ def test_realizar_venda_com_dados_validos(
 @pytest.mark.parametrize(
     'caso',
     [
-        (99999999, None, 'Cliente nao encontrado.'),
-        (99, False, 'Cliente nao pode estar desativado.'),
+        (99999999, None, LookupError, 'Cliente nao encontrado.'),
+        (99, False, ValueError, 'Cliente nao pode estar desativado.'),
     ],
 )
 def test_realizar_venda_com_cliente_invalido(
     venda_service, client_repository_mock, caso, cliente, user_funcionario
 ):
-    id_cliente, ativo, mensagem = caso
+    id_cliente, ativo, erro, mensagem = caso
 
     if ativo is None:
         client_repository_mock.buscar_por_id.return_value = None
@@ -81,7 +81,7 @@ def test_realizar_venda_com_cliente_invalido(
         cliente.ativo = ativo
         client_repository_mock.buscar_por_id.return_value = cliente
 
-    with pytest.raises(ValueError, match=mensagem):
+    with pytest.raises(erro, match=mensagem):
         venda_service.realizar_venda(user_funcionario, id_cliente, [])
 
     client_repository_mock.buscar_por_id.assert_called_once()
@@ -104,30 +104,12 @@ def test_criar_item_venda_sem_campo_obrigatorio(venda_service, item, mensagem):
         venda_service._criar_item_venda(item)
 
 
-@pytest.mark.parametrize(
-    'caso',
-    [
-        ({'id_produto': 1, 'quantidade': 0}, ValueError),
-        ({'id_produto': 1, 'quantidade': True}, TypeError),
-        ({'id_produto': 0, 'quantidade': 1}, ValueError),
-    ],
-)
-def test_criar_item_venda_com_dados_invalidos(
-    venda_service, product_repository_mock, caso
-):
-    item, erro = caso
-    with pytest.raises(erro):
-        venda_service._criar_item_venda(item)
-
-    product_repository_mock.buscar_por_id_para_atualizar.assert_not_called()
-
-
 def test_criar_item_venda_com_produto_inexistente(
     venda_service, product_repository_mock, mock_estoque_service
 ):
     product_repository_mock.buscar_por_id_para_atualizar.return_value = None
 
-    with pytest.raises(ValueError, match='nao encontrado'):
+    with pytest.raises(LookupError, match='nao encontrado'):
         venda_service._criar_item_venda({'id_produto': 1, 'quantidade': 1})
 
     mock_estoque_service.validar_disponibilidade.assert_not_called()
@@ -267,7 +249,7 @@ def test_listar_venda_itens_nao_encontrada(
 ):
     mock_venda_repo.buscar_por_id.return_value = None
 
-    with pytest.raises(ValueError, match='ID nao encontrado'):
+    with pytest.raises(LookupError, match='ID nao encontrado'):
         venda_service.listar_venda_itens(user_gerente, 1)
 
 

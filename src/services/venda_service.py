@@ -12,7 +12,6 @@ from src.repositories.venda_repository import VendaRepository
 from src.services.estoque_service import EstoqueService
 from src.utils.filtro_datas import FiltroDatas
 from src.utils.fuso import FUSO_HORARIO
-from src.utils.validacoes import verificar_id
 
 MES_DEZEMBRO = 12
 
@@ -36,11 +35,10 @@ class VendaService:
         id_cliente: int,
         itens: list[dict],
     ) -> Venda:
-        verificar_id(id_cliente, 'ID de cliente invalido.')
         cliente = self.cliente_repository.buscar_por_id(id_cliente)
 
         if not cliente:
-            raise ValueError('Cliente nao encontrado.')
+            raise LookupError('Cliente nao encontrado.')
 
         if not cliente.ativo:
             raise ValueError('Cliente nao pode estar desativado.')
@@ -90,17 +88,9 @@ class VendaService:
         quantidade = item['quantidade']
         id_produto = item['id_produto']
 
-        if not isinstance(quantidade, int) or isinstance(quantidade, bool):
-            raise TypeError('Quantidade deve ser um numero inteiro.')
-
-        if quantidade <= 0:
-            raise ValueError('Quantiade de ser maior que 0.')
-
-        verificar_id(id_produto)
-
         produto = self.produto_repository.buscar_por_id_para_atualizar(id_produto)
         if not produto:
-            raise ValueError(f'Produto de id: {id_produto} nao encontrado')
+            raise LookupError(f'Produto de id: {id_produto} nao encontrado')
 
         if not self.estoque_service.validar_disponibilidade(id_produto, quantidade):
             raise ValueError(
@@ -119,7 +109,6 @@ class VendaService:
         usuario_logado: Usuario,
         id_venda: int,
     ) -> None | Venda:
-        verificar_id(id_venda)
 
         if usuario_logado.papel == PapelEnum.FUNCIONARIO:
             raise PermissionError('Sem permissao para cancelar vendas.')
@@ -165,13 +154,12 @@ class VendaService:
         return vendas
 
     def listar_venda_itens(self, usuario_logado: Usuario, id_venda: int) -> Venda:
-        verificar_id(id_venda)
         if usuario_logado.papel == PapelEnum.FUNCIONARIO:
             raise PermissionError('Sem Permissao para ver venda de itens.')
 
         vendas = self.venda_repository.buscar_por_id(id_venda)
         if vendas is None:
-            raise ValueError('ID nao encontrado.')
+            raise LookupError('ID nao encontrado.')
 
         return vendas
 
