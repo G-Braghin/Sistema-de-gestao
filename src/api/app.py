@@ -6,6 +6,7 @@ from src.api.routers import (
     estoque,
     gerenciamento_usuarios,
     produto,
+    relatorio,
     usuarios,
     venda,
 )
@@ -19,3 +20,4 @@ app.include_router(cliente.router)
 app.include_router(produto.router)
 app.include_router(estoque.router)
 app.include_router(venda.router)
+app.include_router(relatorio.router)

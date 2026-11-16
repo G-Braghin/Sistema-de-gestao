@@ -57,13 +57,17 @@ def formatar_preco(valor: Decimal) -> str:
     return f'R$ {valor_formatado}'
 
 
-def formatar_hora(hora: datetime):
+def formatar_hora_db(hora: datetime):
     if hora.tzinfo is None:
         hora = hora.replace(tzinfo=ZoneInfo('UTC'))
 
     data_formatada = hora.astimezone(FUSO_HORARIO).strftime('%d/%m/%Y %H:%M')
 
     return data_formatada
+
+
+def formatar_hora_local(hora: datetime) -> str:
+    return hora.strftime('%d/%m/%Y %H:%M')
 
 
 CPF = Annotated[str, AfterValidator(validar_cpf_schema)]
@@ -97,4 +101,6 @@ FormatarPreco = Annotated[
     Decimal, PlainSerializer(formatar_preco, return_type=str, when_used='json')
 ]
 
-FormatarHora = Annotated[datetime, AfterValidator(formatar_hora)]
+FormatarHora = Annotated[datetime, AfterValidator(formatar_hora_db)]
+
+FormatarHoraLocal = Annotated[datetime, AfterValidator(formatar_hora_local)]
