@@ -71,38 +71,55 @@ class VendaService:
 
         return venda
 
+    @staticmethod
+    def _consolidar_itens(itens: list[dict]) -> dict[int, int]:
+        quantidades = {}
+
+        for item in itens:
+            id_produto = item['id_produto']
+            quantidade = item['quantidade']
+
+            quantidades[id_produto] = quantidades.get(id_produto, 0) + quantidade
+
+        return quantidades
+
     def _criar_itens_venda(self, itens: list[dict]) -> list[VendaItens]:
         if not itens:
             raise ValueError('Ao menos deve ter um item.')
 
-        return [self._criar_item_venda(item) for item in itens]
+        quantidades = self._consolidar_itens(itens)
 
-    def _criar_item_venda(self, item: dict) -> VendaItens:
+        produtos = self.produto_repository.buscar_por_multiplos_ids(list(quantidades))
 
-        if 'id_produto' not in item:
-            raise ValueError('O produto deve ter um ID obrigatorio')
+        produtos_por_id = {produto.id: produto for produto in produtos}
 
-        if 'quantidade' not in item:
-            raise ValueError('O produto deve ter uma quantidade.')
+        ids_nao_encontrados = set(quantidades) - set(produtos_por_id)
 
-        quantidade = item['quantidade']
-        id_produto = item['id_produto']
-
-        produto = self.produto_repository.buscar_por_id_para_atualizar(id_produto)
-        if not produto:
-            raise LookupError(f'Produto de id: {id_produto} nao encontrado')
-
-        if not self.estoque_service.validar_disponibilidade(id_produto, quantidade):
-            raise ValueError(
-                f'Estoque insuficiente para o produto: {produto.nome} '
-                f'Disponivel: {produto.quantidade}'
+        if ids_nao_encontrados:
+            raise LookupError(
+                f'Produtos nao encontrados: {sorted(ids_nao_encontrados)}'
             )
 
-        return VendaItens(
-            id_produto=id_produto,
-            quantidade=quantidade,
-            preco_unitario=produto.preco,
-        )
+        venda_itens = []
+
+        for id_produto, quantidade in quantidades.items():
+            produto = produtos_por_id[id_produto]
+
+            if produto.quantidade < quantidade:
+                raise ValueError(
+                    f'Estoque insuficiente para o produto: {produto.nome}. '
+                    f'Disponivel: {produto.quantidade}'
+                )
+
+            venda_itens.append(
+                VendaItens(
+                    id_produto=produto.id,
+                    quantidade=quantidade,
+                    preco_unitario=produto.preco,
+                )
+            )
+
+        return venda_itens
 
     def cancelar_venda(
         self,
