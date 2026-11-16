@@ -130,15 +130,14 @@ def test_cancelar_venda_com_dados_validos(
     venda_service, mock_venda_repo, mock_estoque_service, user_gerente, venda_fake
 ):
     mock_venda_repo.buscar_por_id.return_value = venda_fake
+    mock_venda_repo.cancelar_venda.return_value = venda_fake
 
     resultado = venda_service.cancelar_venda(
         usuario_logado=user_gerente,
         id_venda=venda_fake.id,
     )
 
-    mock_venda_repo.cancelar_venda.assert_called_once_with(
-        id_venda=venda_fake.id,
-    )
+    mock_venda_repo.cancelar_venda.assert_called_once_with(id_venda=venda_fake.id)
 
     assert resultado == venda_fake
 
@@ -150,7 +149,7 @@ def test_cancelar_venda_com_dados_validos(
             id_produto=item.id_produto,
             entrada_estoque=item.quantidade,
             motivo=MotivoMovimentacao.CANCELAMENTO_VENDA,
-            id_venda=item.id_venda,
+            id_venda=venda_fake.id,
         )
 
 

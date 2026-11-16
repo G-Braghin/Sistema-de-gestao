@@ -117,9 +117,11 @@ class VendaService:
         if venda is None:
             raise LookupError('ID nao encontrado!')
 
-        self.venda_repository.cancelar_venda(
+        venda_cancelada = self.venda_repository.cancelar_venda(
             id_venda=id_venda,
         )
+        if venda_cancelada is None:
+            raise ValueError('Venda ja cancelada ou nao pode ser cancelada.')
 
         for item in sorted(venda.itens, key=lambda item: item.id_produto):
             self.estoque_service.dar_entrada(
@@ -127,10 +129,10 @@ class VendaService:
                 id_produto=item.id_produto,
                 entrada_estoque=item.quantidade,
                 motivo=MotivoMovimentacao.CANCELAMENTO_VENDA,
-                id_venda=item.id_venda,
+                id_venda=id_venda,
             )
 
-        return venda
+        return venda_cancelada
 
     def listar_resumo(
         self,

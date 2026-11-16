@@ -55,7 +55,7 @@ class EstoqueService:
         motivo: MotivoMovimentacao,
         id_venda: int | None = None,
     ) -> Movimentacao:
-        if usuario_logado.papel == PapelEnum.FUNCIONARIO:
+        if usuario_logado.papel == PapelEnum.FUNCIONARIO and id_venda is None:
             raise PermissionError('Sem permissao para mecher no estoque')
 
         produto = self.produto_repository.buscar_por_id_para_atualizar(id_produto)
