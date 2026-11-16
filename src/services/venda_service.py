@@ -168,7 +168,7 @@ class VendaService:
 
     def criar_resumo_relatorio(
         self, usuario_logado: Usuario, data_inicial: date, data_final: date
-    ) -> None | RelatorioVendaResumo:
+    ) -> RelatorioVendaResumo:
         if usuario_logado.papel == PapelEnum.FUNCIONARIO:
             raise PermissionError('Sem permissao para ver relatorios.')
 
@@ -179,17 +179,14 @@ class VendaService:
         vendas = self.venda_repository.listar_resumo(
             inicio, final, StatusVenda.CONCLUIDA
         )
-        if not vendas:
-            return None
 
-        num_vendas_concluidas = 0
-        total_periodo = Decimal('0')
-
-        for venda in vendas:
-            total_periodo += venda.valor_total
-            num_vendas_concluidas += 1
-
-        ticket_medio = total_periodo / num_vendas_concluidas
+        num_vendas_concluidas = len(vendas)
+        total_periodo = sum((venda.valor_total for venda in vendas), Decimal('0'))
+        ticket_medio = (
+            total_periodo / num_vendas_concluidas
+            if num_vendas_concluidas > 0
+            else Decimal('0')
+        )
 
         relatorio = RelatorioVendaResumo(
             data_inicial=data_inicial,
