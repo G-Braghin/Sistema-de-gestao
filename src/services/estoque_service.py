@@ -17,6 +17,37 @@ class EstoqueService:
         self.produto_repository = produto_repository
         self.movimentacao_repository = movimentacao_repository
 
+    def _procurar_produto(self, usuario_logado: Usuario, id_produto: int, id_venda):
+        if usuario_logado.papel == PapelEnum.FUNCIONARIO and id_venda is None:
+            raise PermissionError('Sem permissao para mecher no estoque')
+
+        produto = self.produto_repository.buscar_por_id_para_atualizar(id_produto)
+        if not produto:
+            raise LookupError(PRODUTO_NAO_ENCONTRADO)
+
+        return produto
+
+    def _registrar_movimentacao(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
+        self,
+        usuario_logado: Usuario,
+        produto: Produto,
+        quantidade: int,
+        tipo: TipoMovimentacao,
+        motivo: MotivoMovimentacao,
+        id_venda: int | None = None,
+    ) -> Movimentacao:
+
+        movimentacao = Movimentacao(
+            id_produto=produto.id,
+            id_usuario=usuario_logado.id,
+            tipo_movimentacao=tipo,
+            quantidade=quantidade,
+            motivo=motivo,
+            id_venda=id_venda,
+        )
+
+        return self.movimentacao_repository.criar(movimentacao)
+
     def dar_entrada(
         self,
         usuario_logado: Usuario,
@@ -25,25 +56,20 @@ class EstoqueService:
         motivo: MotivoMovimentacao,
         id_venda: int | None = None,
     ) -> Movimentacao:
-        if usuario_logado.papel == PapelEnum.FUNCIONARIO:
-            raise PermissionError('Sem permissao para mecher no estoque')
 
-        produto = self.produto_repository.buscar_por_id_para_atualizar(id_produto)
-        if not produto:
-            raise LookupError(PRODUTO_NAO_ENCONTRADO)
+        produto = self._procurar_produto(usuario_logado, id_produto, id_venda)
 
         produto.quantidade += entrada_estoque
         self.produto_repository.atualizar(produto)
 
-        movimentacao = Movimentacao(
-            id_produto=id_produto,
-            id_usuario=usuario_logado.id,
-            tipo_movimentacao=TipoMovimentacao.ENTRADA,
-            quantidade=entrada_estoque,
-            motivo=motivo,
-            id_venda=id_venda,
+        movimentacao = self._registrar_movimentacao(
+            usuario_logado,
+            produto,
+            entrada_estoque,
+            TipoMovimentacao.ENTRADA,
+            motivo,
+            id_venda,
         )
-        self.movimentacao_repository.criar(movimentacao)
 
         return movimentacao
 
@@ -55,12 +81,8 @@ class EstoqueService:
         motivo: MotivoMovimentacao,
         id_venda: int | None = None,
     ) -> Movimentacao:
-        if usuario_logado.papel == PapelEnum.FUNCIONARIO and id_venda is None:
-            raise PermissionError('Sem permissao para mecher no estoque')
 
-        produto = self.produto_repository.buscar_por_id_para_atualizar(id_produto)
-        if not produto:
-            raise LookupError(PRODUTO_NAO_ENCONTRADO)
+        produto = self._procurar_produto(usuario_logado, id_produto, id_venda)
 
         if saida_estoque > produto.quantidade:
             raise ValueError(f'Estoque indisponivel! Disponivel {produto.quantidade}.')
@@ -68,15 +90,14 @@ class EstoqueService:
         produto.quantidade -= saida_estoque
         self.produto_repository.atualizar(produto)
 
-        movimentacao = Movimentacao(
-            id_produto=id_produto,
-            id_usuario=usuario_logado.id,
-            tipo_movimentacao=TipoMovimentacao.SAIDA,
-            quantidade=saida_estoque,
-            motivo=motivo,
-            id_venda=id_venda,
+        movimentacao = self._registrar_movimentacao(
+            usuario_logado,
+            produto,
+            saida_estoque,
+            TipoMovimentacao.SAIDA,
+            motivo,
+            id_venda,
         )
-        self.movimentacao_repository.criar(movimentacao)
 
         return movimentacao
 

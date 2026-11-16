@@ -38,6 +38,7 @@ def test_dar_entrada_com_quantidade_valida(
     quantidade_antes = produto.quantidade
 
     mock_product_repository.buscar_por_id_para_atualizar.return_value = produto
+    mock_mov_repository.criar.side_effect = lambda movimentacao: movimentacao
 
     quantidade_entrada = 10
 
@@ -97,7 +98,7 @@ def test_dar_saida_com_quantidade_valida(
     produto.quantidade = quantidade_inicial
     mock_product_repository.buscar_por_id_para_atualizar.return_value = produto
 
-    mock_mov_repository.criar.return_value = None
+    mock_mov_repository.criar.side_effect = lambda movimentacao: movimentacao
 
     resultado = estoque_service.dar_saida(
         usuario_logado=user_gerente,
