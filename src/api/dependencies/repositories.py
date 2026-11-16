@@ -7,9 +7,11 @@ from src.repositories.cliente_repository import ClienteRepository
 from src.repositories.movimentacao_repository import MovimentacaoRepository
 from src.repositories.produto_repository import ProdutoRepository
 from src.repositories.usuario_repository import UsuarioRepository
+from src.repositories.venda_repository import VendaRepository
 
 
 def get_usuario_repository(session: SessionDep) -> UsuarioRepository:
+
     return UsuarioRepository(session)
 
 
@@ -17,6 +19,7 @@ UsuarioRepositoryDep = Annotated[UsuarioRepository, Depends(get_usuario_reposito
 
 
 def get_cliente_repository(session: SessionDep) -> ClienteRepository:
+
     return ClienteRepository(session)
 
 
@@ -24,6 +27,7 @@ ClienteRepositoryDep = Annotated[ClienteRepository, Depends(get_cliente_reposito
 
 
 def get_produto_repository(session: SessionDep) -> ProdutoRepository:
+
     return ProdutoRepository(session)
 
 
@@ -31,9 +35,18 @@ ProdutoRepositoryDep = Annotated[ProdutoRepository, Depends(get_produto_reposito
 
 
 def get_movimentacao_repository(session: SessionDep):
+
     return MovimentacaoRepository(session)
 
 
 MovimentacaoRepositoryDep = Annotated[
     MovimentacaoRepository, Depends(get_movimentacao_repository)
 ]
+
+
+def get_venda_repository(session: SessionDep):
+
+    return VendaRepository(session)
+
+
+VendaRepositoryDep = Annotated[VendaRepository, Depends(get_venda_repository)]

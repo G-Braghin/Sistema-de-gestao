@@ -15,6 +15,7 @@ from src.services.estoque_service import EstoqueService
 from tests.clientes.conftest import ClienteFatory
 from tests.produtos.conftest import ProductFactory
 from tests.usuarios.conftest import UserFactory
+from tests.vendas.conftest import VendaFactory, VendaItensFactory
 
 
 @pytest.fixture(scope='session')
@@ -106,6 +107,21 @@ def cliente_db(session):
     session.refresh(client_db)
 
     return client_db
+
+
+@pytest.fixture
+def venda(session, cliente_db, usuario_db, produto_db):
+
+    venda = VendaFactory(
+        id_usuario=usuario_db.id,
+        id_cliente=cliente_db.id,
+        itens=[VendaItensFactory(id_produto=produto_db.id)],
+    )
+    session.add(venda)
+    session.commit()
+    session.flush()
+
+    return venda
 
 
 # Definindo uma meneira de simular um horario para os testes

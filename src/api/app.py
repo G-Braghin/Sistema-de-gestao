@@ -7,6 +7,7 @@ from src.api.routers import (
     gerenciamento_usuarios,
     produto,
     usuarios,
+    venda,
 )
 
 app = FastAPI(title='Sistema de Gestao')
@@ -17,3 +18,4 @@ app.include_router(gerenciamento_usuarios.router)
 app.include_router(cliente.router)
 app.include_router(produto.router)
 app.include_router(estoque.router)
+app.include_router(venda.router)

@@ -57,20 +57,6 @@ def venda_service(
 
 
 @pytest.fixture
-def venda(session, cliente_db, usuario_db, produto_db):
-
-    venda = VendaFactory(
-        id_usuario=usuario_db.id,
-        id_cliente=cliente_db.id,
-        itens=[VendaItensFactory(id_produto=produto_db.id)],
-    )
-    session.add(venda)
-    session.flush()
-
-    return venda
-
-
-@pytest.fixture
 def venda_fake(user_gerente, cliente, produto):
     venda = VendaFactory(
         id_usuario=user_gerente.id,
