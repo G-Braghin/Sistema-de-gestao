@@ -3,8 +3,8 @@ from datetime import date
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from src.entities.dtos.produtos_vendidos_resumo import ProdutosVendidosResumo
-from src.entities.dtos.venda_resumo import VendaResumo
+from src.dtos.produtos_vendidos_resumo import ProdutosVendidosResumo
+from src.dtos.venda_resumo import VendaResumo
 from src.enums import StatusVenda
 from src.models import Cliente, Produto, Usuario, Venda, VendaItens
 

@@ -1,8 +1,8 @@
 from datetime import timedelta
 from decimal import Decimal
 
-from src.entities.dtos.produtos_vendidos_resumo import ProdutosVendidosResumo
-from src.entities.dtos.venda_resumo import VendaResumo
+from src.dtos.produtos_vendidos_resumo import ProdutosVendidosResumo
+from src.dtos.venda_resumo import VendaResumo
 from src.enums import StatusVenda
 from src.models import Venda
 from tests.vendas.conftest import VendaFactory, VendaItensFactory

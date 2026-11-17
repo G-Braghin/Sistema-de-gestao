@@ -13,8 +13,8 @@ from src.api.schemas.relatorio import (
     RelatorioEstoqueRes,
     RelatorioVendaRes,
 )
-from src.entities.dtos.produtos_vendidos_resumo import ProdutosVendidosResumo
-from src.entities.dtos.relatorio_venda_resumo import RelatorioVendaResumo
+from src.dtos.produtos_vendidos_resumo import ProdutosVendidosResumo
+from src.dtos.relatorio_venda_resumo import RelatorioVendaResumo
 
 router = APIRouter(prefix='/relatorios', tags=['relatorios'])
 

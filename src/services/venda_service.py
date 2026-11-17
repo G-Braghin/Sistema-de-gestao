@@ -1,9 +1,9 @@
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 
-from src.entities.dtos.produtos_vendidos_resumo import ProdutosVendidosResumo
-from src.entities.dtos.relatorio_venda_resumo import RelatorioVendaResumo
-from src.entities.dtos.venda_resumo import VendaResumo
+from src.dtos.produtos_vendidos_resumo import ProdutosVendidosResumo
+from src.dtos.relatorio_venda_resumo import RelatorioVendaResumo
+from src.dtos.venda_resumo import VendaResumo
 from src.enums import MotivoMovimentacao, PapelEnum, StatusVenda
 from src.models import Usuario, Venda, VendaItens
 from src.repositories.cliente_repository import ClienteRepository

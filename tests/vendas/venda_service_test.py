@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from src.entities.dtos.produtos_vendidos_resumo import ProdutosVendidosResumo
+from src.dtos.produtos_vendidos_resumo import ProdutosVendidosResumo
 from src.enums import MotivoMovimentacao, StatusVenda
 from src.utils.filtro_datas import FiltroDatas
 from src.utils.fuso import FUSO_HORARIO

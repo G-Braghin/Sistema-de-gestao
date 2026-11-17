@@ -1,4 +1,4 @@
-from src.entities.dtos.relatorio_estoque_resumo import RelatorioEstoqueResumo
+from src.dtos.relatorio_estoque_resumo import RelatorioEstoqueResumo
 from src.enums import MotivoMovimentacao, PapelEnum, TipoMovimentacao
 from src.models import Movimentacao, Produto, Usuario
 from src.repositories.movimentacao_repository import MovimentacaoRepository
