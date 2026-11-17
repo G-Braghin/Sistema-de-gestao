@@ -22,7 +22,7 @@ def test_promover_retorna_422_se_service_retornar_value_error(
     )
 
     response = client_api.patch(
-        'usuarios/-1/promover',
+        'usuarios/999/promover',
         headers={'Authorization': f'Bearer {token_admin}'},
     )
 
