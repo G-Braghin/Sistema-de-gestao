@@ -11,7 +11,7 @@ from src.api.dependencies.services import (
     get_venda_service,
 )
 from src.api.security import criar_token
-from src.database.database import get_session
+from src.database.database import get_db
 from src.enums import PapelEnum
 from src.services.autenticacao_service import AutenticacaoService
 from src.services.cliente_service import ClienteService
@@ -25,11 +25,11 @@ from tests.usuarios.conftest import UserFactory
 
 @pytest.fixture
 def client_api(session):
-    def get_session_override():
+    def get_db_override():
         return session
 
     with TestClient(app) as client:
-        app.dependency_overrides[get_session] = get_session_override
+        app.dependency_overrides[get_db] = get_db_override
         yield client
 
     app.dependency_overrides.clear()
