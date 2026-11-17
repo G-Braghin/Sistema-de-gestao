@@ -11,16 +11,16 @@ from src.api.schemas.types import (
 
 # Entrada
 class ClienteCadastro(BaseModel):
-    nome: NomeFormatar = Field(min_length=3)
+    nome: NomeFormatar = Field(examples=['Bob'])
     cpf: CPF
-    endereco: str | None = Field(default=None)
+    endereco: NomeFormatar | None = Field(default=None)
     telefone: Telefone
 
 
 class ClienteAtualizar(BaseModel):
-    nome: NomeFormatar | None = Field(default=None, min_length=3)
-    endereco: str | None = Field(default=None, min_length=3)
-    telefone: str | None = Field(default=None)
+    nome: NomeFormatar | None = Field(default=None, examples=['Bob'])
+    endereco: NomeFormatar | None = Field(default=None)
+    telefone: Telefone | None = Field(default=None)
 
 
 class ClienteBuscarCpf(BaseModel):
@@ -30,7 +30,7 @@ class ClienteBuscarCpf(BaseModel):
 # Resposta/Saida
 class ClienteBase(BaseModel):
     id: int
-    nome: NomeFormatar
+    nome: str
     telefone: TelefoneFormatar
 
 

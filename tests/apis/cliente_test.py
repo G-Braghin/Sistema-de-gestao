@@ -119,7 +119,7 @@ def test_listar_clientes_api(client_api, token_admin, cliente_db):
     ]
 
 
-def test_cadastrar_cliente_retorna_400_se_service_retornar_value_error(
+def test_cadastrar_cliente_retorna_422_se_service_retornar_value_error(
     client_api,
     token_funcionario,
     mock_cliente_service_api,
@@ -139,11 +139,11 @@ def test_cadastrar_cliente_retorna_400_se_service_retornar_value_error(
         headers={'Authorization': f'Bearer {token_funcionario}'},
     )
 
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
     assert response.json() == {'detail': 'CPF ja existe no sistema.'}
 
 
-def test_buscar_cliente_retorna_400_se_service_retornar_value_error(
+def test_buscar_cliente_retorna_422_se_service_retornar_value_error(
     client_api, token_funcionario, mock_cliente_service_api
 ):
 
@@ -157,7 +157,7 @@ def test_buscar_cliente_retorna_400_se_service_retornar_value_error(
         headers={'Authorization': f'Bearer {token_funcionario}'},
     )
 
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
     assert response.json() == {'detail': 'Cliente inativo.'}
 
 
@@ -178,7 +178,7 @@ def test_buscar_cliente_retorna_404_se_service_retornar_lookup_error(
     assert response.json() == {'detail': 'Cliente nao encontrado'}
 
 
-def test_atualizar_cliente_retorna_400_se_service_retornar_value_error(
+def test_atualizar_cliente_retorna_422_se_service_retornar_value_error(
     client_api, token_funcionario, mock_cliente_service_api
 ):
     mock_cliente_service_api.atualizar.side_effect = ValueError('Cliente inativo.')
@@ -189,7 +189,7 @@ def test_atualizar_cliente_retorna_400_se_service_retornar_value_error(
         headers={'Authorization': f'Bearer {token_funcionario}'},
     )
 
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
     assert response.json() == {'detail': 'Cliente inativo.'}
 
 
@@ -210,7 +210,7 @@ def test_atualizar_cliente_retorna_404_se_service_retornar_lookup_error(
     assert response.json() == {'detail': 'Cliente nao encontrado'}
 
 
-def test_mudar_status_cliente_retorna_400_se_service_retornar_value_error(
+def test_mudar_status_cliente_retorna_422_se_service_retornar_value_error(
     client_api, token_admin, mock_cliente_service_api
 ):
     mock_cliente_service_api.atualizar_status.side_effect = ValueError(
@@ -223,7 +223,7 @@ def test_mudar_status_cliente_retorna_400_se_service_retornar_value_error(
         headers={'Authorization': f'Bearer {token_admin}'},
     )
 
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
     assert response.json() == {'detail': 'Cliente ja ativado.'}
 
 

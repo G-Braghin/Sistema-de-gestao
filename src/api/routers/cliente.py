@@ -2,6 +2,7 @@ from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import PositiveInt
 
 from src.api.dependencies.autenticacao import UsuarioLogado
 from src.api.dependencies.services import ClienteServiceDep
@@ -32,7 +33,7 @@ def cadastrar_cliente(
         return cliente
     except ValueError as erro:
         raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail=str(erro)
+            status_code=HTTPStatus.UNPROCESSABLE_CONTENT, detail=str(erro)
         ) from erro
 
 
@@ -47,7 +48,7 @@ def buscar_info_cliente_por_cpf(
         return cliente
     except ValueError as erro:
         raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail=str(erro)
+            status_code=HTTPStatus.UNPROCESSABLE_CONTENT, detail=str(erro)
         ) from erro
     except LookupError as erro:
         raise HTTPException(
@@ -58,7 +59,7 @@ def buscar_info_cliente_por_cpf(
 @router.patch('/{id_cliente}/atualizar-info', response_model=ClienteDetalhes)
 def atualizar_cliente(
     usuario_logado: UsuarioLogado,
-    id_cliente: int,
+    id_cliente: PositiveInt,
     dados: ClienteAtualizar,
     service: ClienteServiceDep,
 ) -> Cliente:
@@ -72,7 +73,7 @@ def atualizar_cliente(
         return cliente
     except ValueError as erro:
         raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail=str(erro)
+            status_code=HTTPStatus.UNPROCESSABLE_CONTENT, detail=str(erro)
         ) from erro
     except LookupError as erro:
         raise HTTPException(
@@ -83,7 +84,7 @@ def atualizar_cliente(
 @router.patch('/{id_cliente}/status', response_model=Mensagem)
 def mudar_status_cliente(
     usuario_logado: UsuarioLogado,
-    id_cliente: int,
+    id_cliente: PositiveInt,
     status: AtualizarStatus,
     service: ClienteServiceDep,
 ) -> dict[str, str]:
@@ -94,7 +95,7 @@ def mudar_status_cliente(
         return {'mensagem': f'Cliente {cliente.nome} {status} com sucesso.'}
     except ValueError as erro:
         raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail=str(erro)
+            status_code=HTTPStatus.UNPROCESSABLE_CONTENT, detail=str(erro)
         ) from erro
     except LookupError as erro:
         raise HTTPException(

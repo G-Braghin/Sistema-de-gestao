@@ -30,31 +30,6 @@ def test_cadastrar_cliente_com_dados_validos(client_service, client_repository_m
     assert cliente_enviado.endereco == resultado.endereco
 
 
-@pytest.mark.parametrize(
-    'caso',
-    [
-        (None, faker.ssn(), faker.cellphone_number(), 'O nome nao pode estar vazio.'),
-        (faker.name(), None, faker.cellphone_number(), 'CPF nao pode estar vazio.'),
-        (faker.name(), '11111111111', faker.cellphone_number(), 'CPF e invalido.'),
-        (faker.name(), '52998224724', faker.cellphone_number(), 'CPF e invalido.'),
-        (faker.name(), faker.ssn(), None, 'O telefone nao pode estar vazio.'),
-        (faker.name(), faker.ssn(), '42234333234', 'O telefone e invalido!'),
-    ],
-)
-def test_cadastrar_cliente_com_dados_invalidos(
-    client_service, client_repository_mock, caso
-):
-    nome, cpf, telefone, mensagem = caso
-    client_repository_mock.buscar_por_cpf.return_value = None
-
-    with pytest.raises(ValueError, match=mensagem):
-        client_service.cadastrar_cliente(
-            nome=nome, cpf=cpf, telefone=telefone, endereco='Rua A'
-        )
-
-    client_repository_mock.criar.assert_not_called()
-
-
 def test_cadastrar_cliente_com_cpf_ja_cadastrado(
     client_service, client_repository_mock
 ):
@@ -103,8 +78,6 @@ def test_atualizar_cliente_com_dados_validos(
     [
         (False, True, {'nome': 'Bob'}, 'Cliente nao encontrado.'),
         (True, False, {'nome': 'Bob'}, 'Cliente esta desativado.'),
-        (True, True, {'telefone': ''}, 'Telefone invalido.'),
-        (True, True, {'telefone': '66699932211'}, 'Telefone invalido.'),
     ],
 )
 def test_atualizar_cliente_com_dados_invalidos(
@@ -243,21 +216,6 @@ def test_atualizar_status_cliente_funcionario(
         match='Funcionarios nao tem permissao para atualizar status de clientes.',
     ):
         client_service.atualizar_status(user_funcionario, 1, True)
-
-    client_repository_mock.buscar_por_id.assert_not_called()
-    client_repository_mock.atualizar.assert_not_called()
-
-
-def test_atualizar_status_cliente_nao_inserido(
-    client_service, client_repository_mock, user_gerente
-):
-    client_repository_mock.buscar_por_id.return_value = None
-
-    with pytest.raises(
-        ValueError,
-        match='ID nao inserido.',
-    ):
-        client_service.atualizar_status(user_gerente, '', True)
 
     client_repository_mock.buscar_por_id.assert_not_called()
     client_repository_mock.atualizar.assert_not_called()
