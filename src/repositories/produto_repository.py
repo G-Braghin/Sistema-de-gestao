@@ -52,9 +52,3 @@ class ProdutoRepository:
         self.session.add(produto)
 
         return produto
-
-    def atualizar_multiplos(self, produtos: list[Produto]):
-        """Metodo para atualizar multiplos produtos"""
-        self.session.add_all(produtos)
-
-        return produtos

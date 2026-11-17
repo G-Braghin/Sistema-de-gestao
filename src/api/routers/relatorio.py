@@ -3,8 +3,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query
 
+from src.api.dependencies.autenticacao import UsuarioLogado
 from src.api.dependencies.services import EstoqueServiceDep, VendaServiceDep
-from src.api.routers.cliente import UsuarioLogado
 from src.api.schemas.produto import ListarProdutos
 from src.api.schemas.relatorio import (
     EstoqueFiltro,
