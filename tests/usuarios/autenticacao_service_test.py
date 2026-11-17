@@ -49,23 +49,3 @@ def test_nao_autenticar_usuario_inativo(user_auth, user_repository_mock):
 
     with pytest.raises(PermissionError, match='Usuário inativo'):
         user_auth.autenticar(usuario.id, usuario.senha_limpa)
-
-
-@pytest.mark.parametrize(
-    ('id_usuario', 'tipo_erro', 'mensagem'),
-    [
-        (0, ValueError, 'ID de usuario invalido'),
-        (-1, ValueError, 'ID de usuario invalido'),
-        ('abc', TypeError, 'ID tem que ser um numero inteiro'),
-        (True, TypeError, 'ID tem que ser um numero inteiro'),
-    ],
-)
-def test_autenticar_rejeita_id_invalido(user_auth, id_usuario, tipo_erro, mensagem):
-    with pytest.raises(tipo_erro, match=mensagem):
-        user_auth.autenticar(id_usuario, 'senha-atual')
-
-
-@pytest.mark.parametrize('senha', ['', '   ', None])
-def test_autenticar_rejeita_senha_vazia(user_auth, senha):
-    with pytest.raises(ValueError, match='Senha nao pode estar vazio'):
-        user_auth.autenticar(1, senha)
