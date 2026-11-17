@@ -1,83 +1,26 @@
-import re
 from datetime import datetime
 from decimal import Decimal
 from typing import Annotated
-from zoneinfo import ZoneInfo
 
 from pydantic import AfterValidator, Field, PlainSerializer, StringConstraints
 
-from src.utils.fuso import FUSO_HORARIO
-from src.utils.validacoes import validar_cpf, validar_telefone
+from src.utils.formatadores import (
+    formatar_hora_db,
+    formatar_hora_local,
+    formatar_nome_proprio,
+    formatar_preco,
+    formatar_telefone,
+    mascarar_cpf,
+)
+from src.utils.validacoes import (
+    validar_cpf_schema,
+    validar_sem_espacos,
+    validar_telefone_schema,
+)
 
 REGEX_NOME = r'^[a-zA-ZÀ-ÿ0-9 ./-]+$'
 
-
-def validar_cpf_schema(cpf: str) -> str:
-    cpf_limpo = re.sub(r'\D', '', cpf)
-
-    if not validar_cpf(cpf_limpo):
-        raise ValueError('CPF invalido.')
-
-    return cpf_limpo
-
-
-def validar_telefone_schema(telefone: str) -> str:
-    telefone_limpo = re.sub(r'\D', '', telefone)
-
-    if not validar_telefone(telefone_limpo):
-        raise ValueError('Telefone invalido.')
-
-    return telefone_limpo
-
-
-def mascarar_cpf(cpf_limpo: str) -> str:
-    return f'{cpf_limpo[:3]}.***.***-{cpf_limpo[9:]}'
-
-
-def formatar_telefone(telefone_limpo) -> str:
-    return f'({telefone_limpo[:2]}) {telefone_limpo[2:7]}-{telefone_limpo[7:]}'
-
-
-def formatar_nome_proprio(nome: str) -> str:
-    ignorar = {'da', 'de', 'do', 'das', 'dos', 'e'}
-    pastes_nome = nome.lower().split()
-
-    nome_formatado = ' '.join(
-        parte if parte in ignorar and idx > 0 else parte.capitalize()
-        for idx, parte in enumerate(pastes_nome)
-    )
-
-    return nome_formatado
-
-
-def formatar_preco(valor: Decimal) -> str:
-    valor_formatado = (
-        f'{valor:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
-    )
-    return f'R$ {valor_formatado}'
-
-
-def formatar_hora_db(hora: datetime) -> str:
-    if hora.tzinfo is None:
-        hora = hora.replace(tzinfo=ZoneInfo('UTC'))
-
-    data_formatada = hora.astimezone(FUSO_HORARIO).strftime('%d/%m/%Y %H:%M')
-
-    return data_formatada
-
-
-def formatar_hora_local(hora: datetime) -> str:
-    return hora.strftime('%d/%m/%Y %H:%M')
-
-
-def validar_sem_espacos(valor: str) -> str:
-    if ' ' in valor:
-        raise ValueError('A senha nao pode conter espacos.')
-    return valor
-
-
 CPF = Annotated[str, AfterValidator(validar_cpf_schema)]
-CPFMascara = Annotated[str, AfterValidator(mascarar_cpf)]
 Telefone = Annotated[str, AfterValidator(validar_telefone_schema)]
 TelefoneFormatar = Annotated[str, AfterValidator(formatar_telefone)]
 
@@ -87,7 +30,7 @@ NomeFormatar = Annotated[
         strip_whitespace=True,
         pattern=REGEX_NOME,
         min_length=3,
-        max_length=60,
+        max_length=120,
     ),
     AfterValidator(formatar_nome_proprio),
 ]
@@ -99,16 +42,28 @@ Nome = Annotated[
         to_upper=True,
         pattern=REGEX_NOME,
         min_length=3,
-        max_length=60,
+        max_length=100,
     ),
+]
+
+SenhaValida = Annotated[
+    str,
+    Field(min_length=3, max_length=60),
+    AfterValidator(validar_sem_espacos),
+]
+
+CPFMascara = Annotated[
+    str, PlainSerializer(mascarar_cpf, return_type=str, when_used='json')
 ]
 
 FormatarPreco = Annotated[
     Decimal, PlainSerializer(formatar_preco, return_type=str, when_used='json')
 ]
 
-FormatarHora = Annotated[datetime, AfterValidator(formatar_hora_db)]
+FormatarHora = Annotated[
+    datetime, PlainSerializer(formatar_hora_db, return_type=str, when_used='json')
+]
 
-FormatarHoraLocal = Annotated[datetime, AfterValidator(formatar_hora_local)]
-
-SenhaValida = Annotated[str, Field(min_length=3), AfterValidator(validar_sem_espacos)]
+FormatarHoraLocal = Annotated[
+    datetime, PlainSerializer(formatar_hora_local, return_type=str, when_used='json')
+]

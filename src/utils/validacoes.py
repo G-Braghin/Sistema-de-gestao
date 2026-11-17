@@ -5,19 +5,6 @@ LIMITE_RESTO_VALIDADOR = 10
 COMPRIMENTO_CELULAR = 13
 
 
-def verificar_id(id_registro: int, mensagem: str = 'ID invalido.') -> None:
-    if not isinstance(id_registro, int) or isinstance(id_registro, bool):
-        raise TypeError('ID tem que ser um numero inteiro.')
-
-    if id_registro <= 0:
-        raise ValueError(mensagem)
-
-
-def verificar_texto_obrigatorio(texto: str | None, mensagem: str) -> None:
-    if not texto or not texto.strip():
-        raise ValueError(mensagem)
-
-
 def validar_cpf(cpf: str) -> bool:
     if len(cpf) != COMPRIMENTO_CPF:
         return False
@@ -46,3 +33,27 @@ def validar_telefone(telefone: str) -> bool:
     padrao = r'^[1-9]{2}9[\d]{8}$'
 
     return bool(re.match(padrao, telefone))
+
+
+def validar_cpf_schema(cpf: str) -> str:
+    cpf_limpo = re.sub(r'\D', '', cpf)
+
+    if not validar_cpf(cpf_limpo):
+        raise ValueError('CPF invalido.')
+
+    return cpf_limpo
+
+
+def validar_telefone_schema(telefone: str) -> str:
+    telefone_limpo = re.sub(r'\D', '', telefone)
+
+    if not validar_telefone(telefone_limpo):
+        raise ValueError('Telefone invalido.')
+
+    return telefone_limpo
+
+
+def validar_sem_espacos(valor: str) -> str:
+    if ' ' in valor:
+        raise ValueError('A senha nao pode conter espacos.')
+    return valor
