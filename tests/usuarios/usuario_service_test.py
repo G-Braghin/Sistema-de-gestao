@@ -100,39 +100,6 @@ def test_apenas_funcionario_pode_ser_promovido(user_service, papel_alvo):
         user_service.promover_a_gerente(admin, usuario.id)
 
 
-@pytest.mark.parametrize(
-    ('id_usuario', 'tipo_erro', 'mensagem'),
-    [
-        (0, ValueError, 'ID de usuário invalido'),
-        (-1, ValueError, 'ID de usuário invalido'),
-        ('abc', TypeError, 'ID tem que ser um numero inteiro'),
-        (True, TypeError, 'ID tem que ser um numero inteiro'),
-    ],
-)
-@pytest.mark.parametrize(
-    'operacao',
-    ['promover_a_gerente', 'resetar_senha', 'atualizar_status'],
-)
-def test_operacoes_rejeitam_ids_invalidos(
-    user_service, id_usuario, tipo_erro, mensagem, operacao
-):
-    admin = UserFactory.create(papel=PapelEnum.ADMIN)
-    chamada = {
-        'promover_a_gerente': lambda: user_service.promover_a_gerente(
-            admin, id_usuario
-        ),
-        'resetar_senha': lambda: user_service.resetar_senha(
-            admin, id_usuario, 'nova-senha'
-        ),
-        'atualizar_status': lambda: user_service.atualizar_status(
-            admin, id_usuario, False
-        ),
-    }
-
-    with pytest.raises(tipo_erro, match=mensagem):
-        chamada[operacao]()
-
-
 def test_resetar_senha_de_funcionario(
     user_service, user_auth_mock, user_repository_mock
 ):
@@ -166,21 +133,6 @@ def test_gerente_nao_pode_resetar_senha_de_gerente(
         user_service.resetar_senha(gerente, outro_gerente.id, 'nova-senha')
 
     assert outro_gerente.senha == senha_original
-
-
-@pytest.mark.parametrize(
-    'nova_senha',
-    ['', '   ', None],
-)
-def test_resetar_senha_rejeita_senha_vazia(user_service, nova_senha):
-    admin = UserFactory.create(papel=PapelEnum.ADMIN)
-    funcionario = criar_usuario_com_id(999, papel=PapelEnum.FUNCIONARIO)
-    senha_original = funcionario.senha
-
-    with pytest.raises(ValueError, match='Senha não pode estar vazio'):
-        user_service.resetar_senha(admin, funcionario.id, nova_senha)
-
-    assert funcionario.senha == senha_original
 
 
 @pytest.mark.parametrize(
@@ -243,19 +195,6 @@ def test_usuario_nao_pode_desativar_a_propria_conta(user_service, user_repositor
 
     assert gerente.ativo is True
     user_repository_mock.atualizar.assert_not_called()
-
-
-@pytest.mark.parametrize('status_ativo', ['False', None, 0, 1])
-def test_atualizar_status_rejeita_valor_que_nao_seja_boolean(
-    user_service, status_ativo
-):
-    admin = UserFactory.create(papel=PapelEnum.ADMIN)
-    funcionario = criar_usuario_com_id(999, papel=PapelEnum.FUNCIONARIO)
-
-    with pytest.raises(TypeError, match='Status deve ser True ou False'):
-        user_service.atualizar_status(admin, funcionario.id, status_ativo)
-
-    assert funcionario.ativo is True
 
 
 @pytest.mark.parametrize(
@@ -365,24 +304,6 @@ def test_atualizar_senha_rejeita_usuario_inexistente(
 
     with pytest.raises(LookupError, match='Usuario nao encontrado'):
         user_service.atualizar_senha_usuario(usuario, 'senha-atual', 'senha-nova')
-
-
-@pytest.mark.parametrize(
-    ('senha_atual', 'nova_senha', 'mensagem'),
-    [
-        ('', 'senha-nova', 'A senha atual nao pode estar vazio'),
-        ('   ', 'senha-nova', 'A senha atual nao pode estar vazio'),
-        (None, 'senha-nova', 'A senha atual nao pode estar vazio'),
-        ('senha-atual', '', 'A nova senha nao pode estar vazio'),
-        ('senha-atual', '   ', 'A nova senha nao pode estar vazio'),
-        ('senha-atual', None, 'A nova senha nao pode estar vazio'),
-    ],
-)
-def test_atualizar_senha_rejeita_senhas_vazias(
-    user_service, senha_atual, nova_senha, mensagem, usuario
-):
-    with pytest.raises(ValueError, match=mensagem):
-        user_service.atualizar_senha_usuario(usuario, senha_atual, nova_senha)
 
 
 def test_atualizar_senha_rejeita_nova_senha_igual_a_atual(user_service, usuario):

@@ -1,6 +1,7 @@
 from http import HTTPStatus
 
 from fastapi import APIRouter, HTTPException
+from pydantic import PositiveInt
 
 from src.api.dependencies.autenticacao import UsuarioLogado
 from src.api.dependencies.services import UsuarioServiceDep
@@ -12,7 +13,7 @@ router = APIRouter(prefix='/usuarios', tags=['Gerenciamento-Usuario'])
 
 @router.patch('/{id_usuario}/promover', response_model=Mensagem)
 def promover_gerente(
-    usuario_logado: UsuarioLogado, id_usuario: int, service: UsuarioServiceDep
+    usuario_logado: UsuarioLogado, id_usuario: PositiveInt, service: UsuarioServiceDep
 ):
     try:
         usuario = service.promover_a_gerente(usuario_logado, id_usuario)
@@ -20,7 +21,7 @@ def promover_gerente(
         return {'mensagem': f'{usuario.nome} foi promovido com sucesso.'}
     except ValueError as erro:
         raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail=str(erro)
+            status_code=HTTPStatus.UNPROCESSABLE_CONTENT, detail=str(erro)
         ) from erro
     except LookupError as erro:
         raise HTTPException(
@@ -35,7 +36,7 @@ def promover_gerente(
 @router.patch('/{id_usuario}/atualizar-status', response_model=Mensagem)
 def atualizar_status(
     usuario_logado: UsuarioLogado,
-    id_usuario: int,
+    id_usuario: PositiveInt,
     dados: AtualizarStatus,
     service: UsuarioServiceDep,
 ):
@@ -46,7 +47,7 @@ def atualizar_status(
         return {'mensagem': f'Usuario {usuario.nome} {status} com sucesso.'}
     except ValueError as erro:
         raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail=str(erro)
+            status_code=HTTPStatus.UNPROCESSABLE_CONTENT, detail=str(erro)
         ) from erro
     except LookupError as erro:
         raise HTTPException(
@@ -61,17 +62,13 @@ def atualizar_status(
 @router.patch('/{id_usuario}/resetar-senha', response_model=Mensagem)
 def resetar_senha(
     usuario_logado: UsuarioLogado,
-    id_usuario: int,
+    id_usuario: PositiveInt,
     dados: ResetarSenha,
     service: UsuarioServiceDep,
 ):
     try:
         usuario = service.resetar_senha(usuario_logado, id_usuario, dados.nova_senha)
         return {'mensagem': f'Senha de {usuario.nome} redefinida com sucesso.'}
-    except ValueError as erro:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail=str(erro)
-        ) from erro
     except LookupError as erro:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail=str(erro)

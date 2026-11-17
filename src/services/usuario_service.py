@@ -3,7 +3,6 @@ from src.models import Usuario
 from src.repositories.usuario_repository import UsuarioRepository
 from src.services.autenticacao_service import AutenticacaoService
 from src.settings import Settings
-from src.utils.validacoes import verificar_id, verificar_texto_obrigatorio
 
 
 class UsuarioService:
@@ -47,7 +46,6 @@ class UsuarioService:
             raise PermissionError(
                 'Apenas administradores podem promover funcionários a gerentes.'
             )
-        verificar_id(id_usuario, 'ID de usuário invalido.')
 
         usuario = self.usuario_repository.buscar_por_id(id_usuario)
         if not usuario:
@@ -65,9 +63,6 @@ class UsuarioService:
     def resetar_senha(
         self, usuario_logado: Usuario, id_usuario_alvo: int, nova_senha: str
     ) -> Usuario:
-        verificar_id(id_usuario_alvo, 'ID de usuário invalido.')
-
-        verificar_texto_obrigatorio(nova_senha, 'Senha não pode estar vazio.')
 
         usuario_alvo = self.usuario_repository.buscar_por_id(id_usuario_alvo)
         if not usuario_alvo:
@@ -88,10 +83,6 @@ class UsuarioService:
     def atualizar_senha_usuario(
         self, usuario_logado: Usuario, senha_atual: str, nova_senha: str
     ) -> None:
-
-        verificar_texto_obrigatorio(senha_atual, 'A senha atual nao pode estar vazio.')
-
-        verificar_texto_obrigatorio(nova_senha, 'A nova senha nao pode estar vazio.')
 
         if senha_atual == nova_senha:
             raise ValueError('A nova senha nao pode ser igual a atual.')
@@ -114,10 +105,6 @@ class UsuarioService:
     def atualizar_status(
         self, usuario_logado: Usuario, id_usuario_alvo: int, status_ativo: bool
     ) -> Usuario:
-        verificar_id(id_usuario_alvo, 'ID de usuário invalido.')
-
-        if not isinstance(status_ativo, bool):
-            raise TypeError('Status deve ser True ou False.')
 
         usuario_alvo = self.usuario_repository.buscar_por_id(id_usuario_alvo)
         if not usuario_alvo:

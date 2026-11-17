@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Annotated
 from zoneinfo import ZoneInfo
 
-from pydantic import AfterValidator, PlainSerializer, StringConstraints
+from pydantic import AfterValidator, Field, PlainSerializer, StringConstraints
 
 from src.utils.fuso import FUSO_HORARIO
 from src.utils.validacoes import validar_cpf, validar_telefone
@@ -57,7 +57,7 @@ def formatar_preco(valor: Decimal) -> str:
     return f'R$ {valor_formatado}'
 
 
-def formatar_hora_db(hora: datetime):
+def formatar_hora_db(hora: datetime) -> str:
     if hora.tzinfo is None:
         hora = hora.replace(tzinfo=ZoneInfo('UTC'))
 
@@ -68,6 +68,12 @@ def formatar_hora_db(hora: datetime):
 
 def formatar_hora_local(hora: datetime) -> str:
     return hora.strftime('%d/%m/%Y %H:%M')
+
+
+def validar_sem_espacos(valor: str) -> str:
+    if ' ' in valor:
+        raise ValueError('A senha nao pode conter espacos.')
+    return valor
 
 
 CPF = Annotated[str, AfterValidator(validar_cpf_schema)]
@@ -104,3 +110,5 @@ FormatarPreco = Annotated[
 FormatarHora = Annotated[datetime, AfterValidator(formatar_hora_db)]
 
 FormatarHoraLocal = Annotated[datetime, AfterValidator(formatar_hora_local)]
+
+SenhaValida = Annotated[str, Field(min_length=3), AfterValidator(validar_sem_espacos)]

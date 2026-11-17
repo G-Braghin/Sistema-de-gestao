@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+from src.api.schemas.types import NomeFormatar, SenhaValida
 from src.enums import PapelEnum
 
 
@@ -8,6 +9,27 @@ class Token(BaseModel):
     token_type: str
 
 
+# Entrada
+class UsuarioCadastro(BaseModel):
+    nome: NomeFormatar = Field(examples=['Bob'])
+    papel: PapelEnum = Field(default=PapelEnum.FUNCIONARIO)
+    senha: SenhaValida
+
+
+class AtualizarSenha(BaseModel):
+    senha_atual: SenhaValida
+    nova_senha: SenhaValida
+
+
+class FiltroListarUsuario(BaseModel):
+    ativo: bool = Field(default=True)
+
+
+class ResetarSenha(BaseModel):
+    nova_senha: SenhaValida
+
+
+# Saida
 class UsuarioPublico(BaseModel):
     id: int
     nome: str
@@ -15,24 +37,5 @@ class UsuarioPublico(BaseModel):
     ativo: bool
 
 
-class UsuarioCadastro(BaseModel):
-    nome: str = Field(min_length=3, max_length=60)
-    papel: PapelEnum = Field(default=PapelEnum.FUNCIONARIO)
-    senha: str = Field(min_length=3)
-
-
 class UsuarioLista(BaseModel):
     usuarios: list[UsuarioPublico]
-
-
-class FiltroListarUsuario(BaseModel):
-    ativo: bool = Field(default=True)
-
-
-class AtualizarSenha(BaseModel):
-    senha_atual: str = Field(min_length=3)
-    nova_senha: str = Field(min_length=3)
-
-
-class ResetarSenha(BaseModel):
-    nova_senha: str = Field(min_length=3)

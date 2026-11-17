@@ -14,7 +14,7 @@ def test_promover_gerente_a_gerente_api(client_api, funcionario, token_admin):
     }
 
 
-def test_promover_retorna_400_se_service_retornar_value_error(
+def test_promover_retorna_422_se_service_retornar_value_error(
     client_api, mock_usuario_service_api, token_admin
 ):
     mock_usuario_service_api.promover_a_gerente.side_effect = ValueError(
@@ -26,7 +26,7 @@ def test_promover_retorna_400_se_service_retornar_value_error(
         headers={'Authorization': f'Bearer {token_admin}'},
     )
 
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
     assert response.json() == {'detail': 'ID de usuário invalido.'}
 
 
@@ -90,7 +90,7 @@ def test_atualizar_status_usuario_inativo_para_ativo_api(
     }
 
 
-def test_atualizar_status_retorna_400_se_service_retornar_value_error(
+def test_atualizar_status_retorna_422_se_service_retornar_value_error(
     client_api, mock_usuario_service_api, token_admin
 ):
     mock_usuario_service_api.atualizar_status.side_effect = ValueError(
@@ -102,7 +102,7 @@ def test_atualizar_status_retorna_400_se_service_retornar_value_error(
         headers={'Authorization': f'Bearer {token_admin}'},
     )
 
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
     assert response.json() == {'detail': 'Usuario ja esta ativo.'}
 
 
@@ -149,20 +149,6 @@ def test_resetar_senha_de_funcionario_api(client_api, funcionario, token_admin):
     assert response.json() == {
         'mensagem': f'Senha de {funcionario.nome} redefinida com sucesso.'
     }
-
-
-def test_resetar_senha_retorna_400_se_service_retornar_value_error(
-    client_api, mock_usuario_service_api, token_admin
-):
-    mock_usuario_service_api.resetar_senha.side_effect = ValueError('ID invalido.')
-    response = client_api.patch(
-        '/usuarios/-1/resetar-senha',
-        json={'nova_senha': 'nova_senha'},
-        headers={'Authorization': f'Bearer {token_admin}'},
-    )
-
-    assert response.status_code == HTTPStatus.BAD_REQUEST
-    assert response.json() == {'detail': 'ID invalido.'}
 
 
 def test_resetar_senha_retorna_404_se_service_retornar_lookup_error(
