@@ -93,22 +93,19 @@ def test_realizar_venda_sem_itens(venda_service, user_funcionario):
 
 
 def test_criar_item_venda_com_produto_inexistente(
-    venda_service, product_repository_mock, mock_estoque_service
+    venda_service, product_repository_mock
 ):
     product_repository_mock.buscar_por_multiplos_ids.return_value = []
 
     with pytest.raises(LookupError, match='nao encontrado'):
         venda_service._criar_itens_venda([{'id_produto': 999, 'quantidade': 1}])
 
-    mock_estoque_service.validar_disponibilidade.assert_not_called()
-
 
 def test_criar_item_venda_com_estoque_insuficiente(
-    venda_service, product_repository_mock, mock_estoque_service
+    venda_service, product_repository_mock
 ):
     produto = Mock(id=1, nome='Teclado', quantidade=0)
     product_repository_mock.buscar_por_multiplos_ids.return_value = [produto]
-    mock_estoque_service.validar_disponibilidade.return_value = False
 
     with pytest.raises(ValueError, match='Estoque insuficiente'):
         venda_service._criar_itens_venda([{'id_produto': 1, 'quantidade': 1}])

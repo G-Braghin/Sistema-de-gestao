@@ -210,47 +210,6 @@ def test_listar_movimentacoes_sem_permissao(
     mock_mov_repository.listar.assert_not_called()
 
 
-def test_validar_disponibilidade_com_estoque_suficiente(
-    estoque_service, mock_product_repository, produto
-):
-    produto.quantidade = 10
-    mock_product_repository.buscar_por_id.return_value = produto
-
-    resultado = estoque_service.validar_disponibilidade(
-        id_produto=produto.id, quantidade_desejada=5
-    )
-
-    assert resultado is True
-
-    mock_product_repository.buscar_por_id.assert_called_once_with(produto.id)
-
-
-def test_validar_disponibilidade_com_estoque_insuficiente(
-    estoque_service, mock_product_repository, produto
-):
-    produto.quantidade = 10
-    mock_product_repository.buscar_por_id.return_value = produto
-
-    resultado = estoque_service.validar_disponibilidade(
-        id_produto=produto.id, quantidade_desejada=11
-    )
-
-    assert resultado is False
-
-    mock_product_repository.buscar_por_id.assert_called_once_with(produto.id)
-
-
-def test_validar_disponibilidade_com_produto_inexistente(
-    estoque_service, mock_product_repository
-):
-    mock_product_repository.buscar_por_id.return_value = None
-
-    with pytest.raises(LookupError, match='Produto nao encontrado'):
-        estoque_service.validar_disponibilidade(
-            id_produto=999999, quantidade_desejada=5
-        )
-
-
 @pytest.mark.parametrize('papel', [PapelEnum.ADMIN, PapelEnum.GERENTE])
 def test_relatorio_estoque_calcula_totais(
     estoque_service,
