@@ -4,7 +4,6 @@ from src.models import Produto
 from src.repositories.produto_repository import ProdutoRepository
 
 PRODUTO_NAO_ENCONTRADO = 'Produto nao encontrado!'
-ID_INVALIDO = 'ID de produto invalido.'
 
 
 class ProdutoService:

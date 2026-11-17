@@ -5,7 +5,6 @@ from src.repositories.movimentacao_repository import MovimentacaoRepository
 from src.repositories.produto_repository import ProdutoRepository
 
 PRODUTO_NAO_ENCONTRADO = 'Produto nao encontrado!'
-ID_INVALIDO = 'ID de produto invalido.'
 
 
 class EstoqueService:
@@ -110,16 +109,6 @@ class EstoqueService:
                 'Você não tem permissão para ver o histórico de movimentações.'
             )
         return self.movimentacao_repository.listar()
-
-    def validar_disponibilidade(
-        self, id_produto: int, quantidade_desejada: int
-    ) -> bool:
-
-        produto = self.produto_repository.buscar_por_id(id_produto)
-        if not produto:
-            raise LookupError(PRODUTO_NAO_ENCONTRADO)
-
-        return produto.quantidade >= quantidade_desejada
 
     def relatorio_estoque(self, usuario_logado: Usuario) -> RelatorioEstoqueResumo:
         if usuario_logado.papel == PapelEnum.FUNCIONARIO:
