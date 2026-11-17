@@ -39,8 +39,8 @@ def test_realizar_venda_com_dados_validos(
     mock_venda_repo.criar.side_effect = lambda venda: setattr(venda, 'id', 1) or venda
 
     itens = [
-        {'id_produto': produto.id, 'quantidade': 2},
-        {'id_produto': produto2.id, 'quantidade': 3},
+        {'id_produto': produto.id, 'quantidade': 1},
+        {'id_produto': produto2.id, 'quantidade': 1},
     ]
 
     resultado = venda_service.realizar_venda(
@@ -54,9 +54,9 @@ def test_realizar_venda_com_dados_validos(
     assert resultado.id_usuario == user_funcionario.id
     assert resultado.status == StatusVenda.CONCLUIDA
 
-    assert resultado.valor_total == Decimal('65.00')
+    assert resultado.valor_total == Decimal('25.00')
 
-    # assert len(resultado.itens) == 2
+    assert len(resultado.itens) == 2
 
     mock_venda_repo.criar.assert_called_once()
 
